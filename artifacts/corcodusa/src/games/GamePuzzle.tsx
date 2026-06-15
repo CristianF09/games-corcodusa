@@ -1,134 +1,208 @@
 import { useState, useCallback } from "react";
 
-const PUZZLES = [
-  {
-    name: "Pisicuța", emoji: "🐱",
-    pieces: ["🐱😸","😻🙀","😺😼","😽🐈"],
-  },
-  {
-    name: "Jungle", emoji: "🌴",
-    pieces: ["🦁🐯","🐘🦒","🐊🦏","🦓🐆"],
-  },
-  {
-    name: "Fermă", emoji: "🚜",
-    pieces: ["🐄🐷","🐔🐑","🐴🐐","🦆🐇"],
-  },
-  {
-    name: "Ocean", emoji: "🌊",
-    pieces: ["🐳🐬","🦈🐙","🦑🐠","🦀🐡"],
-  },
+const GRIDS = [
+  { id: "2x2", label: "2×2", cols: 2, rows: 2 },
+  { id: "3x3", label: "3×3", cols: 3, rows: 3 },
+  { id: "4x4", label: "4×4", cols: 4, rows: 4 },
 ];
 
-const GRID_SIZE = 4; // 2x2 pieces, each shows 2 emoji
+const THEMES: Record<string, { label: string; emoji: string; grid: string[][] }> = {
+  jungle: {
+    label: "Junglă", emoji: "🌴",
+    grid: [
+      ["🦁","🐯","🐘","🦒"],
+      ["🦊","🦓","🦏","🐆"],
+      ["🐊","🦛","🦁","🐯"],
+      ["🌴","🌿","🍃","🌺"],
+    ],
+  },
+  ocean: {
+    label: "Ocean", emoji: "🌊",
+    grid: [
+      ["🐳","🐬","🦈","🐙"],
+      ["🦑","🐠","🦀","🐡"],
+      ["🐟","🦞","🦐","🐚"],
+      ["🌊","🐋","🐠","🦈"],
+    ],
+  },
+  space: {
+    label: "Spațiu", emoji: "🚀",
+    grid: [
+      ["🚀","⭐","🌙","☀️"],
+      ["🪐","🌍","🌟","☄️"],
+      ["🛸","👨‍🚀","🔭","🌌"],
+      ["💫","🌠","🛰️","🪨"],
+    ],
+  },
+  farm: {
+    label: "Fermă", emoji: "🚜",
+    grid: [
+      ["🐄","🐷","🐔","🐑"],
+      ["🐴","🦆","🐇","🐐"],
+      ["🌾","🌻","🥕","🌽"],
+      ["🚜","🏡","🌳","🌸"],
+    ],
+  },
+};
 
-function shuffle<T>(arr: T[]): T[] {
-  return [...arr].sort(() => Math.random() - 0.5);
+function shuffle<T>(arr: T[]): T[] { return [...arr].sort(() => Math.random() - 0.5); }
+
+interface PieceState { id: number; emoji: string; correctPos: number; currentPos: number }
+
+function createPuzzle(themeKey: string, cols: number, rows: number): PieceState[] {
+  const theme = THEMES[themeKey];
+  const pieces: string[] = [];
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) pieces.push(theme.grid[r][c]);
+  const shuffled = shuffle(pieces.map((emoji, id) => ({ id, emoji, correctPos: id, currentPos: id })));
+  return shuffled.map((p, i) => ({ ...p, currentPos: i }));
 }
 
-interface PieceState { id: number; content: string; correct: number }
-
-function createPuzzle(puzzleIdx: number): PieceState[] {
-  const pieces = PUZZLES[puzzleIdx].pieces.map((content, id) => ({ id, content, correct: id }));
-  return shuffle(pieces).map((p, idx) => ({ ...p }));
+function isSolved(pieces: PieceState[]) {
+  return pieces.every(p => p.correctPos === p.currentPos);
 }
 
 export default function GamePuzzle() {
-  const [puzzleIdx, setPuzzleIdx] = useState(0);
-  const [pieces, setPieces] = useState<PieceState[]>(() => createPuzzle(0));
+  const [themeKey, setThemeKey] = useState("jungle");
+  const [gridId, setGridId] = useState("3x3");
+  const grid = GRIDS.find(g => g.id === gridId)!;
+
+  const [pieces, setPieces] = useState(() => createPuzzle("jungle", 3, 3));
   const [selected, setSelected] = useState<number | null>(null);
   const [moves, setMoves] = useState(0);
   const [won, setWon] = useState(false);
+  const [bestMoves, setBestMoves] = useState<Record<string, number>>({});
+  const [hints, setHints] = useState(3);
+  const [highlighted, setHighlighted] = useState<number | null>(null);
 
-  const puzzle = PUZZLES[puzzleIdx];
-
-  function isSolved(ps: PieceState[]) {
-    return ps.every((p, i) => p.correct === i);
+  function restart(t = themeKey, g = gridId) {
+    const gr = GRIDS.find(x => x.id === g)!;
+    setPieces(createPuzzle(t, gr.cols, gr.rows));
+    setSelected(null); setMoves(0); setWon(false); setHints(3); setHighlighted(null);
   }
 
-  function handleTile(idx: number) {
+  function changeTheme(t: string) { setThemeKey(t); restart(t, gridId); }
+  function changeGrid(g: string) { setGridId(g); restart(themeKey, g); }
+
+  function handleTile(pos: number) {
     if (won) return;
-    if (selected === null) {
-      setSelected(idx);
-    } else {
-      if (selected === idx) { setSelected(null); return; }
-      const next = [...pieces];
-      [next[selected], next[idx]] = [next[idx], next[selected]];
-      setPieces(next);
-      setMoves(m => m + 1);
-      setSelected(null);
-      if (isSolved(next)) setTimeout(() => setWon(true), 300);
+    if (selected === null) { setSelected(pos); return; }
+    if (selected === pos) { setSelected(null); return; }
+
+    const next = [...pieces];
+    const aIdx = next.findIndex(p => p.currentPos === selected);
+    const bIdx = next.findIndex(p => p.currentPos === pos);
+    next[aIdx] = { ...next[aIdx], currentPos: pos };
+    next[bIdx] = { ...next[bIdx], currentPos: selected };
+    setPieces(next);
+    setMoves(m => m + 1);
+    setSelected(null);
+
+    if (isSolved(next)) {
+      setWon(true);
+      const key = `${themeKey}-${gridId}`;
+      setBestMoves(prev => ({ ...prev, [key]: Math.min(moves + 1, prev[key] ?? Infinity) }));
     }
   }
 
-  function restart(pi = puzzleIdx) {
-    setPuzzleIdx(pi);
-    setPieces(createPuzzle(pi));
-    setSelected(null);
-    setMoves(0);
-    setWon(false);
+  function useHint() {
+    if (hints === 0) return;
+    const wrong = pieces.filter(p => p.correctPos !== p.currentPos);
+    if (wrong.length === 0) return;
+    const pick = wrong[Math.floor(Math.random() * wrong.length)];
+    setHighlighted(pick.currentPos);
+    setHints(h => h - 1);
+    setTimeout(() => setHighlighted(null), 2000);
   }
 
+  const bestKey = `${themeKey}-${gridId}`;
+  const solved = pieces.filter(p => p.correctPos === p.currentPos).length;
+  const total = grid.cols * grid.rows;
+
+  // Build display grid
+  const displayGrid = Array.from({ length: total }, (_, pos) =>
+    pieces.find(p => p.currentPos === pos)!
+  );
+
   return (
-    <div className="flex flex-col items-center gap-6 p-4 select-none">
-      {/* Puzzle selector & score */}
-      <div className="flex items-center justify-between w-full max-w-sm flex-wrap gap-2">
-        <div className="flex gap-2 flex-wrap">
-          {PUZZLES.map((p, i) => (
-            <button key={i} onClick={() => restart(i)}
-              className={`px-3 py-1 rounded-full text-sm font-bold transition-all ${puzzleIdx === i ? "bg-primary text-white shadow" : "bg-muted text-muted-foreground hover:bg-muted/70"}`}>
-              {p.emoji} {p.name}
+    <div className="flex flex-col items-center gap-4 p-4 select-none">
+      {/* Theme & grid selector */}
+      <div className="flex gap-2 flex-wrap justify-center">
+        {Object.entries(THEMES).map(([k, t]) => (
+          <button key={k} onClick={() => changeTheme(k)}
+            className={`px-3 py-1.5 rounded-full text-xs font-bold border-2 transition-all ${themeKey === k ? "bg-primary text-white border-primary shadow" : "bg-white border-border text-muted-foreground hover:border-primary/50"}`}>
+            {t.emoji} {t.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex items-center gap-3 flex-wrap justify-center">
+        <div className="flex gap-2">
+          {GRIDS.map(g => (
+            <button key={g.id} onClick={() => changeGrid(g.id)}
+              className={`px-3 py-1 rounded-full text-xs font-bold border-2 transition-all ${gridId === g.id ? "bg-secondary text-secondary-foreground border-secondary shadow" : "bg-muted text-muted-foreground border-muted"}`}>
+              {g.label}
             </button>
           ))}
         </div>
-        <span className="text-sm font-bold text-muted-foreground">🔄 {moves}</span>
+        <div className="flex gap-3 text-sm font-bold text-muted-foreground">
+          <span>✅ {solved}/{total}</span>
+          <span>🔄 {moves}</span>
+          {bestMoves[bestKey] && <span className="text-primary">🏆 {bestMoves[bestKey]}</span>}
+        </div>
+        <button onClick={useHint} disabled={hints === 0}
+          className={`px-3 py-1 rounded-full text-xs font-bold border-2 transition-all ${hints > 0 ? "bg-yellow-100 border-yellow-300 text-yellow-800 hover:bg-yellow-200" : "opacity-30 border-muted"}`}>
+          💡 {hints} indicii
+        </button>
       </div>
 
       {/* Reference image */}
       <div className="flex flex-col items-center gap-1">
-        <p className="text-xs text-muted-foreground font-medium">Modelul de completat:</p>
-        <div className="grid grid-cols-2 gap-1 rounded-2xl overflow-hidden border-2 border-dashed border-primary/40 p-1 bg-primary/5">
-          {puzzle.pieces.map((content, i) => (
-            <div key={i} className="w-16 h-16 flex items-center justify-center text-2xl bg-white rounded-xl">
-              {content}
+        <p className="text-xs text-muted-foreground">Modelul:</p>
+        <div className="grid gap-0.5 rounded-xl overflow-hidden border-2 border-dashed border-primary/30"
+          style={{ gridTemplateColumns: `repeat(${grid.cols}, minmax(0, 1fr))` }}>
+          {Array.from({ length: total }, (_, i) => pieces.find(p => p.correctPos === i)!).map((p, i) => (
+            <div key={i} className="flex items-center justify-center bg-primary/5 text-xl"
+              style={{ width: 36, height: 36 }}>
+              {p.emoji}
             </div>
           ))}
         </div>
       </div>
 
       {won ? (
-        <div className="flex flex-col items-center gap-4 animate-in zoom-in duration-500">
+        <div className="flex flex-col items-center gap-3 animate-in zoom-in duration-500 py-4">
           <div className="text-7xl animate-bounce">🏆</div>
-          <div className="text-2xl font-bold text-green-600">Felicitări! Puzzle rezolvat!</div>
-          <p className="text-muted-foreground">în {moves} mutări</p>
+          <div className="text-2xl font-display font-bold text-green-600">Puzzle rezolvat!</div>
+          <p className="text-muted-foreground">{moves} mutări{bestMoves[bestKey] === moves ? " 🎉 Record nou!" : ""}</p>
           <button onClick={() => restart()} className="px-8 py-3 bg-primary text-white font-bold rounded-full shadow-lg hover:-translate-y-1 transition-all">
-            Încearcă din nou
+            Joacă din nou
           </button>
         </div>
       ) : (
         <>
-          <p className="text-sm text-muted-foreground font-medium">
-            {selected !== null ? "Acum apasă pe locul cu care vrei să schimbi! ↓" : "Apasă pe o piesă ca să o selectezi!"}
-          </p>
-          {/* Puzzle grid */}
-          <div className="grid grid-cols-2 gap-3">
-            {pieces.map((piece, idx) => (
-              <button key={idx} onClick={() => handleTile(idx)}
-                className={`w-28 h-28 rounded-2xl text-4xl flex items-center justify-center border-3 transition-all duration-200 shadow-md font-bold
-                  ${selected === idx ? "border-primary bg-primary/10 scale-110 shadow-xl ring-4 ring-primary/30" :
-                    piece.correct === idx ? "border-green-400 bg-green-50" :
-                    "border-border bg-white hover:border-primary/50 hover:scale-105 hover:shadow-lg"
-                  }
-                `}>
-                {piece.content}
-              </button>
-            ))}
+          {selected !== null && <p className="text-sm text-muted-foreground">Acum apasă pe poziția cu care vrei să schimbi!</p>}
+          {selected === null && <p className="text-sm text-muted-foreground">Apasă pe o piesă ca să o selectezi!</p>}
+          <div className="grid gap-2"
+            style={{ gridTemplateColumns: `repeat(${grid.cols}, minmax(0, 1fr))` }}>
+            {displayGrid.map((piece, pos) => {
+              const isCorrect = piece.correctPos === pos;
+              const isSelected = selected === pos;
+              const isHighlighted = highlighted === pos;
+              const sz = gridId === "4x4" ? 68 : gridId === "3x3" ? 80 : 100;
+              return (
+                <button key={pos} onClick={() => handleTile(pos)}
+                  className={`flex items-center justify-center rounded-2xl border-3 transition-all duration-200 font-bold shadow-md
+                    ${isSelected ? "border-primary bg-primary/10 scale-110 shadow-xl ring-4 ring-primary/30" :
+                      isCorrect ? "border-green-400 bg-green-50 scale-95" :
+                      isHighlighted ? "border-yellow-400 bg-yellow-50 scale-105 ring-2 ring-yellow-300 animate-pulse" :
+                      "border-border bg-white hover:border-primary/50 hover:scale-105 hover:shadow-lg cursor-pointer"}
+                  `}
+                  style={{ width: sz, height: sz, fontSize: sz * 0.44 }}>
+                  {piece.emoji}
+                </button>
+              );
+            })}
           </div>
-
-          {pieces.filter((p, i) => p.correct === i).length > 0 && (
-            <p className="text-sm text-green-600 font-bold">
-              ✅ {pieces.filter((p, i) => p.correct === i).length} / {GRID_SIZE} piese la locul lor!
-            </p>
-          )}
         </>
       )}
     </div>

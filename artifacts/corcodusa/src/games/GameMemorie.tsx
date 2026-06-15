@@ -1,52 +1,77 @@
 import { useState, useEffect } from "react";
 
-const EMOJI_PAIRS = ["🐶","🐱","🐸","🦋","🌟","🍎","🎈","🦄","🐬","🦊","🐧","🦁"];
+const THEMES: Record<string, { label: string; emoji: string; pairs: string[] }> = {
+  animale: {
+    label: "Animale", emoji: "🐾",
+    pairs: ["🐶","🐱","🐸","🦋","🦄","🐬","🦊","🐧","🐘","🦁","🦒","🐯"],
+  },
+  fructe: {
+    label: "Fructe & Mâncare", emoji: "🍎",
+    pairs: ["🍎","🍋","🍓","🍇","🍉","🍒","🥝","🍑","🥭","🍍","🫐","🍊"],
+  },
+  numere: {
+    label: "Cifre", emoji: "🔢",
+    pairs: ["1️⃣","2️⃣","3️⃣","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣","🔟","0️⃣","💯"],
+  },
+  spatiu: {
+    label: "Spațiu", emoji: "🚀",
+    pairs: ["🚀","⭐","🌙","☀️","🪐","🌍","🌟","☄️","🛸","🌌","👨‍🚀","🔭"],
+  },
+};
 
-function createCards(pairCount: number) {
-  const emojis = EMOJI_PAIRS.slice(0, pairCount);
-  const pairs = [...emojis, ...emojis].map((emoji, i) => ({ id: i, emoji, flipped: false, matched: false }));
-  return pairs.sort(() => Math.random() - 0.5);
+const DIFFICULTIES = [
+  { id: "easy",   label: "Ușor",  pairs: 6,  cols: 4 },
+  { id: "medium", label: "Mediu", pairs: 8,  cols: 4 },
+  { id: "hard",   label: "Greu",  pairs: 12, cols: 6 },
+];
+
+function createCards(pairs: string[], count: number) {
+  const chosen = pairs.slice(0, count);
+  return [...chosen, ...chosen]
+    .map((emoji, id) => ({ id, emoji, flipped: false, matched: false }))
+    .sort(() => Math.random() - 0.5);
 }
 
 export default function GameMemorie() {
-  const [difficulty, setDifficulty] = useState<"easy"|"medium"|"hard">("easy");
-  const pairCount = difficulty === "easy" ? 6 : difficulty === "medium" ? 8 : 12;
-  const cols = difficulty === "easy" ? 4 : difficulty === "medium" ? 4 : 6;
+  const [themeKey, setThemeKey] = useState("animale");
+  const [diffId, setDiffId] = useState("easy");
+  const diff = DIFFICULTIES.find(d => d.id === diffId)!;
+  const theme = THEMES[themeKey];
 
-  const [cards, setCards] = useState(() => createCards(6));
+  const [cards, setCards] = useState(() => createCards(theme.pairs, diff.pairs));
   const [flipped, setFlipped] = useState<number[]>([]);
   const [moves, setMoves] = useState(0);
   const [locked, setLocked] = useState(false);
-  const [startTime] = useState(Date.now());
+  const [startMs, setStartMs] = useState(Date.now());
   const [elapsed, setElapsed] = useState(0);
   const [won, setWon] = useState(false);
+  const [bestMoves, setBestMoves] = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (won) return;
-    const t = setInterval(() => setElapsed(Math.floor((Date.now() - startTime) / 1000)), 1000);
+    const t = setInterval(() => setElapsed(Math.floor((Date.now() - startMs) / 1000)), 1000);
     return () => clearInterval(t);
-  }, [won]);
+  }, [won, startMs]);
 
-  function restart(diff = difficulty) {
-    const pc = diff === "easy" ? 6 : diff === "medium" ? 8 : 12;
-    setCards(createCards(pc));
+  function restart(t = themeKey, d = diffId) {
+    const theme = THEMES[t];
+    const diff = DIFFICULTIES.find(x => x.id === d)!;
+    setCards(createCards(theme.pairs, diff.pairs));
     setFlipped([]);
     setMoves(0);
     setLocked(false);
     setWon(false);
     setElapsed(0);
+    setStartMs(Date.now());
   }
 
-  function changeDiff(d: "easy"|"medium"|"hard") {
-    setDifficulty(d);
-    restart(d);
-  }
+  function changeTheme(t: string) { setThemeKey(t); restart(t, diffId); }
+  function changeDiff(d: string) { setDiffId(d); restart(themeKey, d); }
 
   function handleFlip(id: number) {
     if (locked || won) return;
     const card = cards.find(c => c.id === id);
-    if (!card || card.flipped || card.matched) return;
-    if (flipped.includes(id)) return;
+    if (!card || card.flipped || card.matched || flipped.includes(id)) return;
 
     const newFlipped = [...flipped, id];
     setCards(prev => prev.map(c => c.id === id ? { ...c, flipped: true } : c));
@@ -55,13 +80,19 @@ export default function GameMemorie() {
     if (newFlipped.length === 2) {
       setMoves(m => m + 1);
       setLocked(true);
-      const [a, b] = newFlipped.map(fid => cards.find(c => c.id === fid)!);
+      const [aId, bId] = newFlipped;
+      const a = cards.find(c => c.id === aId)!;
+      const b = cards.find(c => c.id === bId)!;
       if (a.emoji === b.emoji) {
-        setCards(prev => prev.map(c => newFlipped.includes(c.id) ? { ...c, matched: true } : c));
+        const next = cards.map(c => newFlipped.includes(c.id) ? { ...c, matched: true, flipped: true } : c);
+        setCards(next);
         setFlipped([]);
         setLocked(false);
-        if (cards.filter(c => !c.matched).length === 2) {
-          setTimeout(() => setWon(true), 300);
+        const allDone = next.every(c => c.matched);
+        if (allDone) {
+          setWon(true);
+          const key = `${themeKey}-${diffId}`;
+          setBestMoves(prev => ({ ...prev, [key]: Math.min(moves + 1, prev[key] ?? Infinity) }));
         }
       } else {
         setTimeout(() => {
@@ -74,51 +105,66 @@ export default function GameMemorie() {
   }
 
   const matched = cards.filter(c => c.matched).length / 2;
+  const key = `${themeKey}-${diffId}`;
+  const best = bestMoves[key];
 
   return (
-    <div className="flex flex-col items-center gap-5 p-4 select-none">
-      {/* Controls */}
-      <div className="flex items-center justify-between w-full max-w-xl flex-wrap gap-3">
-        <div className="flex gap-2">
-          {(["easy","medium","hard"] as const).map(d => (
-            <button key={d} onClick={() => changeDiff(d)}
-              className={`px-3 py-1 rounded-full text-sm font-bold capitalize transition-all ${difficulty === d ? "bg-primary text-white shadow" : "bg-muted text-muted-foreground"}`}>
-              {d === "easy" ? "Ușor" : d === "medium" ? "Mediu" : "Greu"}
-            </button>
-          ))}
-        </div>
-        <div className="flex gap-4 text-sm font-bold text-muted-foreground">
-          <span>🎯 {matched}/{pairCount}</span>
-          <span>🔄 {moves}</span>
-          <span>⏱ {elapsed}s</span>
-        </div>
+    <div className="flex flex-col items-center gap-4 p-4 select-none">
+      {/* Theme */}
+      <div className="flex gap-2 flex-wrap justify-center">
+        {Object.entries(THEMES).map(([k, t]) => (
+          <button key={k} onClick={() => changeTheme(k)}
+            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all border-2 ${themeKey === k ? "bg-primary text-white border-primary shadow" : "bg-white border-border text-muted-foreground hover:border-primary/50"}`}>
+            {t.emoji} {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Difficulty */}
+      <div className="flex gap-2">
+        {DIFFICULTIES.map(d => (
+          <button key={d.id} onClick={() => changeDiff(d.id)}
+            className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${diffId === d.id ? "bg-secondary text-secondary-foreground shadow" : "bg-muted text-muted-foreground"}`}>
+            {d.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Stats */}
+      <div className="flex gap-5 text-sm font-bold text-muted-foreground">
+        <span>🎯 {matched}/{diff.pairs}</span>
+        <span>🔄 {moves}</span>
+        <span>⏱ {elapsed}s</span>
+        {best && <span className="text-primary">🏆 Record: {best}</span>}
       </div>
 
       {won ? (
-        <div className="flex flex-col items-center gap-4 py-6 animate-in zoom-in duration-500">
-          <div className="text-8xl">🏆</div>
-          <div className="text-3xl font-display font-bold text-green-600">Felicitări!</div>
-          <p className="text-muted-foreground text-center">
-            Ai terminat în {elapsed} secunde cu {moves} mutări!
-          </p>
-          <button onClick={() => restart()}
-            className="px-8 py-3 bg-primary text-white font-bold rounded-full shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all">
+        <div className="flex flex-col items-center gap-4 py-4 animate-in zoom-in duration-500">
+          <div className="text-7xl animate-bounce">🏆</div>
+          <div className="text-2xl font-display font-bold text-green-600">Felicitări!</div>
+          <div className="text-center text-muted-foreground">
+            <p>{elapsed}s · {moves} mutări</p>
+            {best && moves <= best && <p className="text-primary font-bold">🎉 Nou record!</p>}
+          </div>
+          <button onClick={() => restart()} className="px-8 py-3 bg-primary text-white font-bold rounded-full shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all">
             Joacă din nou
           </button>
         </div>
       ) : (
-        <div className={`grid gap-3`} style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
+        <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${diff.cols}, minmax(0, 1fr))` }}>
           {cards.map(card => (
-            <button key={card.id}
-              onClick={() => handleFlip(card.id)}
-              className={`aspect-square rounded-2xl text-3xl flex items-center justify-center transition-all duration-400 shadow-md font-bold
+            <button key={card.id} onClick={() => handleFlip(card.id)}
+              className={`flex items-center justify-center rounded-2xl transition-all duration-300 font-bold select-none
                 ${card.flipped || card.matched
-                  ? "bg-white border-2 border-primary/30 scale-95"
-                  : "bg-gradient-to-br from-primary to-primary/70 hover:from-primary/90 hover:scale-105 cursor-pointer"
-                }
-                ${card.matched ? "opacity-60" : ""}
+                  ? "bg-white border-2 border-primary/20 shadow-sm"
+                  : "bg-gradient-to-br from-primary to-primary/70 hover:from-primary/90 hover:scale-105 cursor-pointer shadow-md"}
+                ${card.matched ? "opacity-50 scale-95" : ""}
               `}
-              style={{ width: difficulty === "hard" ? "56px" : "70px", height: difficulty === "hard" ? "56px" : "70px" }}>
+              style={{
+                width: diffId === "hard" ? "58px" : "70px",
+                height: diffId === "hard" ? "58px" : "70px",
+                fontSize: diffId === "hard" ? "24px" : "28px",
+              }}>
               {card.flipped || card.matched ? card.emoji : "❓"}
             </button>
           ))}

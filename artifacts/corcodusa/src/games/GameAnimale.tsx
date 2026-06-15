@@ -1,48 +1,68 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 const ANIMALS = [
-  { name: "Vacă", emoji: "🐄", sound: "Muu!", color: "bg-amber-50 border-amber-200" },
-  { name: "Porc", emoji: "🐷", sound: "Groh!", color: "bg-pink-50 border-pink-200" },
-  { name: "Câine", emoji: "🐶", sound: "Ham!", color: "bg-orange-50 border-orange-200" },
-  { name: "Pisică", emoji: "🐱", sound: "Miau!", color: "bg-purple-50 border-purple-200" },
-  { name: "Oaie", emoji: "🐑", sound: "Bee!", color: "bg-sky-50 border-sky-200" },
-  { name: "Cal", emoji: "🐴", sound: "Iîîî!", color: "bg-brown-50 border-yellow-200" },
-  { name: "Rață", emoji: "🦆", sound: "Mac!", color: "bg-green-50 border-green-200" },
-  { name: "Cocoș", emoji: "🐓", sound: "Cucuriguu!", color: "bg-red-50 border-red-200" },
+  { name: "Vacă",    emoji: "🐄", sound: "Muu!",       habitat: "ferma",   legs: 4, food: "plante", baby: "vițel" },
+  { name: "Porc",    emoji: "🐷", sound: "Groh!",      habitat: "ferma",   legs: 4, food: "orice",  baby: "purcel" },
+  { name: "Câine",   emoji: "🐶", sound: "Ham!",       habitat: "casa",    legs: 4, food: "carne",  baby: "cățel" },
+  { name: "Pisică",  emoji: "🐱", sound: "Miau!",      habitat: "casa",    legs: 4, food: "carne",  baby: "pisicuță" },
+  { name: "Oaie",    emoji: "🐑", sound: "Bee!",       habitat: "ferma",   legs: 4, food: "plante", baby: "miel" },
+  { name: "Cal",     emoji: "🐴", sound: "Iîîî!",      habitat: "ferma",   legs: 4, food: "plante", baby: "mânz" },
+  { name: "Rață",    emoji: "🦆", sound: "Mac!",       habitat: "apa",     legs: 2, food: "plante", baby: "rățușcă" },
+  { name: "Cocoș",   emoji: "🐓", sound: "Cucuriguu!", habitat: "ferma",   legs: 2, food: "seminte",baby: "pui" },
+  { name: "Delfin",  emoji: "🐬", sound: "Clic-clic!", habitat: "ocean",   legs: 0, food: "pești",  baby: "delfinel" },
+  { name: "Leu",     emoji: "🦁", sound: "Roarrr!",    habitat: "savana",  legs: 4, food: "carne",  baby: "pui de leu" },
+  { name: "Elefant", emoji: "🐘", sound: "Barrr!",     habitat: "savana",  legs: 4, food: "plante", baby: "puiul de elefant" },
+  { name: "Pinguin", emoji: "🐧", sound: "Scârțâit!",  habitat: "arctic",  legs: 2, food: "pești",  baby: "pui de pinguin" },
 ];
 
-type Mode = "sound-to-animal" | "animal-to-sound";
+type Mode = "sound" | "habitat" | "legs" | "baby";
 
-function shuffle<T>(arr: T[]): T[] {
-  return [...arr].sort(() => Math.random() - 0.5);
-}
+const HABITATS = ["ferma", "casa", "apa", "ocean", "savana", "arctic"];
+const HABITAT_LABELS: Record<string, string> = { ferma: "🌾 Fermă", casa: "🏠 Casă", apa: "💧 Apă", ocean: "🌊 Ocean", savana: "🌍 Savană", arctic: "🧊 Arctic" };
+const LEGS_OPTIONS = [0, 2, 4, 6, 8];
+
+function shuffle<T>(arr: T[]): T[] { return [...arr].sort(() => Math.random() - 0.5); }
 
 function generateRound(mode: Mode) {
   const target = ANIMALS[Math.floor(Math.random() * ANIMALS.length)];
+  if (mode === "habitat") {
+    const wrongHabitats = shuffle(HABITATS.filter(h => h !== target.habitat)).slice(0, 3);
+    return { target, options: shuffle([target.habitat, ...wrongHabitats]) };
+  }
+  if (mode === "legs") {
+    const wrongLegs = shuffle(LEGS_OPTIONS.filter(l => l !== target.legs)).slice(0, 3);
+    return { target, options: shuffle([target.legs, ...wrongLegs]).map(String) };
+  }
+  if (mode === "baby") {
+    const wrongBabies = shuffle(ANIMALS.filter(a => a.baby !== target.baby)).slice(0, 3).map(a => a.baby);
+    return { target, options: shuffle([target.baby, ...wrongBabies]) };
+  }
+  // sound
   const wrong = shuffle(ANIMALS.filter(a => a.name !== target.name)).slice(0, 3);
-  const options = shuffle([target, ...wrong]);
-  return { target, options };
+  return { target, options: shuffle([target, ...wrong]) };
 }
 
 export default function GameAnimale() {
-  const [mode, setMode] = useState<Mode>("sound-to-animal");
-  const [round, setRound] = useState(() => generateRound("sound-to-animal"));
+  const [mode, setMode] = useState<Mode>("sound");
+  const [round, setRound] = useState(() => generateRound("sound"));
   const [chosen, setChosen] = useState<string | null>(null);
   const [score, setScore] = useState(0);
   const [total, setTotal] = useState(0);
-  const [showSound, setShowSound] = useState(false);
 
   function nextRound(m = mode) {
     setRound(generateRound(m));
     setChosen(null);
-    setShowSound(false);
   }
 
-  function handleChoice(name: string) {
+  function handleChoice(val: string) {
     if (chosen) return;
-    setChosen(name);
+    setChosen(val);
     setTotal(t => t + 1);
-    if (name === round.target.name) setScore(s => s + 1);
+    const correct = mode === "sound" ? val === round.target.name
+      : mode === "habitat" ? val === round.target.habitat
+      : mode === "legs" ? val === String(round.target.legs)
+      : val === round.target.baby;
+    if (correct) setScore(s => s + 1);
     setTimeout(() => nextRound(), 1800);
   }
 
@@ -53,70 +73,99 @@ export default function GameAnimale() {
     nextRound(m);
   }
 
-  const correct = chosen === round.target.name;
+  const isCorrect = (val: string) =>
+    mode === "sound" ? val === round.target.name
+    : mode === "habitat" ? val === round.target.habitat
+    : mode === "legs" ? val === String(round.target.legs)
+    : val === round.target.baby;
+
+  const correct = chosen !== null && isCorrect(chosen);
 
   return (
-    <div className="flex flex-col items-center gap-6 p-4 select-none">
-      {/* Mode & score */}
-      <div className="flex items-center justify-between w-full max-w-lg">
-        <div className="flex gap-2">
-          <button onClick={() => changeMode("sound-to-animal")}
-            className={`px-3 py-1 rounded-full text-sm font-bold transition-all ${mode === "sound-to-animal" ? "bg-primary text-white shadow" : "bg-muted text-muted-foreground"}`}>
-            🔊 → 🐄
+    <div className="flex flex-col items-center gap-5 p-4 select-none">
+      {/* Mode tabs */}
+      <div className="flex gap-2 flex-wrap justify-center">
+        {([["sound","🔊 Sunete"],["habitat","🏡 Habitat"],["legs","🦵 Picioare"],["baby","👶 Pui"]] as [Mode,string][]).map(([m, lbl]) => (
+          <button key={m} onClick={() => changeMode(m)}
+            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all border-2 ${mode === m ? "bg-primary text-white border-primary shadow" : "bg-white border-border text-muted-foreground hover:border-primary/50"}`}>
+            {lbl}
           </button>
-          <button onClick={() => changeMode("animal-to-sound")}
-            className={`px-3 py-1 rounded-full text-sm font-bold transition-all ${mode === "animal-to-sound" ? "bg-primary text-white shadow" : "bg-muted text-muted-foreground"}`}>
-            🐄 → 🔊
-          </button>
-        </div>
-        <span className="text-sm font-bold text-primary">⭐ {score} / {total}</span>
+        ))}
       </div>
 
-      {/* Question */}
-      <div className="flex flex-col items-center gap-3 bg-card rounded-3xl border-2 border-border p-8 w-full max-w-xs shadow-inner">
-        {mode === "sound-to-animal" ? (
+      <span className="text-sm font-bold text-primary">⭐ {score} / {total}</span>
+
+      {/* Question card */}
+      <div className="bg-card rounded-3xl border-2 border-border p-6 w-full max-w-xs text-center shadow-inner">
+        {mode === "sound" && (
           <>
-            <p className="text-sm text-muted-foreground font-medium">Ce animal face sunetul:</p>
-            <button onClick={() => setShowSound(s => !s)}
-              className="text-4xl font-display font-bold text-primary bg-primary/10 px-8 py-4 rounded-2xl hover:bg-primary/20 transition-all">
+            <p className="text-sm text-muted-foreground mb-3">Ce animal face sunetul:</p>
+            <div className="text-3xl font-display font-bold text-primary bg-primary/10 px-6 py-3 rounded-2xl inline-block">
               {round.target.sound}
-            </button>
+            </div>
           </>
-        ) : (
+        )}
+        {mode === "habitat" && (
           <>
-            <p className="text-sm text-muted-foreground font-medium">Ce sunet face:</p>
-            <div className="text-8xl animate-bounce">{round.target.emoji}</div>
-            <div className="text-2xl font-bold text-foreground">{round.target.name}</div>
+            <p className="text-sm text-muted-foreground mb-3">Unde trăiește:</p>
+            <div className="text-7xl">{round.target.emoji}</div>
+            <div className="text-xl font-bold mt-2">{round.target.name}</div>
+          </>
+        )}
+        {mode === "legs" && (
+          <>
+            <p className="text-sm text-muted-foreground mb-3">Câte picioare are:</p>
+            <div className="text-7xl">{round.target.emoji}</div>
+            <div className="text-xl font-bold mt-2">{round.target.name}</div>
+          </>
+        )}
+        {mode === "baby" && (
+          <>
+            <p className="text-sm text-muted-foreground mb-3">Cum se numește puiul de:</p>
+            <div className="text-7xl">{round.target.emoji}</div>
+            <div className="text-xl font-bold mt-2">{round.target.name}</div>
           </>
         )}
       </div>
 
       {/* Options */}
-      <div className="grid grid-cols-2 gap-3 w-full max-w-xs">
-        {round.options.map(opt => (
-          <button key={opt.name} onClick={() => handleChoice(opt.name)}
-            disabled={!!chosen}
-            className={`flex flex-col items-center gap-1 py-4 rounded-2xl border-2 font-bold transition-all duration-300
-              ${!chosen ? `${opt.color} hover:scale-105 hover:shadow-lg cursor-pointer` : ""}
-              ${chosen === opt.name && opt.name === round.target.name ? "bg-green-100 border-green-400 scale-105 shadow-lg" : ""}
-              ${chosen === opt.name && opt.name !== round.target.name ? "bg-red-100 border-red-400" : ""}
-              ${chosen && opt.name === round.target.name && chosen !== opt.name ? "bg-green-100 border-green-400" : ""}
-            `}>
-            {mode === "sound-to-animal" ? (
-              <>
-                <span className="text-4xl">{opt.emoji}</span>
-                <span className="text-sm text-foreground">{opt.name}</span>
-              </>
-            ) : (
-              <span className="text-lg font-bold text-foreground px-2 text-center">{opt.sound}</span>
-            )}
-          </button>
-        ))}
+      <div className="grid grid-cols-2 gap-3 w-full max-w-sm">
+        {(round.options as string[]).map((opt) => {
+          const display = mode === "sound" ? ANIMALS.find(a => a.name === opt)?.emoji + " " + opt
+            : mode === "habitat" ? HABITAT_LABELS[opt] ?? opt
+            : mode === "legs" ? opt + " picioare"
+            : opt;
+          const ic = isCorrect(opt);
+          return (
+            <button key={opt} onClick={() => handleChoice(opt)}
+              disabled={!!chosen}
+              className={`py-4 px-3 rounded-2xl border-2 font-bold text-sm transition-all duration-300 shadow-md text-center
+                ${!chosen ? "bg-white hover:scale-105 hover:border-primary border-border" : ""}
+                ${chosen === opt && ic ? "bg-green-100 border-green-400 text-green-700 scale-105" : ""}
+                ${chosen === opt && !ic ? "bg-red-100 border-red-400 text-red-600" : ""}
+                ${chosen && ic && chosen !== opt ? "bg-green-100 border-green-400 text-green-700" : ""}
+              `}>
+              {display}
+            </button>
+          );
+        })}
       </div>
 
       {chosen && (
         <div className={`text-xl font-bold animate-in zoom-in duration-300 ${correct ? "text-green-600" : "text-red-500"}`}>
-          {correct ? "🎉 Corect! Bravo!" : `❌ Era ${mode === "sound-to-animal" ? round.target.name : round.target.sound}`}
+          {correct ? "🎉 Corect! Bravo!" : (
+            mode === "sound" ? `❌ Era ${round.target.name}` :
+            mode === "habitat" ? `❌ Trăiește la ${HABITAT_LABELS[round.target.habitat]}` :
+            mode === "legs" ? `❌ Are ${round.target.legs} picioare` :
+            `❌ Puiul se numește ${round.target.baby}`
+          )}
+        </div>
+      )}
+
+      {/* Fun fact */}
+      {chosen && correct && (
+        <div className="text-sm bg-blue-50 border border-blue-200 rounded-xl px-4 py-2 text-blue-800 text-center max-w-sm">
+          🌟 Știai că {round.target.name.toLowerCase()} {round.target.food === "plante" ? "mănâncă plante (e ierbivor)" : round.target.food === "carne" ? "mănâncă carne (e carnivor)" : "mănâncă orice (e omnivor)"}?
         </div>
       )}
     </div>
