@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Corcodusa - Jocuri Educaționale"
+version = "1.0.0"
+id = "artifacts/corcodusa"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22256
+
+[services.development]
+run = "pnpm --filter @workspace/corcodusa run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/corcodusa", "run", "build" ]
+publicDir = "artifacts/corcodusa/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22256"
+BASE_PATH = "/"

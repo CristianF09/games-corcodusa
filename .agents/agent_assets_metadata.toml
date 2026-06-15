@@ -1,0 +1,86 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "DrHhMtzWj0ugADQQQKOYC"
+uri = "file://artifacts/corcodusa/public/images/hero.png"
+type = "image"
+title = "Hero illustration kids learning"
+
+[[generated]]
+id = "MDzgp9qYoCw-F7QRLvV0C"
+uri = "file://artifacts/corcodusa/public/images/game-math.png"
+type = "image"
+title = "Math game cover"
+
+[[generated]]
+id = "ls3pjDvo2oMaGd-l9uoQU"
+uri = "file://artifacts/corcodusa/public/images/game-puzzle.png"
+type = "image"
+title = "Puzzle game cover"
+
+[[generated]]
+id = "UcAuhD4yCbeog5lvIAmGp"
+uri = "file://artifacts/corcodusa/public/images/game-reading.png"
+type = "image"
+title = "Reading game cover"
+
+[[generated]]
+id = "nzMKpgMFdqzK837iz3ANC"
+uri = "file://attached_assets/game-matematica-1.png"
+type = "image"
+title = "counting game"
+
+[[generated]]
+id = "LbPSOLlOObZrfa9x8k9bR"
+uri = "file://attached_assets/game-litere-1.png"
+type = "image"
+title = "alphabet game"
+
+[[generated]]
+id = "QZIpOcnlizqY_pYmLewSz"
+uri = "file://attached_assets/game-culori-1.png"
+type = "image"
+title = "shapes game"
+
+[[generated]]
+id = "dzdOLiBmeg_ExlNbQ4WrV"
+uri = "file://attached_assets/game-natura-1.png"
+type = "image"
+title = "animals game"
+
+[[generated]]
+id = "4THfWCnhIw_aDSLVkE-Fi"
+uri = "file://attached_assets/game-muzica-1.png"
+type = "image"
+title = "music game"
+
+[[generated]]
+id = "PSRAT7TEWgy-6WzYeesgD"
+uri = "file://attached_assets/game-memorie-1.png"
+type = "image"
+title = "memory game"
+
+[[generated]]
+id = "rQRdZNZR_QXqE4Q3WFIm4"
+uri = "file://attached_assets/game-creativitate-1.png"
+type = "image"
+title = "art game"
+
+[[generated]]
+id = "hup_NQvmpw2nIHv6ZLjy1"
+uri = "file://attached_assets/game-logica-1.png"
+type = "image"
+title = "logic game"
+
+[[generated]]
+id = "J7bglXAxxFMM_LcTgsdHM"
+uri = "file://attached_assets/game-matematica-2.png"
+type = "image"
+title = "math game 2"
+
+[[generated]]
+id = "IZy8lqzmZOGtSoANW5kYr"
+uri = "file://attached_assets/game-litere-2.png"
+type = "image"
+title = "dino alphabet"

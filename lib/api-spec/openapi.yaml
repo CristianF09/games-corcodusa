@@ -3,13 +3,22 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Corcodusa Educational Games Platform API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: games
+    description: Educational games operations
+  - name: users
+    description: User management
+  - name: subscriptions
+    description: Subscription management
+  - name: payments
+    description: Stripe payment operations
+
 paths:
   /healthz:
     get:
@@ -24,6 +33,220 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /games:
+    get:
+      operationId: listGames
+      tags: [games]
+      summary: List all available games
+      parameters:
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: ageMin
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: ageMax
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: featured
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: List of games
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Game"
+
+  /games/featured:
+    get:
+      operationId: getFeaturedGames
+      tags: [games]
+      summary: Get featured games for homepage
+      responses:
+        "200":
+          description: Featured games list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Game"
+
+  /games/categories:
+    get:
+      operationId: listGameCategories
+      tags: [games]
+      summary: List all game categories with counts
+      responses:
+        "200":
+          description: List of categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GameCategory"
+
+  /games/new:
+    get:
+      operationId: getNewGames
+      tags: [games]
+      summary: Get recently added or updated games
+      responses:
+        "200":
+          description: Recently added games
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Game"
+
+  /games/{id}:
+    get:
+      operationId: getGame
+      tags: [games]
+      summary: Get a single game by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Game details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Game"
+        "404":
+          description: Game not found
+
+  /users/me:
+    get:
+      operationId: getCurrentUser
+      tags: [users]
+      summary: Get current authenticated user profile
+      responses:
+        "200":
+          description: Current user profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+    post:
+      operationId: upsertUser
+      tags: [users]
+      summary: Create or update user profile (called after login)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserInput"
+      responses:
+        "200":
+          description: Updated user profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /users/me/subscription:
+    get:
+      operationId: getUserSubscription
+      tags: [users]
+      summary: Get current user's subscription status
+      responses:
+        "200":
+          description: Subscription details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscriptionStatus"
+        "401":
+          description: Unauthorized
+
+  /payments/products:
+    get:
+      operationId: listProducts
+      tags: [payments]
+      summary: List available subscription products and prices
+      responses:
+        "200":
+          description: Products and prices
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+
+  /payments/checkout:
+    post:
+      operationId: createCheckoutSession
+      tags: [payments]
+      summary: Create a Stripe checkout session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckoutInput"
+      responses:
+        "200":
+          description: Checkout session URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutSession"
+        "401":
+          description: Unauthorized
+
+  /payments/portal:
+    post:
+      operationId: createCustomerPortal
+      tags: [payments]
+      summary: Create a Stripe customer portal session
+      responses:
+        "200":
+          description: Portal session URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PortalSession"
+        "401":
+          description: Unauthorized
+
+  /stats/overview:
+    get:
+      operationId: getPlatformStats
+      tags: [games]
+      summary: Get platform overview statistics
+      responses:
+        "200":
+          description: Platform statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformStats"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +257,156 @@ components:
       required:
         - status
 
+    Game:
+      type: object
+      required: [id, title, description, category, ageMin, ageMax, imageUrl, isNew, isFeatured, requiresSubscription]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        ageMin:
+          type: integer
+        ageMax:
+          type: integer
+        imageUrl:
+          type: string
+        gameUrl:
+          type: ["string", "null"]
+        isNew:
+          type: boolean
+        isFeatured:
+          type: boolean
+        requiresSubscription:
+          type: boolean
+        createdAt:
+          type: string
+
+    GameCategory:
+      type: object
+      required: [name, label, count, emoji]
+      properties:
+        name:
+          type: string
+        label:
+          type: string
+        count:
+          type: integer
+        emoji:
+          type: string
+
+    User:
+      type: object
+      required: [id, clerkId, email, subscriptionTier, trialDaysLeft]
+      properties:
+        id:
+          type: integer
+        clerkId:
+          type: string
+        email:
+          type: string
+        firstName:
+          type: ["string", "null"]
+        lastName:
+          type: ["string", "null"]
+        avatarUrl:
+          type: ["string", "null"]
+        subscriptionTier:
+          type: string
+        trialDaysLeft:
+          type: integer
+        stripeCustomerId:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    UserInput:
+      type: object
+      required: [clerkId, email]
+      properties:
+        clerkId:
+          type: string
+        email:
+          type: string
+        firstName:
+          type: ["string", "null"]
+        lastName:
+          type: ["string", "null"]
+        avatarUrl:
+          type: ["string", "null"]
+
+    SubscriptionStatus:
+      type: object
+      required: [tier, isActive, trialDaysLeft]
+      properties:
+        tier:
+          type: string
+        isActive:
+          type: boolean
+        trialDaysLeft:
+          type: integer
+        expiresAt:
+          type: ["string", "null"]
+        stripePriceId:
+          type: ["string", "null"]
+
+    Product:
+      type: object
+      required: [id, name, description, priceId, amount, currency, interval, isPopular]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        priceId:
+          type: string
+        amount:
+          type: integer
+        currency:
+          type: string
+        interval:
+          type: ["string", "null"]
+        isPopular:
+          type: boolean
+
+    CheckoutInput:
+      type: object
+      required: [priceId]
+      properties:
+        priceId:
+          type: string
+        trialDays:
+          type: ["integer", "null"]
+
+    CheckoutSession:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+
+    PortalSession:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+
+    PlatformStats:
+      type: object
+      required: [totalGames, totalCategories, totalUsers, newGamesThisMonth]
+      properties:
+        totalGames:
+          type: integer
+        totalCategories:
+          type: integer
+        totalUsers:
+          type: integer
+        newGamesThisMonth:
+          type: integer
