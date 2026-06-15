@@ -165,6 +165,9 @@ function HomeRedirect() {
 }
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
+  // Auth disabled for testing — all routes are freely accessible
+  return <Component />;
+  /*
   return (
     <>
       <Show when="signed-in">
@@ -175,6 +178,7 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
       </Show>
     </>
   );
+  */
 }
 
 function ClerkProviderWithRoutes() {

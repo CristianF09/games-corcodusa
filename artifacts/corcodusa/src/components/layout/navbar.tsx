@@ -14,10 +14,17 @@ export function Navbar() {
         </Link>
 
         <div className="flex items-center gap-4">
+          {/* Always visible */}
+          <Link href="/games" className="text-sm font-medium hover:text-primary transition-colors">
+            Jocuri
+          </Link>
+          <Link href="/pricing" className="text-sm font-medium hover:text-primary transition-colors hidden md:block">
+            Abonamente
+          </Link>
+
+          {/* Auth buttons — hidden while auth is disabled for testing */}
+          {/*
           <Show when="signed-out">
-            <Link href="/pricing" className="text-sm font-medium hover:text-primary transition-colors hidden md:block">
-              Abonamente
-            </Link>
             <Link href="/sign-in">
               <Button variant="ghost" className="font-semibold">Autentificare</Button>
             </Link>
@@ -25,16 +32,13 @@ export function Navbar() {
               <Button className="font-semibold rounded-full shadow-md">Încearcă gratuit</Button>
             </Link>
           </Show>
-          
           <Show when="signed-in">
-            <Link href="/games" className="text-sm font-medium hover:text-primary transition-colors">
-              Jocuri
-            </Link>
             <Link href="/dashboard" className="text-sm font-medium hover:text-primary transition-colors hidden sm:block">
               Contul meu
             </Link>
             <UserButton afterSignOutUrl="/" appearance={{ elements: { avatarBox: "h-8 w-8" } }} />
           </Show>
+          */}
         </div>
       </div>
     </nav>
