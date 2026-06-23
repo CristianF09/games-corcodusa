@@ -1,4 +1,5 @@
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useRef, useState, useEffect } from "react";
+import { playClick, playSwap, playCelebrate } from "@/lib/sfx";
 
 const PALETTE = [
   "#ef4444","#f97316","#eab308","#84cc16","#22c55e",
@@ -100,6 +101,65 @@ const COLORING_PAGES = [
       }
     },
   },
+  {
+    name: "Fluture",
+    draw: (ctx: CanvasRenderingContext2D) => {
+      ctx.fillStyle = "#fef9f0"; ctx.fillRect(0, 0, 600, 420);
+      ctx.strokeStyle = "#333"; ctx.lineWidth = 3;
+      // Body
+      ctx.beginPath(); ctx.ellipse(300, 210, 10, 70, 0, 0, Math.PI * 2); ctx.stroke();
+      // Wings (4 big loops)
+      ctx.beginPath(); ctx.ellipse(220, 150, 75, 55, -0.3, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(380, 150, 75, 55, 0.3, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(235, 270, 55, 40, 0.3, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(365, 270, 55, 40, -0.3, 0, Math.PI * 2); ctx.stroke();
+      // Wing patterns
+      for (const [cx, cy, r] of [[210, 150, 18], [390, 150, 18], [240, 265, 14], [360, 265, 14]] as [number,number,number][]) {
+        ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+      }
+      // Antennae
+      ctx.beginPath(); ctx.moveTo(296, 145); ctx.quadraticCurveTo(270, 100, 260, 80); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(304, 145); ctx.quadraticCurveTo(330, 100, 340, 80); ctx.stroke();
+      ctx.beginPath(); ctx.arc(260, 78, 6, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(340, 78, 6, 0, Math.PI * 2); ctx.stroke();
+    },
+  },
+  {
+    name: "Rachetă în spațiu",
+    draw: (ctx: CanvasRenderingContext2D) => {
+      ctx.fillStyle = "#fef9f0"; ctx.fillRect(0, 0, 600, 420);
+      ctx.strokeStyle = "#333"; ctx.lineWidth = 3;
+      // Rocket body
+      ctx.beginPath();
+      ctx.moveTo(300, 60);
+      ctx.quadraticCurveTo(360, 110, 360, 230);
+      ctx.lineTo(240, 230);
+      ctx.quadraticCurveTo(240, 110, 300, 60);
+      ctx.closePath(); ctx.stroke();
+      // Window
+      ctx.beginPath(); ctx.arc(300, 150, 28, 0, Math.PI * 2); ctx.stroke();
+      // Fins
+      ctx.beginPath(); ctx.moveTo(240, 200); ctx.lineTo(190, 260); ctx.lineTo(240, 240); ctx.closePath(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(360, 200); ctx.lineTo(410, 260); ctx.lineTo(360, 240); ctx.closePath(); ctx.stroke();
+      // Bottom flames
+      ctx.beginPath(); ctx.moveTo(255, 230); ctx.quadraticCurveTo(265, 280, 280, 230); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(300, 230); ctx.quadraticCurveTo(300, 290, 300, 230); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(345, 230); ctx.quadraticCurveTo(335, 280, 320, 230); ctx.stroke();
+      // Stars
+      for (const [sx, sy] of [[100, 90], [500, 70], [80, 300], [540, 320], [150, 350], [480, 150]] as [number,number][]) {
+        ctx.beginPath();
+        for (let i = 0; i < 4; i++) {
+          const a = (i * Math.PI) / 2;
+          ctx.moveTo(sx + Math.cos(a) * 12, sy + Math.sin(a) * 12);
+          ctx.lineTo(sx - Math.cos(a) * 12, sy - Math.sin(a) * 12);
+        }
+        ctx.stroke();
+      }
+      // Planet
+      ctx.beginPath(); ctx.arc(500, 330, 40, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(500, 330, 65, 16, -0.3, 0, Math.PI * 2); ctx.stroke();
+    },
+  },
 ];
 
 type Tool = "pen" | "eraser" | "fill" | "stamp";
@@ -178,9 +238,10 @@ export default function GameDesen() {
       saveHistory();
       ctx.font = `${size * 3 + 20}px serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
       ctx.fillText(stamp, pos.x, pos.y);
+      playSwap();
       return;
     }
-    if (tool === "fill") { floodFill(pos.x, pos.y, color); return; }
+    if (tool === "fill") { floodFill(pos.x, pos.y, color); playSwap(); return; }
     saveHistory();
     setDrawing(true);
     lastPos.current = pos;
@@ -206,16 +267,19 @@ export default function GameDesen() {
     setColoringIdx(idx);
     ctx.fillStyle = "#fef9f0"; ctx.fillRect(0, 0, c.width, c.height);
     COLORING_PAGES[idx].draw(ctx);
+    playClick();
   }
 
   function clearCanvas() {
     saveHistory(); initCanvas(); setColoringIdx(-1);
+    playClick();
   }
 
   function saveCanvas() {
     const c = canvasRef.current!;
     const link = document.createElement("a");
     link.download = "desenul-meu.png"; link.href = c.toDataURL(); link.click();
+    playCelebrate();
   }
 
   return (
@@ -225,7 +289,7 @@ export default function GameDesen() {
         {/* Tools */}
         <div className="flex gap-1 border-r border-border pr-2">
           {([["pen","✏️","Creion"],["eraser","🧹","Radieră"],["fill","🪣","Umple"],["stamp","🌸","Ștampilă"]] as [Tool,string,string][]).map(([t,ic,lbl]) => (
-            <button key={t} onClick={() => setTool(t)} title={lbl}
+            <button key={t} onClick={() => { playClick(); setTool(t); }} title={lbl}
               className={`w-9 h-9 rounded-xl text-base transition-all ${tool === t ? "bg-primary text-white shadow" : "bg-muted hover:bg-muted/70"}`}>
               {ic}
             </button>
@@ -247,7 +311,7 @@ export default function GameDesen() {
         </div>
         {/* Actions */}
         <div className="flex gap-1">
-          <button onClick={undo} title="Anul" className="px-2 py-1.5 rounded-xl text-xs font-bold bg-muted hover:bg-muted/70 transition-all">↩</button>
+          <button onClick={() => { playClick(); undo(); }} title="Anul" className="px-2 py-1.5 rounded-xl text-xs font-bold bg-muted hover:bg-muted/70 transition-all">↩</button>
           <button onClick={clearCanvas} className="px-2 py-1.5 rounded-xl text-xs font-bold bg-red-100 text-red-700 hover:bg-red-200 transition-all">🗑</button>
           <button onClick={saveCanvas} className="px-2 py-1.5 rounded-xl text-xs font-bold bg-green-100 text-green-700 hover:bg-green-200 transition-all">💾</button>
         </div>
@@ -266,7 +330,7 @@ export default function GameDesen() {
           </div>
           <div className="flex gap-1 flex-wrap justify-center">
             {STAMP_SETS[stampSet as keyof typeof STAMP_SETS].map(s => (
-              <button key={s} onClick={() => setStamp(s)}
+              <button key={s} onClick={() => { playClick(); setStamp(s); }}
                 className={`w-9 h-9 rounded-xl text-xl transition-all ${stamp === s ? "bg-primary/20 border-2 border-primary scale-110" : "hover:bg-muted"}`}>
                 {s}
               </button>

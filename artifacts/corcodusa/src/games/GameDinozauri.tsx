@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { playCorrect, playWrong, playCelebrate, playClick } from "@/lib/sfx";
 
 const CATEGORIES: Record<string, { label: string; emoji: string; words: { word: string; emoji: string; hint: string }[] }> = {
   animale: {
@@ -70,10 +71,9 @@ export default function GameDinozauri() {
   const [usedIndices, setUsedIndices] = useState<Set<number>>(new Set());
 
   const cat = CATEGORIES[catKey];
-  const available = cat.words.filter((_, i) => !usedIndices.has(i));
-  const current = available.length > 0
-    ? available[wordIndex % available.length]
-    : cat.words[0];
+  // Easiest (shortest) words first, harder/longer words later — gives natural difficulty progression.
+  const available = cat.words.filter((_, i) => !usedIndices.has(i)).sort((a, b) => a.word.length - b.word.length);
+  const current = available.length > 0 ? available[0] : cat.words[0];
   const letters = current.word.split("");
   const keyboard = buildKeyboard(current.word);
 
@@ -85,6 +85,7 @@ export default function GameDinozauri() {
       setTyped(next);
       setWrong(new Set());
       if (next.length === letters.length) {
+        playCelebrate();
         setCelebrate(true);
         setScore(s => s + (hintUsed ? 1 : 2));
         const idx = cat.words.indexOf(current);
@@ -97,13 +98,20 @@ export default function GameDinozauri() {
           setHintUsed(false);
           setWordIndex(wi => wi + 1);
         }, 1800);
+      } else {
+        playClick();
       }
     } else {
+      playWrong();
       setWrong(prev => new Set([...prev, l]));
       setTimeout(() => setWrong(prev => { const n = new Set(prev); n.delete(l); return n; }), 700);
       setLives(lv => {
         const next = lv - 1;
-        if (next === 0) setTimeout(() => { setLives(3); setTyped([]); setWrong(new Set()); setCelebrate(false); }, 1500);
+        if (next === 0) setTimeout(() => {
+          setLives(3); setTyped([]); setWrong(new Set()); setCelebrate(false);
+          setShowHint(false); setHintUsed(false);
+          setWordIndex(wi => wi + 1);
+        }, 1500);
         return next;
       });
     }

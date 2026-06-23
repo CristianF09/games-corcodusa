@@ -1,0 +1,15 @@
+{
+  "projects": {
+    "default": "forkids-4f02d"
+  },
+  "targets": {
+    "forkids-4f02d": {
+      "hosting": {
+        "games": [
+          "games-corcodusa"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { playCorrect, playWrong, playCelebrate, playClick } from "@/lib/sfx";
 
 /* ─── Counting game data ──────────────────────────────────── */
 const ITEM_SETS = [
@@ -133,6 +134,7 @@ export default function GameNumarare() {
   const [total, setTotal] = useState(0);
   const [celebrate, setCelebrate] = useState(false);
   const [showHint, setShowHint] = useState(false);
+  const [parityChosen, setParityChosen] = useState<boolean | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Trace
   const [traceNum, setTraceNum] = useState(1);
@@ -140,13 +142,26 @@ export default function GameNumarare() {
   const [traceCelebrate, setTraceCelebrate] = useState(false);
 
   function nextRound(lv = levelId) {
-    setRound(generateRound(lv)); setClicked(new Set()); setChosen(null); setCelebrate(false); setShowHint(false);
+    setRound(generateRound(lv)); setClicked(new Set()); setChosen(null); setParityChosen(null); setCelebrate(false); setShowHint(false);
   }
   function handleAnswer(n: number) {
     if (chosen !== null) return;
     setChosen(n); setTotal(t => t + 1);
     const ok = n === round.count;
-    if (ok) { setScore(s => s + 1); setStreak(s => s + 1); setCelebrate(true); } else setStreak(0);
+    if (ok) {
+      setScore(s => s + 1); setStreak(s => { const ns = s + 1; (ns >= 3 ? playCelebrate : playCorrect)(); return ns; });
+      setCelebrate(true);
+    } else { setStreak(0); playWrong(); }
+    timerRef.current = setTimeout(() => nextRound(), 2000);
+  }
+  function handleParityAnswer(guessEven: boolean) {
+    if (parityChosen !== null) return;
+    setParityChosen(guessEven); setTotal(t => t + 1);
+    const ok = (round.count % 2 === 0) === guessEven;
+    if (ok) {
+      setScore(s => s + 1); setStreak(s => { const ns = s + 1; (ns >= 3 ? playCelebrate : playCorrect)(); return ns; });
+      setCelebrate(true);
+    } else { setStreak(0); playWrong(); }
     timerRef.current = setTimeout(() => nextRound(), 2000);
   }
   function changeLevel(l: number) {
@@ -155,7 +170,8 @@ export default function GameNumarare() {
   }
 
   const lvl = COUNT_LEVELS[levelId - 1];
-  const correct = chosen === round.count;
+  const correct = lvl.parity ? (round.count % 2 === 0) === parityChosen : chosen === round.count;
+  const answered = lvl.parity ? parityChosen !== null : chosen !== null;
 
   return (
     <div className="flex flex-col items-center gap-5 p-4 select-none">
@@ -193,25 +209,27 @@ export default function GameNumarare() {
           </p>
           <div className="flex flex-wrap justify-center gap-2 max-w-md bg-card rounded-3xl p-5 border-2 border-border shadow-inner min-h-20">
             {Array.from({ length: round.count }).map((_, i) => (
-              <button key={i} onClick={() => { if (chosen !== null) return; setClicked(p => { const n = new Set(p); n.has(i) ? n.delete(i) : n.add(i); return n; }); }}
+              <button key={i} onClick={() => { if (answered) return; playClick(); setClicked(p => { const n = new Set(p); n.has(i) ? n.delete(i) : n.add(i); return n; }); }}
                 className={`text-3xl transition-all duration-200 active:scale-75 ${clicked.has(i) ? "opacity-30 scale-90" : "hover:scale-110"}`}>
                 {round.emoji}
               </button>
             ))}
           </div>
-          {clicked.size > 0 && chosen === null && (
+          {clicked.size > 0 && !answered && (
             <div className="text-5xl font-display font-black text-primary animate-bounce">{clicked.size}</div>
           )}
           {lvl.parity ? (
             <div className="flex gap-4">
-              {[["Par","🟢 Par",true],["Impar","🟡 Impar",false]].map(([key,lbl,isEven]) => {
-                const isCorrect = ((round.count % 2 === 0) === isEven) as boolean;
+              {[["Par","🟢 Par",true],["Impar","🟡 Impar",false]].map(([key,lbl,isEvenRaw]) => {
+                const isEven = isEvenRaw as boolean;
+                const isThisCorrect = (round.count % 2 === 0) === isEven;
+                const isThisChosen = parityChosen === isEven;
                 return (
-                  <button key={String(key)} onClick={() => handleAnswer(isEven ? round.count : round.count + 1)} disabled={chosen !== null}
+                  <button key={String(key)} onClick={() => handleParityAnswer(isEven)} disabled={parityChosen !== null}
                     className={`px-8 py-4 rounded-2xl text-xl font-bold border-2 transition-all duration-300 shadow-md
-                      ${chosen === null ? "bg-white hover:bg-primary/10 hover:border-primary border-border hover:-translate-y-1" : ""}
-                      ${chosen !== null && isCorrect ? "bg-green-100 border-green-400 text-green-700 scale-105" : ""}
-                      ${chosen !== null && !isCorrect ? "bg-red-100 border-red-400 text-red-700" : ""}
+                      ${parityChosen === null ? "bg-white hover:bg-primary/10 hover:border-primary border-border hover:-translate-y-1" : ""}
+                      ${parityChosen !== null && isThisCorrect ? "bg-green-100 border-green-400 text-green-700 scale-105" : ""}
+                      ${parityChosen !== null && !isThisCorrect && isThisChosen ? "bg-red-100 border-red-400 text-red-700" : ""}
                     `}>
                     {String(lbl)}
                   </button>
@@ -233,15 +251,19 @@ export default function GameNumarare() {
               ))}
             </div>
           )}
-          {chosen !== null && (
+          {answered && (
             <div className={`text-xl font-bold animate-in zoom-in ${correct ? "text-green-600" : "text-red-500"}`}>
-              {correct ? (streak >= 3 ? "🔥 Fantastic!" : "🎉 Corect! Bravo!") : `❌ Erau ${round.count} ${round.label}`}
+              {correct
+                ? (streak >= 3 ? "🔥 Fantastic!" : "🎉 Corect! Bravo!")
+                : lvl.parity
+                  ? `❌ ${round.count} este ${round.count % 2 === 0 ? "par" : "impar"}`
+                  : `❌ Erau ${round.count} ${round.label}`}
             </div>
           )}
-          {!showHint && chosen === null && (
+          {!showHint && !answered && (
             <button onClick={() => setShowHint(true)} className="text-xs text-muted-foreground underline hover:text-primary">💡 Ajutor</button>
           )}
-          {showHint && chosen === null && (
+          {showHint && !answered && (
             <div className="text-sm bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-2 text-yellow-800">
               Apasă pe fiecare {round.emoji} ca să numeri mai ușor!
             </div>
@@ -280,6 +302,7 @@ export default function GameNumarare() {
             </div>
           ) : (
             <NumberTracingCanvas key={traceNum} num={traceNum} onComplete={() => {
+              playCelebrate();
               setTraceCelebrate(true); setTraceScore(s => s + 1);
               setTimeout(() => { setTraceCelebrate(false); if (traceNum < 20) setTraceNum(n => n + 1); }, 1200);
             }} />

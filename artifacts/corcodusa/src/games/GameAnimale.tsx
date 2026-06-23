@@ -1,4 +1,22 @@
 import { useState } from "react";
+import { playCorrect, playWrong, playCelebrate } from "@/lib/sfx";
+
+/* ─── Confetti ────────────────────────────────────────────── */
+function Confetti() {
+  const PIECES = Array.from({ length: 22 }, (_, i) => ({
+    left: Math.random() * 100, delay: Math.random() * 0.6,
+    color: ["#ff6b6b","#ffd93d","#6bcb77","#4d96ff","#ff922b"][i % 5], size: 6 + Math.random() * 7,
+  }));
+  return (
+    <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
+      {PIECES.map((p, i) => (
+        <div key={i} className="absolute" style={{ left: `${p.left}%`, top: "-12px", animationDelay: `${p.delay}s` }}>
+          <div className="animate-bounce" style={{ width: p.size, height: p.size, background: p.color, borderRadius: "2px", transform: `rotate(${Math.random()*360}deg)` }} />
+        </div>
+      ))}
+    </div>
+  );
+}
 
 const ANIMALS = [
   { name: "Vacă",    emoji: "🐄", sound: "Muu!",       habitat: "ferma",   legs: 4, food: "plante", baby: "vițel" },
@@ -39,7 +57,7 @@ function generateRound(mode: Mode) {
   }
   // sound
   const wrong = shuffle(ANIMALS.filter(a => a.name !== target.name)).slice(0, 3);
-  return { target, options: shuffle([target, ...wrong]) };
+  return { target, options: shuffle([target.name, ...wrong.map(a => a.name)]) };
 }
 
 export default function GameAnimale() {
@@ -48,6 +66,8 @@ export default function GameAnimale() {
   const [chosen, setChosen] = useState<string | null>(null);
   const [score, setScore] = useState(0);
   const [total, setTotal] = useState(0);
+  const [streak, setStreak] = useState(0);
+  const [celebrate, setCelebrate] = useState(false);
 
   function nextRound(m = mode) {
     setRound(generateRound(m));
@@ -62,7 +82,18 @@ export default function GameAnimale() {
       : mode === "habitat" ? val === round.target.habitat
       : mode === "legs" ? val === String(round.target.legs)
       : val === round.target.baby;
-    if (correct) setScore(s => s + 1);
+    if (correct) {
+      setScore(s => s + 1);
+      setStreak(s => {
+        const next = s + 1;
+        if (next >= 3) { playCelebrate(); setCelebrate(true); setTimeout(() => setCelebrate(false), 1400); }
+        else playCorrect();
+        return next;
+      });
+    } else {
+      setStreak(0);
+      playWrong();
+    }
     setTimeout(() => nextRound(), 1800);
   }
 
@@ -70,6 +101,7 @@ export default function GameAnimale() {
     setMode(m);
     setScore(0);
     setTotal(0);
+    setStreak(0);
     nextRound(m);
   }
 
@@ -83,6 +115,7 @@ export default function GameAnimale() {
 
   return (
     <div className="flex flex-col items-center gap-5 p-4 select-none">
+      {celebrate && <Confetti />}
       {/* Mode tabs */}
       <div className="flex gap-2 flex-wrap justify-center">
         {([["sound","🔊 Sunete"],["habitat","🏡 Habitat"],["legs","🦵 Picioare"],["baby","👶 Pui"]] as [Mode,string][]).map(([m, lbl]) => (
@@ -93,7 +126,10 @@ export default function GameAnimale() {
         ))}
       </div>
 
-      <span className="text-sm font-bold text-primary">⭐ {score} / {total}</span>
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-bold text-primary">⭐ {score} / {total}</span>
+        {streak >= 2 && <span className="text-xs font-bold text-orange-500 animate-pulse">🔥 {streak}</span>}
+      </div>
 
       {/* Question card */}
       <div className="bg-card rounded-3xl border-2 border-border p-6 w-full max-w-xs text-center shadow-inner">

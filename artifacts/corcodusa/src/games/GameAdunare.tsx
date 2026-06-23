@@ -1,6 +1,24 @@
 import { useState } from "react";
+import { playCorrect, playWrong, playCelebrate } from "@/lib/sfx";
 
 const EMOJI_SETS = ["🍎","🍋","🍓","🍇","🌟","🎈","🐥","🦋","🍩","🪄"];
+
+/* ─── Confetti ────────────────────────────────────────────── */
+function Confetti() {
+  const PIECES = Array.from({ length: 22 }, (_, i) => ({
+    left: Math.random() * 100, delay: Math.random() * 0.6,
+    color: ["#ff6b6b","#ffd93d","#6bcb77","#4d96ff","#ff922b"][i % 5], size: 6 + Math.random() * 7,
+  }));
+  return (
+    <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
+      {PIECES.map((p, i) => (
+        <div key={i} className="absolute" style={{ left: `${p.left}%`, top: "-12px", animationDelay: `${p.delay}s` }}>
+          <div className="animate-bounce" style={{ width: p.size, height: p.size, background: p.color, borderRadius: "2px", transform: `rotate(${Math.random()*360}deg)` }} />
+        </div>
+      ))}
+    </div>
+  );
+}
 
 const LEVELS = [
   { id: 1, label: "Adunare 1–5",    desc: "Adunare simplă", op: "add",  max: 5  },
@@ -53,6 +71,8 @@ export default function GameAdunare() {
   const [total, setTotal] = useState(0);
   const [mode, setMode] = useState<"visual"|"word">("visual");
   const [showExplain, setShowExplain] = useState(false);
+  const [streak, setStreak] = useState(0);
+  const [celebrate, setCelebrate] = useState(false);
 
   function nextRound(lvl = levelId) {
     setRound(generateRound(lvl));
@@ -64,7 +84,23 @@ export default function GameAdunare() {
     if (chosen !== null) return;
     setChosen(n);
     setTotal(t => t + 1);
-    if (n === round.answer) setScore(s => s + 1);
+    if (n === round.answer) {
+      setScore(s => s + 1);
+      setStreak(s => {
+        const next = s + 1;
+        if (next >= 3) {
+          playCelebrate();
+          setCelebrate(true);
+          setTimeout(() => setCelebrate(false), 1400);
+        } else {
+          playCorrect();
+        }
+        return next;
+      });
+    } else {
+      setStreak(0);
+      playWrong();
+    }
     setTimeout(() => nextRound(), 2200);
   }
 
@@ -72,6 +108,7 @@ export default function GameAdunare() {
     setLevelId(l);
     setScore(0);
     setTotal(0);
+    setStreak(0);
     nextRound(l);
   }
 
@@ -81,6 +118,7 @@ export default function GameAdunare() {
 
   return (
     <div className="flex flex-col items-center gap-5 p-4 select-none">
+      {celebrate && <Confetti />}
       {/* Levels */}
       <div className="flex gap-2 flex-wrap justify-center">
         {LEVELS.map(l => (
@@ -93,7 +131,10 @@ export default function GameAdunare() {
 
       {/* Stats + mode toggle */}
       <div className="flex items-center justify-between w-full max-w-lg">
-        <span className="text-sm font-bold text-primary">⭐ {score}/{total}</span>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-bold text-primary">⭐ {score}/{total}</span>
+          {streak >= 2 && <span className="text-xs font-bold text-orange-500 animate-pulse">🔥 {streak}</span>}
+        </div>
         <div className="flex gap-1">
           {(["visual","word"] as const).map(m => (
             <button key={m} onClick={() => setMode(m)}

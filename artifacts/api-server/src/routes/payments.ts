@@ -3,29 +3,24 @@ import { requireAuth, getAuth } from "@clerk/express";
 import { db, usersTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import { logger } from "../lib/logger";
-import { getUncachableStripeClient, getStripeSync } from "../stripeClient";
-import { runMigrations } from "stripe-replit-sync";
+import { getUncachableStripeClient } from "../stripeClient";
 import { WebhookHandlers } from "../webhookHandlers";
 
 const router = Router();
+
+function getBaseUrl(): string {
+  if (process.env.APP_BASE_URL) return process.env.APP_BASE_URL;
+  const port = process.env.PORT ?? "8080";
+  return `http://localhost:${port}`;
+}
 
 let stripeInitialized = false;
 
 export async function initStripe() {
   if (stripeInitialized) return;
-  const databaseUrl = process.env.DATABASE_URL;
-  if (!databaseUrl) return;
-  try {
-    await runMigrations({ databaseUrl });
-    const stripeSync = await getStripeSync();
-    const webhookBaseUrl = `https://${process.env.REPLIT_DOMAINS?.split(",")[0]}`;
-    await stripeSync.findOrCreateManagedWebhook(`${webhookBaseUrl}/api/stripe/webhook`);
-    await stripeSync.syncBackfill();
-    stripeInitialized = true;
-    logger.info("Stripe initialized successfully");
-  } catch (err: any) {
-    logger.warn({ err: err.message }, "Stripe not initialized — integration not connected");
-  }
+  if (!process.env.STRIPE_SECRET_KEY) return;
+  stripeInitialized = true;
+  logger.info("Stripe configured (STRIPE_SECRET_KEY present)");
 }
 
 router.post("/stripe/webhook",
@@ -102,7 +97,7 @@ router.post("/payments/checkout", requireAuth(), async (req, res) => {
     if (!user) return res.status(404).json({ error: "User not found" });
 
     const stripe = await getUncachableStripeClient();
-    const baseUrl = `https://${process.env.REPLIT_DOMAINS?.split(",")[0]}`;
+    const baseUrl = getBaseUrl();
 
     let customerId = user.stripeCustomerId;
     if (!customerId) {
@@ -149,7 +144,7 @@ router.post("/payments/portal", requireAuth(), async (req, res) => {
     }
 
     const stripe = await getUncachableStripeClient();
-    const baseUrl = `https://${process.env.REPLIT_DOMAINS?.split(",")[0]}`;
+    const baseUrl = getBaseUrl();
     const session = await stripe.billingPortal.sessions.create({
       customer: user.stripeCustomerId,
       return_url: `${baseUrl}/dashboard`,

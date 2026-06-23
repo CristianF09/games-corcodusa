@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { playCorrect, playWrong, playCelebrate, playClick } from "@/lib/sfx";
 
 /* ─── Shape SVGs ─────────────────────────────────────────── */
 type ShapeName = "cerc" | "pătrat" | "triunghi" | "stea" | "dreptunghi" | "romb" | "pentagon" | "hexagon";
@@ -125,7 +126,11 @@ function ShapeTracingCanvas({ shape, onComplete }: { shape: TracableShape; onCom
 function genColorRound() {
   const shape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
   const color = COLORS[Math.floor(Math.random() * COLORS.length)];
-  return { shape, color, options: shuffle([color, ...shuffle(COLORS.filter(c => c !== color)).slice(0,3)]) };
+  return {
+    shape, color,
+    options: shuffle([color, ...shuffle(COLORS.filter(c => c !== color)).slice(0,3)]),
+    shapeOptions: shuffle([shape, ...shuffle(SHAPES.filter(s => s !== shape)).slice(0,3)]),
+  };
 }
 function genCountRound() {
   const shape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
@@ -164,7 +169,7 @@ export default function GameForme() {
   }
   function handleAnswer(val: string, correct: string) {
     if (chosen) return; setChosen(val); setTotal(t => t + 1);
-    if (val === correct) setScore(s => s + 1);
+    if (val === correct) { setScore(s => s + 1); playCorrect(); } else { playWrong(); }
     setTimeout(() => nextRound(), 1800);
   }
   function changeMode(m: Mode) { setMode(m); setScore(0); setTotal(0); nextRound(); }
@@ -233,7 +238,7 @@ export default function GameForme() {
             {SHAPE_SVG[colorR.shape]("#6366f1")}
           </div>
           <div className="grid grid-cols-2 gap-3 w-full max-w-xs">
-            {shuffle([colorR.shape, ...shuffle(SHAPES.filter(s => s !== colorR.shape)).slice(0, 3)]).map(s => (
+            {colorR.shapeOptions.map(s => (
               <button key={s} onClick={() => handleAnswer(s, colorR.shape)} disabled={!!chosen}
                 className={`flex items-center gap-2 px-4 py-3 rounded-2xl border-2 font-bold text-sm capitalize transition-all duration-300 shadow-md
                   ${!chosen ? "bg-white hover:scale-105 hover:border-primary border-border" : ""}
@@ -287,7 +292,7 @@ export default function GameForme() {
             )).reduce((acc, el, i) => i === 0 ? [el] : [...acc, <span key="plus" className="text-3xl font-bold text-muted-foreground">+</span>, el], [] as JSX.Element[])}
             <span className="text-3xl font-bold text-muted-foreground">=</span>
             <div className="flex flex-col items-center gap-1">
-              <button onClick={() => setMixRevealed(true)}
+              <button onClick={() => { setMixRevealed(true); playCelebrate(); }}
                 className={`w-14 h-14 rounded-full border-4 border-white shadow-lg transition-all duration-500 ${mixRevealed ? "" : "bg-gradient-to-br from-muted to-muted/60 animate-pulse"}`}
                 style={mixRevealed ? { background: COLOR_HEX[COLOR_MIXING[mixIdx % COLOR_MIXING.length].result] } : {}} />
               <span className="text-xs font-bold text-muted-foreground">{mixRevealed ? COLOR_MIXING[mixIdx % COLOR_MIXING.length].result : "?"}</span>
@@ -296,7 +301,7 @@ export default function GameForme() {
           {mixRevealed ? (
             <div className="text-center">
               <p className="text-xl font-bold text-green-600">{COLOR_MIXING[mixIdx % COLOR_MIXING.length].desc}</p>
-              <button onClick={() => { setMixIdx(i => i + 1); setMixRevealed(false); }}
+              <button onClick={() => { playClick(); setMixIdx(i => i + 1); setMixRevealed(false); }}
                 className="mt-3 px-6 py-2 bg-primary text-white font-bold rounded-full shadow hover:-translate-y-0.5 transition-all">
                 Următoarea ▶
               </button>
@@ -365,7 +370,7 @@ export default function GameForme() {
             </div>
           ) : (
             <ShapeTracingCanvas key={curShape} shape={curShape} onComplete={() => {
-              setTraceCelebrate(true); setTraceScore(s => s + 1);
+              setTraceCelebrate(true); setTraceScore(s => s + 1); playCelebrate();
               setTimeout(() => { setTraceCelebrate(false); if (traceIdx < TRACEABLE.length - 1) setTraceIdx(i => i + 1); }, 1200);
             }} />
           )}

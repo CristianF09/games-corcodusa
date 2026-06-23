@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { playCorrect, playWrong, playClick, playCelebrate } from "@/lib/sfx";
 
 /* ─── Data ───────────────────────────────────────────────── */
 const LETTERS_DATA: Record<string, { word: string; emoji: string; desc: string; type: "vocala" | "consoana" }> = {
@@ -156,18 +157,22 @@ export default function GameAlfabet() {
   const [traceScore, setTraceScore] = useState(0);
   const [traceCelebrate, setTraceCelebrate] = useState(false);
 
+  // Vowels
+  const [vowelOrder, setVowelOrder] = useState(() => shuffle([...ALL_LETTERS]));
+
   const filteredLetters = ALL_LETTERS.filter(l => filter === "all" || LETTERS_DATA[l].type === filter);
 
   function handleQuizAnswer(l: string) {
     if (quizChosen) return;
     setQuizChosen(l); setQuizTotal(t => t + 1);
-    if (l === quiz.target) setQuizScore(s => s + 1);
+    if (l === quiz.target) { setQuizScore(s => s + 1); playCorrect(); } else { playWrong(); }
     setTimeout(() => { setQuiz(generateQuiz()); setQuizChosen(null); }, 1800);
   }
 
   function handleTraceComplete() {
     setTraceCelebrate(true);
     setTraceScore(s => s + 1);
+    playCelebrate();
     setTimeout(() => {
       setTraceCelebrate(false);
       setTraceIdx(i => (i + 1) % TRACE_ALPHABET.length);
@@ -216,7 +221,7 @@ export default function GameAlfabet() {
 
           <div className="flex flex-wrap justify-center gap-2 max-w-xl">
             {filteredLetters.map(l => (
-              <button key={l} onClick={() => { setSelected(l); setDiscovered(p => new Set([...p, l])); }}
+              <button key={l} onClick={() => { playClick(); setSelected(l); setDiscovered(p => new Set([...p, l])); }}
                 className={`w-12 h-12 rounded-2xl text-xl font-display font-bold transition-all duration-200 border-2 shadow-sm
                   ${selected === l ? "bg-primary text-white scale-115 shadow-lg border-primary" :
                     discovered.has(l) ? (LETTERS_DATA[l].type === "vocala" ? "bg-blue-100 border-blue-300 text-blue-700" : "bg-orange-100 border-orange-300 text-orange-700") :
@@ -330,10 +335,10 @@ export default function GameAlfabet() {
             <p className="text-sm text-muted-foreground">Vocalele limbii române: A, Ă, Â, E, I, Î, O, U</p>
           </div>
           <div className="flex flex-wrap justify-center gap-2 max-w-xl">
-            {shuffle([...ALL_LETTERS]).map(l => {
+            {vowelOrder.map(l => {
               const isV = LETTERS_DATA[l].type === "vocala";
               return (
-                <button key={l} onClick={() => setDiscovered(p => new Set([...p, l]))}
+                <button key={l} onClick={() => { setDiscovered(p => new Set([...p, l])); if (isV) playCorrect(); else playWrong(); }}
                   className={`w-12 h-12 rounded-2xl text-xl font-display font-bold transition-all duration-200 border-2 shadow-sm
                     ${discovered.has(l) ? (isV ? "bg-green-100 border-green-400 text-green-700 scale-110 shadow-green-100" : "bg-red-100 border-red-300 text-red-600 scale-95") :
                       "bg-white border-border hover:bg-primary/10 hover:border-primary hover:scale-105"}`}>
@@ -346,7 +351,7 @@ export default function GameAlfabet() {
             <span className="text-green-600">✅ Vocale: {[...discovered].filter(l => LETTERS_DATA[l]?.type === "vocala").length}/8</span>
             <span className="text-red-500">❌ Greșit: {[...discovered].filter(l => LETTERS_DATA[l]?.type === "consoana").length}</span>
           </div>
-          <button onClick={() => setDiscovered(new Set())}
+          <button onClick={() => { setDiscovered(new Set()); setVowelOrder(shuffle([...ALL_LETTERS])); }}
             className="text-xs text-muted-foreground underline hover:text-primary transition-colors">Resetează</button>
         </>
       )}

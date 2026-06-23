@@ -44,6 +44,9 @@ Thumbs.db
 .cursor/rules/nx-rules.mdc
 .github/instructions/nx.instructions.md
 
-# Replit
+# Local tool caches
 .cache/
 .local/
+.firebase/
+firebase-debug.log
+.pnpm-store/

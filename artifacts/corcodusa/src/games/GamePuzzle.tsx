@@ -1,4 +1,22 @@
-import { useState, useCallback } from "react";
+import { useState } from "react";
+import { playClick, playSwap, playCelebrate } from "@/lib/sfx";
+
+/* ─── Confetti ────────────────────────────────────────────── */
+function Confetti() {
+  const PIECES = Array.from({ length: 22 }, (_, i) => ({
+    left: Math.random() * 100, delay: Math.random() * 0.6,
+    color: ["#ff6b6b","#ffd93d","#6bcb77","#4d96ff","#ff922b"][i % 5], size: 6 + Math.random() * 7,
+  }));
+  return (
+    <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
+      {PIECES.map((p, i) => (
+        <div key={i} className="absolute" style={{ left: `${p.left}%`, top: "-12px", animationDelay: `${p.delay}s` }}>
+          <div className="animate-bounce" style={{ width: p.size, height: p.size, background: p.color, borderRadius: "2px", transform: `rotate(${Math.random()*360}deg)` }} />
+        </div>
+      ))}
+    </div>
+  );
+}
 
 const GRIDS = [
   { id: "2x2", label: "2×2", cols: 2, rows: 2 },
@@ -12,7 +30,7 @@ const THEMES: Record<string, { label: string; emoji: string; grid: string[][] }>
     grid: [
       ["🦁","🐯","🐘","🦒"],
       ["🦊","🦓","🦏","🐆"],
-      ["🐊","🦛","🦁","🐯"],
+      ["🐊","🦛","🐒","🦥"],
       ["🌴","🌿","🍃","🌺"],
     ],
   },
@@ -22,7 +40,7 @@ const THEMES: Record<string, { label: string; emoji: string; grid: string[][] }>
       ["🐳","🐬","🦈","🐙"],
       ["🦑","🐠","🦀","🐡"],
       ["🐟","🦞","🦐","🐚"],
-      ["🌊","🐋","🐠","🦈"],
+      ["🌊","🐋","🦦","🦭"],
     ],
   },
   space: {
@@ -73,11 +91,12 @@ export default function GamePuzzle() {
   const [bestMoves, setBestMoves] = useState<Record<string, number>>({});
   const [hints, setHints] = useState(3);
   const [highlighted, setHighlighted] = useState<number | null>(null);
+  const [celebrate, setCelebrate] = useState(false);
 
   function restart(t = themeKey, g = gridId) {
     const gr = GRIDS.find(x => x.id === g)!;
     setPieces(createPuzzle(t, gr.cols, gr.rows));
-    setSelected(null); setMoves(0); setWon(false); setHints(3); setHighlighted(null);
+    setSelected(null); setMoves(0); setWon(false); setHints(3); setHighlighted(null); setCelebrate(false);
   }
 
   function changeTheme(t: string) { setThemeKey(t); restart(t, gridId); }
@@ -85,7 +104,7 @@ export default function GamePuzzle() {
 
   function handleTile(pos: number) {
     if (won) return;
-    if (selected === null) { setSelected(pos); return; }
+    if (selected === null) { playClick(); setSelected(pos); return; }
     if (selected === pos) { setSelected(null); return; }
 
     const next = [...pieces];
@@ -96,8 +115,11 @@ export default function GamePuzzle() {
     setPieces(next);
     setMoves(m => m + 1);
     setSelected(null);
+    playSwap();
 
     if (isSolved(next)) {
+      playCelebrate();
+      setCelebrate(true);
       setWon(true);
       const key = `${themeKey}-${gridId}`;
       setBestMoves(prev => ({ ...prev, [key]: Math.min(moves + 1, prev[key] ?? Infinity) }));
@@ -108,6 +130,7 @@ export default function GamePuzzle() {
     if (hints === 0) return;
     const wrong = pieces.filter(p => p.correctPos !== p.currentPos);
     if (wrong.length === 0) return;
+    playClick();
     const pick = wrong[Math.floor(Math.random() * wrong.length)];
     setHighlighted(pick.currentPos);
     setHints(h => h - 1);
@@ -125,6 +148,7 @@ export default function GamePuzzle() {
 
   return (
     <div className="flex flex-col items-center gap-4 p-4 select-none">
+      {celebrate && <Confetti />}
       {/* Theme & grid selector */}
       <div className="flex gap-2 flex-wrap justify-center">
         {Object.entries(THEMES).map(([k, t]) => (

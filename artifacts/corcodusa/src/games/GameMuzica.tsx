@@ -1,4 +1,22 @@
 import { useState, useRef } from "react";
+import { playWrong, playCelebrate } from "@/lib/sfx";
+
+/* ─── Confetti ────────────────────────────────────────────── */
+function Confetti() {
+  const PIECES = Array.from({ length: 22 }, (_, i) => ({
+    left: Math.random() * 100, delay: Math.random() * 0.6,
+    color: ["#ff6b6b","#ffd93d","#6bcb77","#4d96ff","#ff922b"][i % 5], size: 6 + Math.random() * 7,
+  }));
+  return (
+    <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
+      {PIECES.map((p, i) => (
+        <div key={i} className="absolute" style={{ left: `${p.left}%`, top: "-12px", animationDelay: `${p.delay}s` }}>
+          <div className="animate-bounce" style={{ width: p.size, height: p.size, background: p.color, borderRadius: "2px", transform: `rotate(${Math.random()*360}deg)` }} />
+        </div>
+      ))}
+    </div>
+  );
+}
 
 const OCTAVES = [
   { label: "Octava 4", base: 261.63, mult: 1 },
@@ -32,7 +50,10 @@ const RHYTHMS: { name: string; pattern: boolean[]; bpm: number }[] = [
   { name: "Rapid", pattern: [true,true,false,true,true,false,true,false], bpm: 120 },
 ];
 
+type GMode = "liber" | "joc";
+
 export default function GameMuzica() {
+  const [gmode, setGmode] = useState<GMode>("liber");
   const [active, setActive] = useState<Set<number>>(new Set());
   const [octave, setOctave] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -41,6 +62,16 @@ export default function GameMuzica() {
   const [rhythmBeat, setRhythmBeat] = useState<boolean>(false);
   const ctxRef = useRef<AudioContext | null>(null);
   const rhythmRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Echo challenge ("Repetă melodia") — listen to a growing note sequence, then play it back.
+  const [echoSeq, setEchoSeq] = useState<number[]>([]);
+  const [echoStep, setEchoStep] = useState(0);
+  const [echoLevel, setEchoLevel] = useState(2);
+  const [echoPlaying, setEchoPlaying] = useState(false);
+  const [echoLives, setEchoLives] = useState(3);
+  const [echoBest, setEchoBest] = useState(0);
+  const [echoCelebrate, setEchoCelebrate] = useState(false);
+  const [echoFail, setEchoFail] = useState(false);
 
   function getCtx() {
     if (!ctxRef.current || ctxRef.current.state === "closed") {
@@ -61,9 +92,12 @@ export default function GameMuzica() {
     gain.gain.setValueAtTime(0.35, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
     osc.start(now); osc.stop(now + duration + 0.1);
-    if (when === 0) {
+    // Highlight the key in sync with when it actually sounds (works for live taps and scheduled playback alike).
+    setTimeout(() => {
       setActive(p => new Set([...p, noteIdx]));
       setTimeout(() => setActive(p => { const n = new Set(p); n.delete(noteIdx); return n; }), 250);
+    }, when * 1000);
+    if (when === 0) {
       setHistory(h => [...h.slice(-16), noteIdx]);
     }
   }
@@ -107,8 +141,111 @@ export default function GameMuzica() {
     }, interval);
   }
 
+  function playSequence(seq: number[]) {
+    setEchoPlaying(true);
+    seq.forEach((n, i) => playNote(n, i * 0.65, 0.5));
+    setTimeout(() => setEchoPlaying(false), seq.length * 650 + 250);
+  }
+
+  function startEcho(level: number) {
+    const seq = Array.from({ length: level }, () => Math.floor(Math.random() * 8));
+    setEchoSeq(seq);
+    setEchoStep(0);
+    setTimeout(() => playSequence(seq), 400);
+  }
+
+  function resetEcho() {
+    setEchoLevel(2);
+    setEchoLives(3);
+    startEcho(2);
+  }
+
+  function handleEchoInput(i: number) {
+    if (echoPlaying || echoSeq.length === 0) return;
+    if (i === echoSeq[echoStep]) {
+      const nextStep = echoStep + 1;
+      setEchoStep(nextStep);
+      if (nextStep === echoSeq.length) {
+        playCelebrate();
+        setEchoCelebrate(true);
+        setEchoBest(b => Math.max(b, echoLevel));
+        setTimeout(() => {
+          setEchoCelebrate(false);
+          const nl = Math.min(echoLevel + 1, 9);
+          setEchoLevel(nl);
+          startEcho(nl);
+        }, 1300);
+      }
+    } else {
+      playWrong();
+      setEchoFail(true);
+      setEchoLives(lv => {
+        const next = lv - 1;
+        setTimeout(() => {
+          setEchoFail(false);
+          if (next <= 0) resetEcho();
+          else { setEchoStep(0); playSequence(echoSeq); }
+        }, 900);
+        return next;
+      });
+    }
+  }
+
   return (
     <div className="flex flex-col items-center gap-5 p-4 select-none">
+      {echoCelebrate && <Confetti />}
+
+      {/* Mode tabs */}
+      <div className="flex gap-2 flex-wrap justify-center">
+        {([["liber","🎹","Cântă liber"],["joc","🎧","Repetă melodia"]] as [GMode,string,string][]).map(([m,ic,lbl]) => (
+          <button key={m} onClick={() => { setGmode(m); if (m === "joc" && echoSeq.length === 0) resetEcho(); }}
+            className={`px-4 py-2 rounded-full text-sm font-bold transition-all border-2 flex items-center gap-1.5
+              ${gmode === m ? "bg-primary text-white border-primary shadow-md" : "bg-white border-border text-muted-foreground hover:border-primary/50 hover:text-foreground"}`}>
+            <span>{ic}</span>{lbl}
+          </button>
+        ))}
+      </div>
+
+      {/* ── ECHO CHALLENGE ── */}
+      {gmode === "joc" && (
+        <div className="flex flex-col items-center gap-3 w-full max-w-xl">
+          <div className="flex items-center justify-between w-full">
+            <div className="flex gap-1">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <span key={i} className={`text-xl ${i < echoLives ? "opacity-100" : "opacity-20"}`}>❤️</span>
+              ))}
+            </div>
+            <span className="text-sm font-bold text-primary">🎯 Nivel {echoLevel - 1}</span>
+            {echoBest > 0 && <span className="text-xs font-bold text-muted-foreground">🏆 {echoBest - 1}</span>}
+          </div>
+
+          <div className="flex gap-1.5 justify-center">
+            {echoSeq.map((_, i) => (
+              <span key={i} className={`w-4 h-4 rounded-full border-2 transition-all duration-300
+                ${i < echoStep ? "bg-green-400 border-green-500 scale-110" : "bg-muted border-muted-foreground/30"}`} />
+            ))}
+          </div>
+
+          {echoCelebrate ? (
+            <div className="flex flex-col items-center gap-2 py-2 animate-in zoom-in">
+              <div className="text-6xl animate-bounce">🌟</div>
+              <div className="text-xl font-bold text-green-600">Perfect! Următorul e mai lung!</div>
+            </div>
+          ) : echoFail ? (
+            <div className="text-xl font-bold text-red-500 animate-bounce">❌ Nu era nota aia — ascultă din nou!</div>
+          ) : (
+            <p className="text-sm text-muted-foreground font-medium">
+              {echoPlaying ? "👂 Ascultă cu atenție..." : "🎵 Acum cântă tu melodia, în ordine!"}
+            </p>
+          )}
+
+          <button onClick={() => !echoPlaying && playSequence(echoSeq)} disabled={echoPlaying}
+            className="text-xs text-muted-foreground underline hover:text-primary disabled:opacity-40">
+            🔁 Ascultă din nou
+          </button>
+        </div>
+      )}
+
       {/* Octave & history */}
       <div className="flex items-center justify-between w-full max-w-xl">
         <div className="flex gap-2">
@@ -134,10 +271,12 @@ export default function GameMuzica() {
       <div className="flex gap-1.5 bg-card rounded-3xl p-4 border-2 border-border shadow-inner w-full max-w-xl justify-center">
         {NOTE_LABELS.map((label, i) => (
           <button key={i}
-            onMouseDown={() => playNote(i)}
-            onTouchStart={(e) => { e.preventDefault(); playNote(i); }}
+            onMouseDown={() => { playNote(i); if (gmode === "joc") handleEchoInput(i); }}
+            onTouchStart={(e) => { e.preventDefault(); playNote(i); if (gmode === "joc") handleEchoInput(i); }}
+            disabled={gmode === "joc" && echoPlaying}
             className={`flex-1 rounded-2xl border-2 flex flex-col items-end pb-3 pr-1 gap-1 font-bold text-xs transition-all duration-100 cursor-pointer
               ${active.has(i) ? `${NOTE_COLORS[i].active} text-white scale-95 shadow-inner` : `${NOTE_COLORS[i].bg} ${NOTE_COLORS[i].text} shadow-md hover:scale-105 hover:shadow-lg`}
+              ${gmode === "joc" && echoPlaying ? "opacity-60 cursor-not-allowed" : ""}
             `}
             style={{ height: "120px" }}>
             <span className="self-center mt-2 text-base">
@@ -148,6 +287,8 @@ export default function GameMuzica() {
         ))}
       </div>
 
+      {gmode === "liber" && (
+      <>
       {/* Drums */}
       <div className="grid grid-cols-4 gap-2 w-full max-w-sm">
         {(["kick","snare","hihat","cowbell"] as const).map((type, i) => (
@@ -190,6 +331,8 @@ export default function GameMuzica() {
           ))}
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 }

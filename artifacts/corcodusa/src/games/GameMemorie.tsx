@@ -1,4 +1,22 @@
 import { useState, useEffect } from "react";
+import { playFlip, playCorrect, playWrong, playCelebrate } from "@/lib/sfx";
+
+/* ─── Confetti ────────────────────────────────────────────── */
+function Confetti() {
+  const PIECES = Array.from({ length: 22 }, (_, i) => ({
+    left: Math.random() * 100, delay: Math.random() * 0.6,
+    color: ["#ff6b6b","#ffd93d","#6bcb77","#4d96ff","#ff922b"][i % 5], size: 6 + Math.random() * 7,
+  }));
+  return (
+    <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
+      {PIECES.map((p, i) => (
+        <div key={i} className="absolute" style={{ left: `${p.left}%`, top: "-12px", animationDelay: `${p.delay}s` }}>
+          <div className="animate-bounce" style={{ width: p.size, height: p.size, background: p.color, borderRadius: "2px", transform: `rotate(${Math.random()*360}deg)` }} />
+        </div>
+      ))}
+    </div>
+  );
+}
 
 const THEMES: Record<string, { label: string; emoji: string; pairs: string[] }> = {
   animale: {
@@ -46,6 +64,7 @@ export default function GameMemorie() {
   const [elapsed, setElapsed] = useState(0);
   const [won, setWon] = useState(false);
   const [bestMoves, setBestMoves] = useState<Record<string, number>>({});
+  const [celebrate, setCelebrate] = useState(false);
 
   useEffect(() => {
     if (won) return;
@@ -63,6 +82,7 @@ export default function GameMemorie() {
     setWon(false);
     setElapsed(0);
     setStartMs(Date.now());
+    setCelebrate(false);
   }
 
   function changeTheme(t: string) { setThemeKey(t); restart(t, diffId); }
@@ -73,6 +93,7 @@ export default function GameMemorie() {
     const card = cards.find(c => c.id === id);
     if (!card || card.flipped || card.matched || flipped.includes(id)) return;
 
+    playFlip();
     const newFlipped = [...flipped, id];
     setCards(prev => prev.map(c => c.id === id ? { ...c, flipped: true } : c));
     setFlipped(newFlipped);
@@ -90,11 +111,17 @@ export default function GameMemorie() {
         setLocked(false);
         const allDone = next.every(c => c.matched);
         if (allDone) {
+          playCelebrate();
+          setCelebrate(true);
+          setTimeout(() => setCelebrate(false), 1800);
           setWon(true);
           const key = `${themeKey}-${diffId}`;
           setBestMoves(prev => ({ ...prev, [key]: Math.min(moves + 1, prev[key] ?? Infinity) }));
+        } else {
+          playCorrect();
         }
       } else {
+        playWrong();
         setTimeout(() => {
           setCards(prev => prev.map(c => newFlipped.includes(c.id) ? { ...c, flipped: false } : c));
           setFlipped([]);
@@ -110,6 +137,7 @@ export default function GameMemorie() {
 
   return (
     <div className="flex flex-col items-center gap-4 p-4 select-none">
+      {celebrate && <Confetti />}
       {/* Theme */}
       <div className="flex gap-2 flex-wrap justify-center">
         {Object.entries(THEMES).map(([k, t]) => (

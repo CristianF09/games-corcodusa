@@ -4,13 +4,21 @@ Platformă de jocuri educaționale pentru copii români cu vârste între 3 și 
 
 ## Run & Operate
 
+- `pnpm install` — install all workspace dependencies
 - `pnpm --filter @workspace/api-server run dev` — run the API server (port 8080, accessible at `/api`)
 - `pnpm --filter @workspace/corcodusa run dev` — run the frontend (Vite, accessible at `/`)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+
+### Required environment variables
+
+- `DATABASE_URL` — Postgres connection string
+- `CLERK_SECRET_KEY` / Clerk publishable key — authentication (see [Clerk Dashboard](https://dashboard.clerk.com))
+- `STRIPE_SECRET_KEY` — enables payments (optional; API falls back to mock product data when unset)
+- `STRIPE_WEBHOOK_SECRET` — enables Stripe webhook signature verification (optional)
+- `APP_BASE_URL` — public base URL used to build Stripe checkout/portal redirect URLs (defaults to `http://localhost:<PORT>`)
 
 ## Stack
 
@@ -20,7 +28,7 @@ Platformă de jocuri educaționale pentru copii români cu vârste între 3 și 
 - DB: PostgreSQL + Drizzle ORM (`lib/db`)
 - Validation: Zod (`zod/v4`), `drizzle-zod`
 - Auth: Clerk (whitelabel proxy at `/clerk`)
-- Payments: Stripe (not yet connected — graceful fallback in place)
+- Payments: Stripe (graceful fallback when not configured)
 - API codegen: Orval (from OpenAPI spec at `lib/api-spec/openapi.yaml`)
 - Build: esbuild (CJS bundle for API)
 
@@ -50,19 +58,9 @@ Platformă de jocuri educaționale pentru copii români cu vârste între 3 și 
 - Browsable game library with category filtering and search
 - User dashboard showing subscription status and account management
 
-## User preferences
-
-_Populate as you build — explicit user instructions worth remembering across sessions._
-
 ## Gotchas
 
 - **Stats endpoint**: uses `db.execute(sql`...`).rows[0]` — Drizzle returns `{ rows: [...] }`, not a plain array.
-- **Stripe not connected**: must be linked via the Integrations tab before checkout works in production.
+- **Stripe not configured**: set `STRIPE_SECRET_KEY` (and optionally `STRIPE_WEBHOOK_SECRET`) before checkout works in production.
 - **Game images**: stored in `attached_assets/*.png`, served via `/api/assets/`. Add new images there and seed the DB with `/api/assets/<filename>` URLs.
 - **Clerk dev keys warning**: expected in development — not an error.
-
-## Pointers
-
-- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
-- See the `clerk-auth` skill for Clerk customization (branding, providers, localization)
-- See the `stripe` skill for connecting Stripe payments
