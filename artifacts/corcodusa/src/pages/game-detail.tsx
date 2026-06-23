@@ -7,11 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft } from "lucide-react";
 import { getGetGameQueryKey } from "@workspace/api-client-react";
 import { GAME_COMPONENTS } from "@/games";
-
-const CATEGORY_EMOJIS: Record<string, string> = {
-  matematica: "🔢", litere: "🔤", culori: "🎨", natura: "🌿",
-  muzica: "🎵", memorie: "🧠", creativitate: "✏️", logica: "🧩",
-};
+import { categoryEmoji, categoryGradient } from "@/lib/category-colors";
 
 export default function GameDetail() {
   const { id } = useParams();
@@ -52,7 +48,7 @@ export default function GameDetail() {
             {/* Game header */}
             <div className="flex flex-col sm:flex-row sm:items-center gap-3">
               <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground">
-                {CATEGORY_EMOJIS[game.category] ?? "🎮"} {game.title}
+                {categoryEmoji(game.category)} {game.title}
               </h1>
               <div className="flex gap-2">
                 <Badge variant="outline" className="uppercase tracking-wider font-bold text-xs">
@@ -74,11 +70,9 @@ export default function GameDetail() {
             {/* Game area */}
             {GameComponent ? (
               <div className="bg-gradient-to-br from-background to-muted/30 rounded-3xl border-2 border-border shadow-xl overflow-hidden">
-                <div className="bg-primary/5 border-b border-border px-6 py-3 flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-red-400" />
-                  <div className="w-3 h-3 rounded-full bg-yellow-400" />
-                  <div className="w-3 h-3 rounded-full bg-green-400" />
-                  <span className="ml-2 text-sm font-medium text-muted-foreground">
+                <div className={`bg-gradient-to-r ${categoryGradient(game.category)} px-6 py-4 flex items-center gap-3`}>
+                  <span className="text-2xl">{categoryEmoji(game.category)}</span>
+                  <span className="font-display text-lg font-bold text-white drop-shadow-sm">
                     {game.title}
                   </span>
                 </div>

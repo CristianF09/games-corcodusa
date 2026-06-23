@@ -8,6 +8,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Card, CardContent } from "@/components/ui/card";
 import { PlayCircle, Shield, Brain, Sparkles, CheckCircle2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { categoryGradient } from "@/lib/category-colors";
 
 export default function Home() {
   const { data: featuredGames, isLoading: isLoadingFeatured } = useGetFeaturedGames();
@@ -87,9 +89,10 @@ export default function Home() {
                   <Skeleton key={i} className="h-32 rounded-3xl" />
                 ))
               ) : categories?.slice(0, 4).map((category) => (
-                <Card key={category.name} className="bg-background border-2 border-border/50 hover:border-primary/50 transition-colors rounded-3xl text-center group cursor-pointer overflow-hidden">
+                <Card key={category.name} className="bg-background border-2 border-border/50 hover:border-primary/50 hover:-translate-y-1 transition-all duration-300 rounded-3xl text-center group cursor-pointer overflow-hidden">
+                  <div className={`h-1.5 w-full bg-gradient-to-r ${categoryGradient(category.name)}`} />
                   <CardContent className="p-6 md:p-8 flex flex-col items-center gap-4">
-                    <div className="text-5xl md:text-6xl group-hover:scale-110 transition-transform duration-300">
+                    <div className={`h-16 w-16 rounded-2xl bg-gradient-to-br ${categoryGradient(category.name)} flex items-center justify-center text-3xl md:text-4xl shadow-md group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300`}>
                       {category.emoji}
                     </div>
                     <div>
@@ -221,6 +224,3 @@ export default function Home() {
     </div>
   );
 }
-
-// Ensure Badge is imported (adding at top of file typically, here for self-containment)
-import { Badge } from "@/components/ui/badge";
