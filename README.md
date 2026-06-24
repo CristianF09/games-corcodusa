@@ -18,12 +18,13 @@ Platformă de jocuri educaționale pentru copii români cu vârste între 3 și 
 - `CLERK_SECRET_KEY` / Clerk publishable key — authentication (see [Clerk Dashboard](https://dashboard.clerk.com))
 - `STRIPE_SECRET_KEY` — enables payments (optional; API falls back to mock product data when unset)
 - `STRIPE_WEBHOOK_SECRET` — enables Stripe webhook signature verification (optional)
-- `APP_BASE_URL` — public base URL used to build Stripe checkout/portal redirect URLs (defaults to `http://localhost:<PORT>`)
+- `APP_BASE_URL` — base URL of the **frontend** (not the API), used to build Stripe checkout/portal redirect URLs (defaults to `http://localhost:5173`)
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
 - Frontend: React 19 + Vite 7, wouter (routing), Clerk React — deployed to Firebase Hosting (`games.corcodusa.ro`)
+- **Domains**: `games.corcodusa.ro` (this frontend) and `games-api.corcodusa.ro` (this backend, once deployed) are distinct from `corcodusa.ro` / `www.corcodusa.ro` and `api.corcodusa.ro`, which belong to a separate, unrelated business (PDF-delivery site, repo `CristianF09/forkids`) — same Stripe account, different everything else.
 - API: `artifacts/api-server-py` — FastAPI + Beanie/Motor, the active backend, targeted for the Render deploy. (The original Express + Mongoose implementation is archived at `_deprecated/api-server/`, a 1:1 functional reference if ever needed.)
 - DB: MongoDB (no more Postgres/Drizzle — fully migrated; legacy SQL files moved to `_deprecated/postgres-legacy/`)
 - Validation: Zod (`zod/v4`)
@@ -65,5 +66,4 @@ Platformă de jocuri educaționale pentru copii români cu vârste între 3 și 
 - **Stripe not configured**: set `STRIPE_SECRET_KEY` (and optionally `STRIPE_WEBHOOK_SECRET`) before checkout works in production.
 - **Game images**: stored in `attached_assets/*.png`, served via `/api/assets/`. Add new images there and seed the DB with `/api/assets/<filename>` URLs.
 - **Clerk dev keys warning**: expected in development — not an error.
-- **GAME_COMPONENTS vs seed data**: `artifacts/corcodusa/src/games/index.ts` maps numeric game ids to playable components; ids 4–11 from the seed data don't all line up thematically with their component, and id 11 has no component at all (falls back to a "in development" placeholder). Check this mapping before adding/reordering seed games.
-- **Auth is currently disabled for testing**: `ProtectedRoute` in the frontend doesn't enforce Clerk login — re-enable before shipping if subscription gating matters.
+- **GAME_COMPONENTS vs seed data**: `artifacts/corcodusa/src/games/index.ts` maps numeric game ids to playable components; ids 4–11 from the seed dat

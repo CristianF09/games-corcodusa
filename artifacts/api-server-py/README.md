@@ -49,11 +49,14 @@ Seed date de test: `python -m scripts.seed_games` (cu `MONGODB_URI` setat).
 4. **Build Command**: `pip install -r requirements.txt`
 5. **Start Command**: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 6. **Environment** → adaugă: `MONGODB_URI`, `CLERK_SECRET_KEY`,
-   `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `APP_BASE_URL` (cu
-   `https://api.corcodusa.ro` după ce atașezi subdomeniul).
-7. Restul (subdomeniu `api.corcodusa.ro` pe Cloudflare, MongoDB Atlas
-   `0.0.0.0/0` în Network Access) — identic cu pașii explicați deja pentru
-   varianta Node, nimic nu se schimbă aici.
+   `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `APP_BASE_URL` (URL-ul
+   **frontend-ului**, `https://games.corcodusa.ro` — Stripe redirectează
+   userul acolo după plată, nu către acest API).
+7. Subdomeniu pentru acest API: `games-api.corcodusa.ro` (CNAME în
+   Cloudflare către `<serviciu>.onrender.com`) — **nu** `api.corcodusa.ro`,
+   care e backend-ul separat al site-ului corcodusa.ro (livrare PDF-uri,
+   alt repo). MongoDB Atlas `0.0.0.0/0` în Network Access — la fel ca la
+   varianta Node.
 
 ## Verificat în această sesiune
 
@@ -76,6 +79,4 @@ credențiale, fără rețea către Atlas) — testează din nou cu cheile reale
 - **Stripe webhook**: verificarea semnăturii funcționează, dar nu se
   procesează niciun eveniment (`checkout.session.completed`,
   `customer.subscription.updated/deleted`) — exact același TODO ca în
-  versiunea Node originală, nu e o regresie introdusă de portare.
-- **Clerk proxy pentru domeniu custom** (`clerkProxyMiddleware.ts`) — folosit
-  doar dacă NU configurezi un CNAME `clerk.*`; caz de margine, nu blocant.
+  versiunea Node originală, nu e o
