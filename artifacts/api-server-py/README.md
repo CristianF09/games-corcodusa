@@ -79,4 +79,6 @@ credențiale, fără rețea către Atlas) — testează din nou cu cheile reale
 - **Stripe webhook**: verificarea semnăturii funcționează, dar nu se
   procesează niciun eveniment (`checkout.session.completed`,
   `customer.subscription.updated/deleted`) — exact același TODO ca în
-  versiunea Node originală, nu e o
+  versiunea Node originală, nu e o regresie introdusă de portare.
+- **Clerk proxy pentru domeniu custom** (`clerkProxyMiddleware.ts`) — folosit
+  doar dacă NU configurezi un CNAME `clerk.*`; caz de margine, nu blocant.

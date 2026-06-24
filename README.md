@@ -66,4 +66,5 @@ Platformă de jocuri educaționale pentru copii români cu vârste între 3 și 
 - **Stripe not configured**: set `STRIPE_SECRET_KEY` (and optionally `STRIPE_WEBHOOK_SECRET`) before checkout works in production.
 - **Game images**: stored in `attached_assets/*.png`, served via `/api/assets/`. Add new images there and seed the DB with `/api/assets/<filename>` URLs.
 - **Clerk dev keys warning**: expected in development — not an error.
-- **GAME_COMPONENTS vs seed data**: `artifacts/corcodusa/src/games/index.ts` maps numeric game ids to playable components; ids 4–11 from the seed dat
+- **GAME_COMPONENTS vs seed data**: `artifacts/corcodusa/src/games/index.ts` maps numeric game ids to playable components; ids 4–11 from the seed data don't all line up thematically with their component, and id 11 has no component at all (falls back to a "in development" placeholder). Check this mapping before adding/reordering seed games.
+- **Auth is currently disabled for testing**: `ProtectedRoute` in the frontend doesn't enforce Clerk login — re-enable before shipping if subscription gating matters.
