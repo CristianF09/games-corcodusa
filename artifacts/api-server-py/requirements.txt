@@ -1,0 +1,13 @@
+# Pinned to versions verified in this session. Bump deliberately, not blindly —
+# this repo's pnpm side enforces a 24h "minimum release age" supply-chain
+# policy (see pnpm-workspace.yaml); apply the same caution here: check a new
+# version has been out for at least a day before upgrading.
+fastapi==0.138.0
+uvicorn[standard]==0.49.0
+beanie==2.1.0
+motor==3.7.1
+pydantic==2.13.4
+stripe==15.2.1
+clerk-backend-api==6.0.1
+httpx==0.28.1
+python-dotenv==1.0.1

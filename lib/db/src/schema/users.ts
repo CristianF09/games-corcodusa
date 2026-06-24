@@ -1,26 +1,57 @@
-import { pgTable, text, serial, timestamp, integer } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
+import { Schema, model, models, type HydratedDocument } from "mongoose";
 import { z } from "zod/v4";
+import { nextSequence } from "./counter";
 
-export const usersTable = pgTable("users", {
-  id: serial("id").primaryKey(),
-  clerkId: text("clerk_id").notNull().unique(),
-  email: text("email").notNull(),
-  firstName: text("first_name"),
-  lastName: text("last_name"),
-  avatarUrl: text("avatar_url"),
-  subscriptionTier: text("subscription_tier").notNull().default("free"),
-  trialStartedAt: timestamp("trial_started_at", { withTimezone: true }),
-  stripeCustomerId: text("stripe_customer_id"),
-  stripeSubscriptionId: text("stripe_subscription_id"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+export interface UserAttrs {
+  id: number;
+  clerkId: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  avatarUrl: string | null;
+  subscriptionTier: string;
+  trialStartedAt: Date | null;
+  stripeCustomerId: string | null;
+  stripeSubscriptionId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const userSchema = new Schema<UserAttrs>(
+  {
+    id: { type: Number, unique: true, index: true },
+    clerkId: { type: String, required: true, unique: true, index: true },
+    email: { type: String, required: true },
+    firstName: { type: String, default: null },
+    lastName: { type: String, default: null },
+    avatarUrl: { type: String, default: null },
+    subscriptionTier: { type: String, required: true, default: "free" },
+    trialStartedAt: { type: Date, default: null },
+    stripeCustomerId: { type: String, default: null },
+    stripeSubscriptionId: { type: String, default: null },
+  },
+  {
+    // Disable Mongoose's default `id` virtual — we define our own numeric
+    // `id` field above (see schema/games.ts for the full rationale).
+    id: false,
+    timestamps: true,
+  },
+);
+
+userSchema.pre("save", async function assignId() {
+  if (this.isNew && this.id == null) {
+    this.id = await nextSequence("users");
+  }
 });
 
-export const insertUserSchema = createInsertSchema(usersTable).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
+export type UserDocument = HydratedDocument<UserAttrs>;
+export const UserModel = models.User ?? model<UserAttrs>("User", userSchema);
+
+export const insertUserSchema = z.object({
+  clerkId: z.string(),
+  email: z.string(),
+  firstName: z.string().nullable().optional(),
+  lastName: z.string().nullable().optional(),
+  avatarUrl: z.string().nullable().optional(),
 });
 export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof usersTable.$inferSelect;

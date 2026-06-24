@@ -1,7 +1,6 @@
 import { Router } from "express";
 import { requireAuth, getAuth } from "@clerk/express";
-import { db, usersTable } from "@workspace/db";
-import { eq, sql } from "drizzle-orm";
+import { UserModel } from "@workspace/db";
 import { logger } from "../lib/logger";
 import { getUncachableStripeClient } from "../stripeClient";
 import { WebhookHandlers } from "../webhookHandlers";
@@ -93,7 +92,7 @@ router.post("/payments/checkout", requireAuth(), async (req, res) => {
     if (!clerkId) return res.status(401).json({ error: "Unauthorized" });
 
     const { priceId, trialDays } = req.body;
-    const [user] = await db.select().from(usersTable).where(eq(usersTable.clerkId, clerkId));
+    const user = await UserModel.findOne({ clerkId });
     if (!user) return res.status(404).json({ error: "User not found" });
 
     const stripe = await getUncachableStripeClient();
@@ -107,9 +106,7 @@ router.post("/payments/checkout", requireAuth(), async (req, res) => {
         metadata: { userId: String(user.id) },
       });
       customerId = customer.id;
-      await db.update(usersTable)
-        .set({ stripeCustomerId: customerId })
-        .where(eq(usersTable.clerkId, clerkId));
+      await UserModel.updateOne({ clerkId }, { stripeCustomerId: customerId });
     }
 
     const sessionParams: any = {
@@ -138,7 +135,7 @@ router.post("/payments/portal", requireAuth(), async (req, res) => {
     const { userId: clerkId } = getAuth(req);
     if (!clerkId) return res.status(401).json({ error: "Unauthorized" });
 
-    const [user] = await db.select().from(usersTable).where(eq(usersTable.clerkId, clerkId));
+    const user = await UserModel.findOne({ clerkId });
     if (!user?.stripeCustomerId) {
       return res.status(400).json({ error: "No Stripe customer found" });
     }

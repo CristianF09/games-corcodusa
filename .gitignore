@@ -50,3 +50,14 @@ Thumbs.db
 .firebase/
 firebase-debug.log
 .pnpm-store/
+
+# Secrets — never commit real Clerk/DB/API keys
+.env
+.env.*
+!.env.example
+
+# Python (artifacts/api-server-py)
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/

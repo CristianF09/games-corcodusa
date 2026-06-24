@@ -299,6 +299,25 @@ async function parseSuccessBody(
     return null;
   }
 
+  // An HTML body where the caller expected JSON/text/blob almost always means
+  // the request was misrouted — e.g. a static-hosting catch-all/SPA rewrite
+  // serving index.html for an API path that has no real backend behind it —
+  // rather than a genuine API payload. Fail loudly instead of silently
+  // handing the caller a chunk of markup typed as their expected data (which
+  // then crashes downstream code like `data.slice(...).map(...)`).
+  if (responseType === "auto" && getMediaType(response.headers) === "text/html") {
+    const raw = await response.text();
+    throw new ResponseParseError(
+      response,
+      raw,
+      new Error(
+        "Expected an API response but received an HTML page. This usually means " +
+          "the request hit a static-hosting fallback (no real backend at this URL).",
+      ),
+      requestInfo,
+    );
+  }
+
   const effectiveType =
     responseType === "auto" ? inferResponseType(response) : responseType;
 
