@@ -27,7 +27,7 @@ MONGODB_URI = _require("MONGODB_URI")
 CLERK_SECRET_KEY = os.environ.get("CLERK_SECRET_KEY")
 STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY")
 STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET")
-APP_BASE_URL = os.environ.get("APP_BASE_URL", "http://localhost:8080")
+APP_BASE_URL = os.environ.get("APP_BASE_URL", "http://localhost:5173")
 
 
 def require_port() -> int:
