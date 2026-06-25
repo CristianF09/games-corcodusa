@@ -4,101 +4,114 @@ import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { GameCard } from "@/components/game-card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
 
 export default function Games() {
   const [activeCategory, setActiveCategory] = useState<string | undefined>();
   const [searchQuery, setSearchQuery] = useState("");
-  
+
   const { data: categories, isLoading: isLoadingCategories } = useListGameCategories();
   const { data: games, isLoading: isLoadingGames } = useListGames({
     category: activeCategory,
   });
 
-  const filteredGames = games?.filter(g => 
-    !searchQuery || g.title.toLowerCase().includes(searchQuery.toLowerCase()) || g.description.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredGames = games?.filter(
+    (g) =>
+      !searchQuery ||
+      g.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      g.description.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex min-h-screen flex-col bg-[#F0F4F8]">
       <Navbar />
-      
-      <main className="flex-1 container mx-auto px-4 md:px-6 py-8 md:py-12">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-6">
-          <div>
-            <h1 className="font-display text-4xl font-bold mb-2">Toate Jocurile</h1>
-            <p className="text-muted-foreground">Găsește activitatea perfectă pentru copilul tău.</p>
-          </div>
-          
-          <div className="relative w-full md:w-72">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input 
-              type="text" 
-              placeholder="Caută jocuri..." 
-              className="pl-10 rounded-full bg-card"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-        </div>
 
-        {/* Filters */}
-        <div className="flex flex-wrap gap-2 mb-8">
-          <Button 
-            variant={activeCategory === undefined ? "default" : "outline"} 
-            className="rounded-full font-bold"
-            onClick={() => setActiveCategory(undefined)}
-          >
-            Toate jocurile
-          </Button>
-          
-          {isLoadingCategories ? (
-            Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-10 w-24 rounded-full" />
-            ))
-          ) : (
-            categories?.map(category => (
-              <Button
-                key={category.name}
-                variant={activeCategory === category.name ? "default" : "outline"}
-                className="rounded-full font-bold"
-                onClick={() => setActiveCategory(category.name)}
-              >
-                {category.emoji} {category.label}
-              </Button>
-            ))
-          )}
-        </div>
+      <main className="flex-1">
+        {/* Gradient page header */}
+        <div className="relative overflow-hidden bg-gradient-to-br from-[#0A4D68] to-[#2C5F7A]">
+          <div className="pointer-events-none absolute -top-16 -right-16 h-48 w-48 rounded-full bg-[#FF6B00]/20 blur-2xl" />
+          <div className="pointer-events-none absolute -bottom-12 -left-12 h-36 w-36 rounded-full bg-[#FFD700]/10 blur-2xl" />
 
-        {/* Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {isLoadingGames ? (
-            Array.from({ length: 8 }).map((_, i) => (
-              <Skeleton key={i} className="h-[350px] rounded-3xl" />
-            ))
-          ) : filteredGames && filteredGames.length > 0 ? (
-            filteredGames.map(game => (
-              <GameCard key={game.id} game={game} />
-            ))
-          ) : (
-            <div className="col-span-full py-20 text-center">
-              <div className="text-6xl mb-4">🔍</div>
-              <h3 className="text-xl font-bold mb-2">Nu am găsit jocuri</h3>
-              <p className="text-muted-foreground">Încearcă alte filtre sau alt termen de căutare.</p>
-              <Button 
-                variant="outline" 
-                className="mt-6 rounded-full"
-                onClick={() => { setActiveCategory(undefined); setSearchQuery(""); }}
-              >
-                Resetează filtrele
-              </Button>
+          <div className="relative max-w-[1152px] mx-auto px-10 py-10 md:py-14 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div>
+              <h1 className="text-4xl font-black text-white mb-2">Toate Jocurile</h1>
+              <p className="text-white/70 text-lg">Găsește activitatea perfectă pentru copilul tău.</p>
             </div>
-          )}
+
+            {/* Search */}
+            <div className="relative w-full md:w-80">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#4B5563]" />
+              <input
+                type="text"
+                placeholder="Caută jocuri..."
+                className="w-full h-12 pl-10 pr-4 rounded-xl border border-white/20 bg-white text-[#1F2937] text-base placeholder:text-[#9CA3AF] focus:outline-none focus:border-[#FF6B00] focus:ring-[3px] focus:ring-[#FF6B00]/15 transition-all shadow-[0px_2px_8px_rgba(0,0,0,.10)]"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-[1152px] mx-auto px-10 py-8 md:py-12">
+          {/* Category filters */}
+          <div className="flex flex-wrap gap-2 mb-8">
+            <button
+              onClick={() => setActiveCategory(undefined)}
+              className={[
+                "h-10 px-4 text-sm font-bold rounded-xl transition-all border",
+                activeCategory === undefined
+                  ? "bg-gradient-to-r from-[#FF6B00] to-[#FF9A3C] text-white border-transparent shadow-[0px_4px_15px_rgba(255,107,0,.35)]"
+                  : "bg-white text-[#374151] border-[#E5E7EB] hover:border-[#FF6B00] hover:text-[#FF6B00] shadow-[0px_2px_8px_rgba(0,0,0,.05)]",
+              ].join(" ")}
+            >
+              Toate jocurile
+            </button>
+
+            {isLoadingCategories
+              ? Array.from({ length: 4 }).map((_, i) => (
+                  <Skeleton key={i} className="h-10 w-28 rounded-xl" />
+                ))
+              : categories?.map((category) => (
+                  <button
+                    key={category.name}
+                    onClick={() => setActiveCategory(category.name)}
+                    className={[
+                      "h-10 px-4 text-sm font-bold rounded-xl transition-all border",
+                      activeCategory === category.name
+                        ? "bg-gradient-to-r from-[#FF6B00] to-[#FF9A3C] text-white border-transparent shadow-[0px_4px_15px_rgba(255,107,0,.35)]"
+                        : "bg-white text-[#374151] border-[#E5E7EB] hover:border-[#FF6B00] hover:text-[#FF6B00] shadow-[0px_2px_8px_rgba(0,0,0,.05)]",
+                    ].join(" ")}
+                  >
+                    {category.emoji} {category.label}
+                  </button>
+                ))}
+          </div>
+
+          {/* Game grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {isLoadingGames ? (
+              Array.from({ length: 8 }).map((_, i) => (
+                <Skeleton key={i} className="h-[360px] rounded-2xl" />
+              ))
+            ) : filteredGames && filteredGames.length > 0 ? (
+              filteredGames.map((game) => <GameCard key={game.id} game={game} />)
+            ) : (
+              <div className="col-span-full py-20 text-center">
+                <div className="text-5xl mb-4">🔍</div>
+                <h3 className="text-xl font-black text-[#1F2937] mb-2">Nu am găsit jocuri</h3>
+                <p className="text-muted-foreground mb-6">Încearcă alte filtre sau alt termen de căutare.</p>
+                <button
+                  onClick={() => { setActiveCategory(undefined); setSearchQuery(""); }}
+                  className="h-11 px-6 text-base font-bold rounded-xl border-2 border-[#E5E7EB] text-[#374151] hover:border-[#FF6B00] hover:text-[#FF6B00] transition-all"
+                >
+                  Resetează filtrele
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </main>
-      
+
       <Footer />
     </div>
   );

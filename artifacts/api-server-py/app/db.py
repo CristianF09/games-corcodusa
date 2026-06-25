@@ -34,6 +34,13 @@ async def connect_db() -> AsyncIOMotorDatabase:
     from app.models.game import Game
     from app.models.user import User
 
+    # motor 3.7.x doesn't expose PyMongo's append_metadata on AsyncIOMotorClient.
+    # Beanie 2.1.0 checks callable(db.client.append_metadata) which raises TypeError
+    # instead of AttributeError, crashing startup. Patch the class once before
+    # creating the client so the attribute exists and the check is a safe no-op.
+    if not hasattr(AsyncIOMotorClient, "append_metadata"):
+        AsyncIOMotorClient.append_metadata = lambda self, driver_info: None  # type: ignore[attr-defined]
+
     _client = AsyncIOMotorClient(MONGODB_URI)
     _db = _client.get_default_database()
 

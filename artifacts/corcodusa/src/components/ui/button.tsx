@@ -5,34 +5,39 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0" +
-" hover-elevate active-elevate-2",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap font-sans font-bold transition-all focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30 disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
+        /* Primary — orange #FF6B00, elevated shadow */
         default:
-           // no hover, and add primary border
-           "bg-primary text-primary-foreground border border-primary-border",
-        destructive:
-          "bg-destructive text-destructive-foreground shadow-sm border-destructive-border",
-        outline:
-          // Shows the background color of whatever card / sidebar / accent background it is inside of.
-          // Inherits the current text color. Uses shadow-xs. no shadow on active
-          // No hover state
-          " border [border-color:var(--button-outline)] shadow-xs active:shadow-none ",
+          "bg-primary text-primary-foreground rounded-xl shadow-[0px_20px_25px_-5px_rgba(0,0,0,.10),0px_8px_10px_-6px_rgba(0,0,0,.10)] hover:bg-[#E55A00] hover:shadow-[0px_25px_30px_-5px_rgba(0,0,0,.15)] active:bg-[#CC4D00] disabled:bg-[#C9B2A5] disabled:text-white/50",
+        /* Secondary — transparent with white 4px border, for use on dark backgrounds */
         secondary:
-          // border, no hover, no shadow, secondary border.
-          "border bg-secondary text-secondary-foreground border border-secondary-border ",
-        // no hover, transparent border
-        ghost: "border border-transparent",
+          "bg-transparent text-white border-4 border-white rounded-xl shadow-[0px_20px_25px_-5px_rgba(0,0,0,.10),0px_8px_10px_-6px_rgba(0,0,0,.10)] hover:bg-white/15 active:bg-white/25 disabled:border-white/50 disabled:text-white/50",
+        /* Outline — standard bordered, adapts to context */
+        outline:
+          "bg-transparent border-2 border-border text-foreground rounded-xl hover:border-primary hover:text-primary hover:bg-primary/5 active:bg-primary/10",
+        /* Tertiary — yellow #FFD700 */
+        tertiary:
+          "bg-[#FFD700] text-[#1F2937] rounded-xl shadow-[0px_20px_25px_-5px_rgba(0,0,0,.10),0px_8px_10px_-6px_rgba(0,0,0,.10)] hover:bg-[#F0C800] active:bg-[#E6BA00] disabled:bg-[#D9D0B5] disabled:text-[#1F2937]/50",
+        /* Ghost — text only, hover orange */
+        ghost:
+          "bg-transparent text-foreground rounded-lg hover:text-primary hover:bg-primary/5 active:text-[#E55A00] active:bg-primary/10 disabled:text-muted-foreground",
+        /* Destructive */
+        destructive:
+          "bg-destructive text-destructive-foreground rounded-xl shadow-[0px_20px_25px_-5px_rgba(0,0,0,.10)] hover:bg-destructive/90",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
-        // adjusted sizes
-        default: "min-h-9 px-4 py-2",
-        sm: "min-h-8 rounded-md px-3 text-xs",
-        lg: "min-h-10 rounded-md px-8",
-        icon: "h-9 w-9",
+        /* sm — 32px height, 8px h-padding */
+        sm:      "h-8 px-3 text-sm rounded-sm",
+        /* default — 44px height, standard touch target */
+        default: "h-11 px-6 text-base",
+        /* lg — 60px height, 32px h-padding per design spec */
+        lg:      "h-[60px] px-8 text-lg",
+        /* icon */
+        icon:    "h-11 w-11",
       },
     },
     defaultVariants: {

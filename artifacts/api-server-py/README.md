@@ -1,9 +1,6 @@
 # api-server-py
 
-Backend Python (FastAPI) pentru Corcodusa Games — înlocuiește `artifacts/api-server`
-(Node/Express). Aceleași rute, aceleași nume de câmpuri în Mongo, aceeași
-colecție `games`/`users`/`counters` — datele existente (sau cele puse cu
-seed-ul vechi în Node) sunt compatibile fără migrare.
+Backend Python (FastAPI) pentru Corcodusa Games.
 
 ## Stack
 
@@ -74,11 +71,10 @@ Nu am putut testa cu Clerk/Stripe/MongoDB *reale* din acest sandbox (fără
 credențiale, fără rețea către Atlas) — testează din nou cu cheile reale
 înainte de a trece definitiv pe acest backend.
 
-## Ce NU am portat (încă)
+## TODO
 
 - **Stripe webhook**: verificarea semnăturii funcționează, dar nu se
   procesează niciun eveniment (`checkout.session.completed`,
-  `customer.subscription.updated/deleted`) — exact același TODO ca în
-  versiunea Node originală, nu e o regresie introdusă de portare.
-- **Clerk proxy pentru domeniu custom** (`clerkProxyMiddleware.ts`) — folosit
-  doar dacă NU configurezi un CNAME `clerk.*`; caz de margine, nu blocant.
+  `customer.subscription.updated/deleted`).
+- **Clerk proxy pentru domeniu custom** — folosit doar dacă NU configurezi
+  un CNAME `clerk.*`; caz de margine, nu blocant.

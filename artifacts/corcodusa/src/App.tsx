@@ -1,9 +1,9 @@
-import { 
-  ClerkProvider, 
-  SignIn, 
-  SignUp, 
-  Show, 
-  useUser, 
+import {
+  ClerkProvider,
+  SignIn,
+  SignUp,
+  Show,
+  useUser,
   useAuth,
   useClerk
 } from "@clerk/react";
@@ -49,58 +49,95 @@ const clerkAppearance = {
   options: {
     logoPlacement: "inside" as const,
     logoLinkUrl: basePath || "/",
-    logoImageUrl: `${window.location.origin}${basePath}/logo.svg`,
+    logoImageUrl: `${window.location.origin}${basePath}/og-image.png`,
   },
   variables: {
-    colorPrimary: "hsl(10 90% 60%)",
-    colorForeground: "hsl(330 30% 15%)",
-    colorMutedForeground: "hsl(330 20% 45%)",
-    colorDanger: "hsl(0 85% 60%)",
-    colorBackground: "hsl(0 0% 100%)",
-    colorInput: "hsl(0 0% 100%)",
-    colorInputForeground: "hsl(330 30% 15%)",
-    colorNeutral: "hsl(35 30% 85%)",
-    fontFamily: "'Nunito', sans-serif",
-    borderRadius: "1rem",
+    colorPrimary: "#FF6B00",
+    colorForeground: "#1F2937",
+    colorMutedForeground: "#4B5563",
+    colorDanger: "#DC2626",
+    colorBackground: "#FFFFFF",
+    colorInput: "#FFFFFF",
+    colorInputForeground: "#1F2937",
+    colorNeutral: "#E5E7EB",
+    fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif",
+    borderRadius: "12px",
   },
   elements: {
     rootBox: "w-full flex justify-center",
-    cardBox: "bg-white rounded-3xl w-[440px] max-w-full overflow-hidden border border-border shadow-xl",
+    cardBox: "bg-white/95 backdrop-blur-xl rounded-2xl w-[440px] max-w-full overflow-hidden border border-white/20 shadow-[0px_25px_50px_-12px_rgba(0,0,0,.35)]",
     card: "!shadow-none !border-0 !bg-transparent !rounded-none",
     footer: "!shadow-none !border-0 !bg-transparent !rounded-none",
-    headerTitle: "font-display text-2xl text-foreground",
-    headerSubtitle: "text-muted-foreground font-sans",
-    socialButtonsBlockButtonText: "font-sans font-semibold text-foreground",
-    formFieldLabel: "font-sans font-bold text-foreground",
-    footerActionLink: "font-sans font-bold text-primary hover:text-primary/80 transition-colors",
-    footerActionText: "font-sans text-muted-foreground",
-    dividerText: "font-sans text-muted-foreground",
-    identityPreviewEditButton: "text-primary",
-    formFieldSuccessText: "text-secondary",
-    alertText: "font-sans text-destructive-foreground",
-    formButtonPrimary: "font-sans font-bold shadow-md hover:shadow-lg transition-all rounded-xl",
+    logoBox: "pt-6 pb-2",
+    logoImage: "h-16 w-auto object-contain mx-auto",
+    headerTitle: "font-bold text-2xl text-[#1F2937]",
+    headerSubtitle: "text-[#4B5563]",
+    socialButtonsBlockButtonText: "font-semibold text-[#1F2937]",
+    formFieldLabel: "font-bold text-[#1F2937]",
+    footerActionLink: "font-bold text-[#FF6B00] hover:text-[#E55A00] transition-colors",
+    footerActionText: "text-[#4B5563]",
+    dividerText: "text-[#4B5563]",
+    identityPreviewEditButton: "text-[#FF6B00]",
+    formFieldSuccessText: "text-[#2C5F7A]",
+    alertText: "font-bold",
+    formButtonPrimary: "font-bold bg-gradient-to-r from-[#FF6B00] to-[#FF9A3C] shadow-[0px_8px_20px_-3px_rgba(255,107,0,.45)] hover:shadow-[0px_12px_25px_-3px_rgba(255,107,0,.55)] hover:from-[#E55A00] hover:to-[#E58A2C] transition-all rounded-xl",
+    formFieldInput: "rounded-xl focus:border-[#FF6B00] focus:ring-[#FF6B00]/10",
   },
 };
 
-function SignInPage() {
+function AuthPageShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4 bg-[url('/images/hero.png')] bg-cover bg-center bg-no-repeat relative">
-      <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
-      <div className="relative z-10 animate-in fade-in zoom-in duration-500">
-        <SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} />
+    <div className="relative flex min-h-[100dvh] items-center justify-center px-4 py-12 overflow-hidden">
+      {/* Gradient background: deep teal → teal-green */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#0A4D68] via-[#0F6080] to-[#0C5C48]" />
+
+      {/* Ambient glow blobs */}
+      <div className="pointer-events-none absolute -top-40 -right-40 h-[600px] w-[600px] rounded-full bg-[#FF6B00]/20 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-40 -left-40 h-[500px] w-[500px] rounded-full bg-[#FFD700]/10 blur-3xl" />
+      <div className="pointer-events-none absolute top-1/2 left-1/3 -translate-x-1/2 -translate-y-1/2 h-[350px] w-[350px] rounded-full bg-white/5 blur-2xl" />
+
+      {/* Decorative rings */}
+      <div className="pointer-events-none absolute top-16 left-10 h-24 w-24 rounded-full border-2 border-white/10" />
+      <div className="pointer-events-none absolute top-20 left-14 h-14 w-14 rounded-full border border-white/8" />
+      <div className="pointer-events-none absolute bottom-24 right-12 h-16 w-16 rounded-full bg-[#FF6B00]/15" />
+      <div className="pointer-events-none absolute bottom-20 right-20 h-8 w-8 rounded-full border border-[#FFD700]/25" />
+
+      <div className="relative z-10 w-full max-w-[440px] animate-in fade-in zoom-in duration-500">
+        {/* Logo icon + brand name above Clerk card */}
+        <div className="text-center mb-7">
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <img
+              src="/logo-icon.png"
+              alt="Corcodusa"
+              className="h-14 w-14 object-contain drop-shadow-[0_4px_16px_rgba(255,107,0,.55)]"
+            />
+            <span className="text-3xl font-black text-white leading-none">
+              Corcodușa<span className="text-[#FFD700]">.ro</span>
+            </span>
+          </div>
+          <p className="text-white/50 text-sm font-medium tracking-wide">
+            Platforma educațională pentru copii
+          </p>
+        </div>
+        {children}
       </div>
     </div>
   );
 }
 
+function SignInPage() {
+  return (
+    <AuthPageShell>
+      <SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} />
+    </AuthPageShell>
+  );
+}
+
 function SignUpPage() {
   return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4 bg-[url('/images/hero.png')] bg-cover bg-center bg-no-repeat relative">
-      <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
-      <div className="relative z-10 animate-in fade-in zoom-in duration-500">
-        <SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} />
-      </div>
-    </div>
+    <AuthPageShell>
+      <SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} />
+    </AuthPageShell>
   );
 }
 
@@ -203,7 +240,7 @@ function ClerkProviderWithRoutes() {
           <Route path="/sign-in/*?" component={SignInPage} />
           <Route path="/sign-up/*?" component={SignUpPage} />
           <Route path="/pricing" component={Pricing} />
-          
+
           <Route path="/games">
             {() => <ProtectedRoute component={Games} />}
           </Route>
@@ -213,7 +250,7 @@ function ClerkProviderWithRoutes() {
           <Route path="/dashboard">
             {() => <ProtectedRoute component={Dashboard} />}
           </Route>
-          
+
           <Route component={NotFound} />
         </Switch>
       </QueryClientProvider>

@@ -10,11 +10,10 @@ Platformă de jocuri educaționale pentru copii români cu vârste între 3 și 
 - `pnpm run typecheck` — full typecheck across all (remaining JS/TS) packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- The original Node/Express API server and the `mockup-sandbox` UI-preview app have been moved to `_deprecated/` (kept for reference, not part of the active build). Run `pnpm install` again after pulling this change — pnpm will drop their stale workspace links.
 
 ### Required environment variables
 
-- `MONGODB_URI` — MongoDB connection string (same database for both the Node and the Python API server)
+- `MONGODB_URI` — MongoDB connection string
 - `CLERK_SECRET_KEY` / Clerk publishable key — authentication (see [Clerk Dashboard](https://dashboard.clerk.com))
 - `STRIPE_SECRET_KEY` — enables payments (optional; API falls back to mock product data when unset)
 - `STRIPE_WEBHOOK_SECRET` — enables Stripe webhook signature verification (optional)
@@ -25,12 +24,12 @@ Platformă de jocuri educaționale pentru copii români cu vârste între 3 și 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
 - Frontend: React 19 + Vite 7, wouter (routing), Clerk React — deployed to Firebase Hosting (`games.corcodusa.ro`)
 - **Domains**: `games.corcodusa.ro` (this frontend) and `games-api.corcodusa.ro` (this backend, once deployed) are distinct from `corcodusa.ro` / `www.corcodusa.ro` and `api.corcodusa.ro`, which belong to a separate, unrelated business (PDF-delivery site, repo `CristianF09/forkids`) — same Stripe account, different everything else.
-- API: `artifacts/api-server-py` — FastAPI + Beanie/Motor, the active backend, targeted for the Render deploy. (The original Express + Mongoose implementation is archived at `_deprecated/api-server/`, a 1:1 functional reference if ever needed.)
-- DB: MongoDB (no more Postgres/Drizzle — fully migrated; legacy SQL files moved to `_deprecated/postgres-legacy/`)
+- API: `artifacts/api-server-py` — FastAPI + Beanie/Motor, deployed to Render
+- DB: MongoDB + Beanie/Motor (Mongoose for `lib/db` seed scripts)
 - Validation: Zod (`zod/v4`)
 - Auth: Clerk (whitelabel proxy at `/clerk`) — currently **disabled** in the frontend's `ProtectedRoute` for testing; all routes are open
 - Payments: Stripe (graceful fallback when not configured; webhook signature verification works, but event handling — e.g. `checkout.session.completed` — is still a TODO)
-- API codegen: Orval (from OpenAPI spec at `lib/api-spec/openapi.yaml`) — still valid as the API contract, even though the Node API that originally implemented it is archived
+- API codegen: Orval (from OpenAPI spec at `lib/api-spec/openapi.yaml`)
 - Build: Vite (frontend); see `artifacts/api-server-py/README.md` for the Python API
 
 ## Where things live
@@ -43,7 +42,6 @@ Platformă de jocuri educaționale pentru copii români cu vârste între 3 și 
 - `artifacts/corcodusa/src/components/` — shared UI components
 - `artifacts/corcodusa/src/games/` — the actual playable game components, mapped by numeric id in `GAME_COMPONENTS`
 - `attached_assets/` — game cover images (served at `/api/assets/*`)
-- `_deprecated/` — archived, not part of the active build: `api-server/` (original Node/Express API), `mockup-sandbox/` (standalone UI-preview app), `postgres-legacy/` (old Postgres schema/seed/docker-compose files). Safe to delete fully once you're confident you won't need them as reference.
 
 ## Architecture decisions
 
