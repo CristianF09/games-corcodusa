@@ -189,16 +189,9 @@ function UserSync() {
 }
 
 function HomeRedirect() {
-  return (
-    <>
-      <Show when="signed-in">
-        <Redirect to="/games" />
-      </Show>
-      <Show when="signed-out">
-        <Home />
-      </Show>
-    </>
-  );
+  // Single-page layout: everyone sees the home page.
+  // Signed-in users play games directly from the grid on the home page.
+  return <Home />;
 }
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
