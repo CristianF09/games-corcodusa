@@ -1,0 +1,112 @@
+// Per-game visual identity for the bold, flat-color "app tile" look —
+// each of the 10 games gets its own vivid solid color + visual content
+// (big example text like "2+3=5" or an emoji) + short tagline.
+//
+// Keyed by numeric game id (1-10), matching GAME_COMPONENTS in
+// src/games/index.ts and the seed order in scripts/seed_games.py.
+//
+// `isTextVisual = true` → render `visual` as large bold text (math
+// equations, letters, shapes).  false → render it as a big emoji.
+
+export interface GameTileStyle {
+  gradient: string;       // tailwind "from-x to-y" gradient classes
+  label: string;          // short ALL-CAPS label shown at top of tile
+  visual: string;         // main content: equation, letters, shapes, or emoji
+  isTextVisual: boolean;  // true = render as big bold text; false = big emoji
+  tagline: string;        // short subtitle (age / category hint)
+}
+
+export const GAME_TILE_STYLES: Record<number, GameTileStyle> = {
+  // 1 → GameNumarare: counting & number recognition
+  1: {
+    gradient: "from-[#1565C0] to-[#1976D2]",
+    label: "NUMERE",
+    visual: "1 2 3",
+    isTextVisual: true,
+    tagline: "Numără până la 20",
+  },
+  // 2 → GameAdunare: addition, subtraction, multiplication
+  2: {
+    gradient: "from-[#00796B] to-[#00897B]",
+    label: "ADUNĂRI",
+    visual: "2+3=5",
+    isTextVisual: true,
+    tagline: "Adunări și scăderi",
+  },
+  // 3 → GameAlfabet: letters & sounds
+  3: {
+    gradient: "from-[#2E7D32] to-[#388E3C]",
+    label: "ALFABET",
+    visual: "A B C",
+    isTextVisual: true,
+    tagline: "Literele alfabetului",
+  },
+  // 4 → GameDinozauri: dinosaur exploration
+  4: {
+    gradient: "from-[#558B2F] to-[#689F38]",
+    label: "DINOZAURI",
+    visual: "🦕",
+    isTextVisual: false,
+    tagline: "Lumea dinozaurilor",
+  },
+  // 5 → GameForme: shapes + color mixing
+  5: {
+    gradient: "from-[#4527A0] to-[#5E35B1]",
+    label: "FORME",
+    visual: "◯ □ △",
+    isTextVisual: true,
+    tagline: "Forme și culori",
+  },
+  // 6 → GameAnimale: animal sounds & habitats
+  6: {
+    gradient: "from-[#E65100] to-[#F57F17]",
+    label: "ANIMALE",
+    visual: "🐾",
+    isTextVisual: false,
+    tagline: "Sunete și habitate",
+  },
+  // 7 → GameMuzica: rhythm & instrument sequences
+  7: {
+    gradient: "from-[#880E4F] to-[#C2185B]",
+    label: "MUZICĂ",
+    visual: "🎵",
+    isTextVisual: false,
+    tagline: "Ritmuri muzicale",
+  },
+  // 8 → GameMemorie: classic matching pairs
+  8: {
+    gradient: "from-[#0D47A1] to-[#1565C0]",
+    label: "MEMORIE",
+    visual: "🧠",
+    isTextVisual: false,
+    tagline: "Găsește perechile",
+  },
+  // 9 → GameDesen: free drawing & coloring canvas
+  9: {
+    gradient: "from-[#BF360C] to-[#E64A19]",
+    label: "DESEN",
+    visual: "🎨",
+    isTextVisual: false,
+    tagline: "Desenează liber",
+  },
+  // 10 → GamePuzzle: logic & matching puzzles
+  10: {
+    gradient: "from-[#004D40] to-[#00695C]",
+    label: "PUZZLE",
+    visual: "🧩",
+    isTextVisual: false,
+    tagline: "Rezolvă & asociază",
+  },
+};
+
+export const DEFAULT_TILE_STYLE: GameTileStyle = {
+  gradient: "from-primary to-secondary",
+  label: "JOC",
+  visual: "🎮",
+  isTextVisual: false,
+  tagline: "Joacă și învață",
+};
+
+export function gameTileStyle(gameId: number | undefined): GameTileStyle {
+  return (gameId && GAME_TILE_STYLES[gameId]) || DEFAULT_TILE_STYLE;
+}

@@ -20,6 +20,10 @@ def _require(name: str) -> str:
 
 
 MONGODB_URI = _require("MONGODB_URI")
+# Fallback database name when the URI has no /dbname segment (e.g. a bare
+# Atlas connection string without the database path).  Render env vars often
+# omit it, so we default to "corcodusa" to match the Atlas cluster setup.
+DB_NAME = os.environ.get("DB_NAME", "corcodusa")
 
 # Optional at import time — routes that need these fail with a clear 5xx
 # instead of crashing the whole server, matching the Node backend's
@@ -28,6 +32,17 @@ CLERK_SECRET_KEY = os.environ.get("CLERK_SECRET_KEY")
 STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY")
 STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET")
 APP_BASE_URL = os.environ.get("APP_BASE_URL", "http://localhost:5173")
+
+# Contact form (POST /api/contact) — sent via Resend's HTTP API. Soft-degrades
+# like Stripe/Clerk above: missing key means the route 500s with a clear
+# message instead of crashing the whole server at import time.
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
+# Must be a verified sender on the Resend account/domain (e.g.
+# "Corcodușa <no-reply@corcodusa.ro>"). Falls back to Resend's shared test
+# sender, which only delivers to the Resend account owner's own email — fine
+# for local testing, NOT for production use.
+CONTACT_EMAIL_FROM = os.environ.get("CONTACT_EMAIL_FROM", "Corcodușa <onboarding@resend.dev>")
+CONTACT_EMAIL_TO = os.environ.get("CONTACT_EMAIL_TO", "contact@corcodusa.ro")
 
 
 def require_port() -> int:

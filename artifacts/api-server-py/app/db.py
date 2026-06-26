@@ -5,8 +5,9 @@ opened once at startup, safe to import from anywhere.
 """
 
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
+from pymongo.errors import ConfigurationError
 
-from app.config import MONGODB_URI
+from app.config import DB_NAME, MONGODB_URI
 
 _client: AsyncIOMotorClient | None = None
 _db: AsyncIOMotorDatabase | None = None
@@ -42,7 +43,14 @@ async def connect_db() -> AsyncIOMotorDatabase:
         AsyncIOMotorClient.append_metadata = lambda self, driver_info: None  # type: ignore[attr-defined]
 
     _client = AsyncIOMotorClient(MONGODB_URI)
-    _db = _client.get_default_database()
+    # Use the database name embedded in the URI when present (e.g.
+    # ".../corcodusa?..."); fall back to DB_NAME env var (default "corcodusa")
+    # when the Render MONGODB_URI is a bare connection string without a /dbname
+    # segment — that's what caused the ConfigurationError on Render.
+    try:
+        _db = _client.get_default_database()
+    except ConfigurationError:
+        _db = _client[DB_NAME]
 
     await init_beanie(database=_db, document_models=[Game, User])
     return _db
