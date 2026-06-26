@@ -1,15 +1,29 @@
-"""One-off seed script — direct port of scripts/src/seed-games.ts.
+"""One-off seed script — keeps the `games` collection in sync with the 10
+playable games in artifacts/corcodusa/src/games/index.ts.
+
+IMPORTANT: `numeric_id` is assigned sequentially (1, 2, 3, ...) in insertion
+order by Game.create_new() (see app/models/counter.py's next_sequence). The
+frontend's GAME_COMPONENTS map (src/games/index.ts) keys components by that
+same numeric id:
+
+    1: GameNumarare   2: GameAdunare   3: GameAlfabet   4: GameDinozauri
+    5: GameForme      6: GameAnimale   7: GameMuzica    8: GameMemorie
+    9: GameDesen     10: GamePuzzle
+
+So the order of GAMES below is load-bearing — it must match that map 1:1,
+or a DB game's id will point at the wrong (or no) component on the games
+hub. (An earlier version of this script seeded 11 games in a different
+order/category split that did NOT line up with the component map — e.g.
+id 4 resolved to "Primele Cuvinte" while the frontend rendered GameDinozauri
+for id 4, and id 11 had no component at all. This rewrite fixes that.)
 
 Run with:  python -m scripts.seed_games   (from artifacts/api-server-py/,
 with MONGODB_URI set, e.g. via the .env file and python-dotenv which
 app.config already loads).
 
 Safe to re-run: games are matched by `title` and skipped if they already
-exist.
-
-NOTE: writes to the same `games` collection/field names as the Node seed
-script, so it's interchangeable with it against the same MongoDB Atlas
-cluster — running one after the other won't create duplicates.
+exist. Existing games with placehold.co placeholder images are updated to
+the real /api/assets/ paths.
 """
 
 import asyncio
@@ -17,108 +31,109 @@ import asyncio
 from app.db import close_db, connect_db
 from app.models.game import Game
 
-PLACEHOLDER_IMAGE = "https://placehold.co/600x400/FFD166/333?text="
-
 GAMES = [
     {
-        "title": "Numere Vesele",
-        "description": "Învață să numeri de la 1 la 20 cu animale simpatice.",
+        # id 1 -> GameNumarare: counting 1-20, odd/even, tens, number tracing.
+        "title": "Numărătoare Veselă",
+        "description": "Numără de la 1 la 20, exersează par/impar și trasează cifrele cu degetul.",
         "category": "matematica",
         "age_min": 3,
-        "age_max": 6,
-        "image_url": f"{PLACEHOLDER_IMAGE}1-2-3",
+        "age_max": 7,
+        "image_url": "/api/assets/game-matematica-1.png",
         "is_new_game": True,
         "is_featured": True,
         "requires_subscription": False,
     },
     {
+        # id 2 -> GameAdunare: addition, subtraction, mixed, early multiplication.
         "title": "Adunări Distractive",
-        "description": "Exersează adunări simple printr-un joc de potrivire.",
+        "description": "Adunări, scăderi și primele tabele de înmulțire prin jocuri rapide.",
         "category": "matematica",
         "age_min": 6,
         "age_max": 9,
-        "image_url": f"{PLACEHOLDER_IMAGE}%2B",
+        "image_url": "/api/assets/game-matematica-2.png",
         "is_featured": True,
     },
     {
-        "title": "Alfabetul Animalelor",
-        "description": "Asociază fiecare literă cu un animal și sunetul ei.",
+        # id 3 -> GameAlfabet: letters of the alphabet.
+        "title": "Alfabetul Vesel",
+        "description": "Învață literele alfabetului și sunetele lor prin asociere cu imagini.",
         "category": "litere",
         "age_min": 3,
         "age_max": 7,
-        "image_url": f"{PLACEHOLDER_IMAGE}ABC",
+        "image_url": "/api/assets/game-litere-1.png",
         "is_new_game": True,
         "is_featured": True,
         "requires_subscription": False,
     },
     {
-        "title": "Primele Cuvinte",
-        "description": "Formează cuvinte simple din litere colorate.",
-        "category": "litere",
-        "age_min": 5,
+        # id 4 -> GameDinozauri: dinosaur exploration/discovery.
+        "title": "Lumea Dinozaurilor",
+        "description": "Descoperă dinozauri, numele și caracteristicile lor printr-o aventură interactivă.",
+        "category": "natura",
+        "age_min": 4,
         "age_max": 8,
-        "image_url": f"{PLACEHOLDER_IMAGE}Cuvinte",
+        "image_url": "/api/assets/game-natura-1.png",
+        "is_new_game": True,
     },
     {
-        "title": "Curcubeul Culorilor",
-        "description": "Învață culorile de bază printr-un puzzle interactiv.",
+        # id 5 -> GameForme: shapes + color mixing + shape tracing.
+        "title": "Forme și Culori",
+        "description": "Recunoaște forme geometrice, combină culori și trasează contururi.",
         "category": "culori",
         "age_min": 3,
-        "age_max": 6,
-        "image_url": f"{PLACEHOLDER_IMAGE}🎨",
+        "age_max": 7,
+        "image_url": "/api/assets/game-culori-1.png",
         "is_featured": True,
         "requires_subscription": False,
     },
     {
-        "title": "Forme și Contururi",
-        "description": "Recunoaște și sortează forme geometrice de bază.",
-        "category": "culori",
-        "age_min": 4,
-        "age_max": 7,
-        "image_url": f"{PLACEHOLDER_IMAGE}%E2%97%8F%E2%96%B2",
-    },
-    {
-        "title": "Ritmuri Vesele",
-        "description": "Reproduce secvențe muzicale simple apăsând pe instrumente.",
-        "category": "muzica",
-        "age_min": 4,
-        "age_max": 8,
-        "image_url": f"{PLACEHOLDER_IMAGE}🎵",
-        "is_new_game": True,
-    },
-    {
+        # id 6 -> GameAnimale: animal sounds, habitats, legs, babies.
         "title": "Lumea Animalelor",
-        "description": "Descoperă animale și habitatele lor naturale.",
+        "description": "Asociază animale cu sunetele, habitatele și puii lor.",
         "category": "natura",
         "age_min": 3,
         "age_max": 7,
-        "image_url": f"{PLACEHOLDER_IMAGE}🌿",
+        "image_url": "/api/assets/game-natura-1.png",
         "is_featured": True,
     },
     {
-        "title": "Puzzle Logic",
-        "description": "Rezolvă puzzle-uri simple de logică și asociere.",
-        "category": "logica",
-        "age_min": 5,
-        "age_max": 9,
-        "image_url": f"{PLACEHOLDER_IMAGE}🧩",
-    },
-    {
-        "title": "Joc de Memorie",
-        "description": "Găsește perechile de cărți identice — exersează memoria.",
-        "category": "memorie",
+        # id 7 -> GameMuzica: rhythm/instrument sequences.
+        "title": "Ritmuri Vesele",
+        "description": "Reproduce secvențe muzicale simple apăsând pe instrumente colorate.",
+        "category": "muzica",
         "age_min": 4,
         "age_max": 8,
-        "image_url": f"{PLACEHOLDER_IMAGE}🧠",
+        "image_url": "/api/assets/game-muzica-1.png",
         "is_new_game": True,
     },
     {
+        # id 8 -> GameMemorie: classic memory/matching pairs.
+        "title": "Joc de Memorie",
+        "description": "Găsește perechile de cărți identice din 4 teme diferite — exersează memoria.",
+        "category": "memorie",
+        "age_min": 4,
+        "age_max": 9,
+        "image_url": "/api/assets/game-memorie-1.png",
+        "is_new_game": True,
+    },
+    {
+        # id 9 -> GameDesen: free drawing / coloring canvas.
         "title": "Atelier de Desen",
-        "description": "Desenează liber sau colorează șabloane gata făcute.",
+        "description": "Desenează liber sau colorează șabloane gata făcute, cu pensule și culori variate.",
         "category": "creativitate",
         "age_min": 3,
         "age_max": 9,
-        "image_url": f"{PLACEHOLDER_IMAGE}✏️",
+        "image_url": "/api/assets/game-creativitate-1.png",
+    },
+    {
+        # id 10 -> GamePuzzle: logic/matching puzzles.
+        "title": "Puzzle de Logică",
+        "description": "Rezolvă puzzle-uri de logică, sortare și asociere la mai multe niveluri.",
+        "category": "logica",
+        "age_min": 5,
+        "age_max": 9,
+        "image_url": "/api/assets/game-logica-1.png",
     },
 ]
 
@@ -128,16 +143,23 @@ async def main():
 
     created = 0
     skipped = 0
+    updated = 0
 
     for game in GAMES:
         existing = await Game.find_one(Game.title == game["title"])
         if existing:
-            skipped += 1
+            # Update placeholder image URLs to real assets
+            if existing.image_url and "placehold.co" in existing.image_url:
+                existing.image_url = game["image_url"]
+                await existing.save()
+                updated += 1
+            else:
+                skipped += 1
             continue
         await Game.create_new(**game)
         created += 1
 
-    print(f"Seed complete: {created} created, {skipped} already existed.")
+    print(f"Seed complete: {created} created, {updated} updated, {skipped} already up-to-date.")
     await close_db()
 
 

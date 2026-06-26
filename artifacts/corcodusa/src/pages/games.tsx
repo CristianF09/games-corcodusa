@@ -27,19 +27,23 @@ export default function Games() {
       <Navbar />
 
       <main className="flex-1">
-        {/* Gradient page header */}
-        <div className="relative overflow-hidden bg-gradient-to-br from-[#0A4D68] to-[#2C5F7A]">
+        {/* Gradient page header — logo + "Joacă și Învață" app-style banner */}
+        <div className="relative overflow-hidden bg-gradient-to-br from-[#0A4D68] via-[#0F6080] to-[#0C5C48]">
           <div className="pointer-events-none absolute -top-16 -right-16 h-48 w-48 rounded-full bg-[#FF6B00]/20 blur-2xl" />
           <div className="pointer-events-none absolute -bottom-12 -left-12 h-36 w-36 rounded-full bg-[#FFD700]/10 blur-2xl" />
 
-          <div className="relative max-w-[1152px] mx-auto px-10 py-10 md:py-14 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          <div className="relative max-w-[1152px] mx-auto px-10 py-12 md:py-16 flex flex-col items-center text-center gap-5">
+            <img src="/logo-icon.png" alt="Corcodușa" className="h-20 w-20 object-contain drop-shadow-lg" />
             <div>
-              <h1 className="text-4xl font-black text-white mb-2">Toate Jocurile</h1>
-              <p className="text-white/70 text-lg">Găsește activitatea perfectă pentru copilul tău.</p>
+              <p className="text-white/60 text-sm font-bold tracking-wide mb-1">games.corcodusa.ro</p>
+              <h1 className="text-4xl md:text-5xl font-black text-white">
+                Joacă și <span className="text-[#FFD700]">Învață</span>
+              </h1>
+              <p className="text-white/70 text-lg mt-2">Găsește activitatea perfectă pentru copilul tău.</p>
             </div>
 
             {/* Search */}
-            <div className="relative w-full md:w-80">
+            <div className="relative w-full max-w-md mt-2">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#4B5563]" />
               <input
                 type="text"
@@ -88,10 +92,10 @@ export default function Games() {
           </div>
 
           {/* Game grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5 md:gap-6">
             {isLoadingGames ? (
               Array.from({ length: 8 }).map((_, i) => (
-                <Skeleton key={i} className="h-[360px] rounded-2xl" />
+                <Skeleton key={i} className="h-[240px] rounded-3xl" />
               ))
             ) : filteredGames && filteredGames.length > 0 ? (
               filteredGames.map((game) => <GameCard key={game.id} game={game} />)

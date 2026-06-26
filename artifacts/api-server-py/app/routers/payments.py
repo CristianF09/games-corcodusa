@@ -66,23 +66,23 @@ async def list_products():
         log_warn("Stripe products not available", err=str(err))
         return [
             {
-                "id": "prod_trial",
-                "name": "Acces Gratuit 7 Zile",
-                "description": "Acces complet timp de 7 zile, fără card bancar",
+                "id": "prod_monthly",
+                "name": "Abonament Lunar",
+                "description": "Acces nelimitat la toate jocurile, anulezi oricând",
                 "priceId": "",
-                "amount": 0,
+                "amount": 6700,
                 "currency": "ron",
-                "interval": None,
+                "interval": "month",
                 "isPopular": False,
             },
             {
-                "id": "prod_full",
-                "name": "Acces Complet",
-                "description": "Acces nelimitat la toate jocurile, jocuri noi în fiecare lună",
+                "id": "prod_annual",
+                "name": "Abonament Anual",
+                "description": "Acces nelimitat la toate jocurile, -25% față de plata lunară",
                 "priceId": "",
-                "amount": 4900,
+                "amount": 60300,
                 "currency": "ron",
-                "interval": "month",
+                "interval": "year",
                 "isPopular": True,
             },
         ]

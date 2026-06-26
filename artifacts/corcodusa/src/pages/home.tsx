@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
-import { useGetFeaturedGames, useGetPlatformStats, useListGameCategories } from "@workspace/api-client-react";
+import { useListGames, useGetPlatformStats, useListGameCategories } from "@workspace/api-client-react";
 import { GameCard } from "@/components/game-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -10,7 +10,9 @@ import { PlayCircle, Shield, Brain } from "lucide-react";
 import { categoryGradient } from "@/lib/category-colors";
 
 export default function Home() {
-  const { data: featuredGames, isLoading: isLoadingFeatured } = useGetFeaturedGames();
+  // All 10 games, not just is_featured ones — the home page is meant to
+  // showcase the full catalog (GameNumarare ... GamePuzzle) by name.
+  const { data: allGames, isLoading: isLoadingFeatured } = useListGames({});
   const { data: categories, isLoading: isLoadingCategories } = useListGameCategories();
   const { data: stats } = useGetPlatformStats();
 
@@ -120,15 +122,15 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ── Featured Games ─────────────────────────────────── */}
+        {/* ── All Games ──────────────────────────────────────── */}
         <section className="py-16 md:py-24 bg-[#F0F4F8]">
           <div className="max-w-[1152px] mx-auto px-10">
             <div className="flex flex-col md:flex-row items-start md:items-end justify-between mb-12 gap-4">
               <div>
                 <h2 className="text-3xl md:text-[48px] font-black text-[#1F2937] mb-3 leading-tight">
-                  Recomandate pentru tine
+                  Cele 10 jocuri Corcodușa
                 </h2>
-                <p className="text-muted-foreground text-lg">Cele mai populare jocuri din această săptămână.</p>
+                <p className="text-muted-foreground text-lg">Câte unul pentru fiecare interes — matematică, litere, muzică și mai multe.</p>
               </div>
               <Link href="/games">
                 <Button variant="ghost">
@@ -137,14 +139,15 @@ export default function Home() {
               </Link>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-5 md:gap-6">
               {isLoadingFeatured
-                ? Array.from({ length: 3 }).map((_, i) => (
-                    <Skeleton key={i} className="h-[380px] rounded-2xl" />
+                ? Array.from({ length: 10 }).map((_, i) => (
+                    <Skeleton key={i} className="h-[240px] rounded-3xl" />
                   ))
-                : featuredGames?.slice(0, 3).map((game) => (
-                    <GameCard key={game.id} game={game} />
-                  ))}
+                : allGames
+                    ?.slice()
+                    .sort((a, b) => a.id - b.id)
+                    .map((game) => <GameCard key={game.id} game={game} />)}
             </div>
           </div>
         </section>

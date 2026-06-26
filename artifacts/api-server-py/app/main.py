@@ -15,7 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from app.config import CLERK_SECRET_KEY, STRIPE_SECRET_KEY
 from app.db import close_db, connect_db
 from app.logger import log_info
-from app.routers import games, health, payments, users
+from app.routers import contact, games, health, payments, users
 
 
 @asynccontextmanager
@@ -49,6 +49,7 @@ app.include_router(health.router, prefix="/api")
 app.include_router(games.router, prefix="/api")
 app.include_router(users.router, prefix="/api")
 app.include_router(payments.router, prefix="/api")
+app.include_router(contact.router, prefix="/api")
 
 # Mirrors `app.use("/api/assets", express.static(...))` — serves
 # attached_assets/ (repo root) at /api/assets/*, same as the Node backend.

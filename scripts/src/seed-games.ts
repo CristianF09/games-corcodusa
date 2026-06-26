@@ -9,8 +9,6 @@
  */
 import { connectDB, GameModel } from "@workspace/db";
 
-const PLACEHOLDER_IMAGE = "https://placehold.co/600x400/FFD166/333?text=";
-
 const games = [
   {
     title: "Numere Vesele",
@@ -18,7 +16,7 @@ const games = [
     category: "matematica",
     ageMin: 3,
     ageMax: 6,
-    imageUrl: `${PLACEHOLDER_IMAGE}1-2-3`,
+    imageUrl: "/api/assets/game-matematica-1.png",
     isNewGame: true,
     isFeatured: true,
     requiresSubscription: false,
@@ -29,7 +27,7 @@ const games = [
     category: "matematica",
     ageMin: 6,
     ageMax: 9,
-    imageUrl: `${PLACEHOLDER_IMAGE}%2B`,
+    imageUrl: "/api/assets/game-matematica-2.png",
     isFeatured: true,
   },
   {
@@ -38,7 +36,7 @@ const games = [
     category: "litere",
     ageMin: 3,
     ageMax: 7,
-    imageUrl: `${PLACEHOLDER_IMAGE}ABC`,
+    imageUrl: "/api/assets/game-litere-1.png",
     isNewGame: true,
     isFeatured: true,
     requiresSubscription: false,
@@ -49,7 +47,7 @@ const games = [
     category: "litere",
     ageMin: 5,
     ageMax: 8,
-    imageUrl: `${PLACEHOLDER_IMAGE}Cuvinte`,
+    imageUrl: "/api/assets/game-litere-2.png",
   },
   {
     title: "Curcubeul Culorilor",
@@ -57,7 +55,7 @@ const games = [
     category: "culori",
     ageMin: 3,
     ageMax: 6,
-    imageUrl: `${PLACEHOLDER_IMAGE}🎨`,
+    imageUrl: "/api/assets/game-culori-1.png",
     isFeatured: true,
     requiresSubscription: false,
   },
@@ -67,7 +65,7 @@ const games = [
     category: "culori",
     ageMin: 4,
     ageMax: 7,
-    imageUrl: `${PLACEHOLDER_IMAGE}%E2%97%8F%E2%96%B2`,
+    imageUrl: "/api/assets/game-culori-1.png",
   },
   {
     title: "Ritmuri Vesele",
@@ -75,7 +73,7 @@ const games = [
     category: "muzica",
     ageMin: 4,
     ageMax: 8,
-    imageUrl: `${PLACEHOLDER_IMAGE}🎵`,
+    imageUrl: "/api/assets/game-muzica-1.png",
     isNewGame: true,
   },
   {
@@ -84,7 +82,7 @@ const games = [
     category: "natura",
     ageMin: 3,
     ageMax: 7,
-    imageUrl: `${PLACEHOLDER_IMAGE}🌿`,
+    imageUrl: "/api/assets/game-natura-1.png",
     isFeatured: true,
   },
   {
@@ -93,7 +91,7 @@ const games = [
     category: "logica",
     ageMin: 5,
     ageMax: 9,
-    imageUrl: `${PLACEHOLDER_IMAGE}🧩`,
+    imageUrl: "/api/assets/game-logica-1.png",
   },
   {
     title: "Joc de Memorie",
@@ -101,7 +99,7 @@ const games = [
     category: "memorie",
     ageMin: 4,
     ageMax: 8,
-    imageUrl: `${PLACEHOLDER_IMAGE}🧠`,
+    imageUrl: "/api/assets/game-memorie-1.png",
     isNewGame: true,
   },
   {
@@ -110,7 +108,7 @@ const games = [
     category: "creativitate",
     ageMin: 3,
     ageMax: 9,
-    imageUrl: `${PLACEHOLDER_IMAGE}✏️`,
+    imageUrl: "/api/assets/game-creativitate-1.png",
   },
 ];
 

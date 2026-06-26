@@ -1,9 +1,11 @@
+import { useEffect } from "react";
 import { useParams, Link } from "wouter";
-import { useGetGame } from "@workspace/api-client-react";
+import { useAuth, useClerk } from "@clerk/react";
+import { useGetGame, useGetUserSubscription } from "@workspace/api-client-react";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Lock } from "lucide-react";
 import { getGetGameQueryKey } from "@workspace/api-client-react";
 import { GAME_COMPONENTS } from "@/games";
 import { categoryEmoji, categoryGradient } from "@/lib/category-colors";
@@ -12,6 +14,9 @@ export default function GameDetail() {
   const { id } = useParams();
   const gameId = id ? parseInt(id, 10) : 0;
 
+  const { isLoaded: isAuthLoaded, isSignedIn } = useAuth();
+  const { openSignIn } = useClerk();
+
   const { data: game, isLoading } = useGetGame(gameId, {
     query: {
       enabled: !!gameId,
@@ -19,6 +24,19 @@ export default function GameDetail() {
     },
   });
 
+  const { data: subscription, isLoading: isLoadingSub } = useGetUserSubscription({
+    query: { enabled: !!isSignedIn },
+  });
+
+  // Signed-out visitors who land here directly (bookmark, back-button, etc.)
+  // get the same login popup as clicking a game card from the hub.
+  useEffect(() => {
+    if (isAuthLoaded && !isSignedIn) {
+      openSignIn({ forceRedirectUrl: `/games/${gameId}`, signUpForceRedirectUrl: `/games/${gameId}` });
+    }
+  }, [isAuthLoaded, isSignedIn, gameId, openSignIn]);
+
+  const hasAccess = !!subscription?.isActive || (subscription?.trialDaysLeft ?? 0) > 0;
   const GameComponent = gameId ? GAME_COMPONENTS[gameId] : null;
 
   return (
@@ -68,7 +86,14 @@ export default function GameDetail() {
 
         {/* Content */}
         <div className="max-w-[1152px] mx-auto px-6 md:px-10 py-8">
-          {isLoading ? (
+          {!isAuthLoaded || !isSignedIn ? (
+            // Login popup is open over this; keep something friendly behind it.
+            <div className="p-16 bg-white rounded-2xl border-2 border-dashed border-[#E5E7EB] text-center">
+              <div className="text-5xl mb-4">🔒</div>
+              <h3 className="text-xl font-black text-[#1F2937] mb-2">Conectează-te pentru a juca</h3>
+              <p className="text-base text-muted-foreground">Finalizează autentificarea în fereastra apărută.</p>
+            </div>
+          ) : isLoading || isLoadingSub ? (
             <div className="space-y-6">
               <Skeleton className="h-5 w-2/3 rounded-lg" />
               <Skeleton className="h-[500px] w-full rounded-2xl" />
@@ -82,7 +107,23 @@ export default function GameDetail() {
               )}
 
               {/* Game area */}
-              {GameComponent ? (
+              {!hasAccess ? (
+                <div className="relative overflow-hidden bg-gradient-to-br from-[#0A4D68] via-[#0F6080] to-[#0C5C48] rounded-2xl p-10 md:p-14 text-center text-white shadow-[0px_10px_30px_rgba(10,77,104,.25)]">
+                  <div className="pointer-events-none absolute -top-12 -right-12 h-40 w-40 rounded-full bg-[#FF6B00]/20 blur-2xl" />
+                  <div className="relative">
+                    <Lock className="h-10 w-10 mx-auto mb-4 text-[#FFD700]" />
+                    <h3 className="text-2xl font-black mb-2">Deblochează acest joc</h3>
+                    <p className="text-white/70 mb-6 max-w-md mx-auto">
+                      Alege un abonament și începe cu 7 zile gratuite ca să joci {game.title} și toate celelalte jocuri.
+                    </p>
+                    <Link href="/pricing">
+                      <button className="h-[52px] px-8 rounded-xl bg-gradient-to-r from-[#FF6B00] to-[#FF9A3C] text-white font-black text-base shadow-[0px_8px_20px_rgba(255,107,0,.45)] hover:shadow-[0px_12px_28px_rgba(255,107,0,.60)] hover:from-[#E55A00] hover:to-[#E58A2C] transition-all duration-300">
+                        Vezi abonamentele →
+                      </button>
+                    </Link>
+                  </div>
+                </div>
+              ) : GameComponent ? (
                 <div className="bg-white rounded-2xl border border-[#E5E7EB] overflow-hidden shadow-[0px_8px_30px_rgba(0,0,0,.08)]">
                   <div className={`bg-gradient-to-r ${categoryGradient(game.category)} px-6 py-4 flex items-center gap-3`}>
                     <span className="text-2xl">{categoryEmoji(game.category)}</span>

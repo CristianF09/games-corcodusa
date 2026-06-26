@@ -1,6 +1,10 @@
+import { useState } from "react";
 import { Link } from "wouter";
+import { ContactDialog } from "@/components/contact-dialog";
 
 export function Footer() {
+  const [contactOpen, setContactOpen] = useState(false);
+
   return (
     <footer className="w-full bg-brand text-brand-foreground pt-14 pb-10 md:pt-16 md:pb-12">
       <div className="max-w-[1152px] mx-auto px-10">
@@ -32,7 +36,13 @@ export function Footer() {
             <h3 className="text-sm font-semibold text-white/50 uppercase tracking-wider">Legal</h3>
             <Link href="#" className="text-sm text-white/80 hover:text-white transition-colors">Termeni și Condiții</Link>
             <Link href="#" className="text-sm text-white/80 hover:text-white transition-colors">Confidențialitate</Link>
-            <Link href="#" className="text-sm text-white/80 hover:text-white transition-colors">Contact</Link>
+            <button
+              type="button"
+              onClick={() => setContactOpen(true)}
+              className="text-left text-sm text-white/80 hover:text-white transition-colors"
+            >
+              Contact
+            </button>
           </div>
         </div>
 
@@ -40,6 +50,8 @@ export function Footer() {
           &copy; {new Date().getFullYear()} Corcodușa.ro. Toate drepturile rezervate.
         </div>
       </div>
+
+      <ContactDialog open={contactOpen} onOpenChange={setContactOpen} />
     </footer>
   );
 }
