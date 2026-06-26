@@ -5,7 +5,7 @@ opened once at startup, safe to import from anywhere.
 """
 
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
-from pymongo.errors import ConfigurationError
+from pymongo.errors import ConfigurationError, OperationFailure
 
 from app.config import DB_NAME, MONGODB_URI
 
@@ -52,7 +52,28 @@ async def connect_db() -> AsyncIOMotorDatabase:
     except ConfigurationError:
         _db = _client[DB_NAME]
 
-    await init_beanie(database=_db, document_models=[Game, User])
+    try:
+        await init_beanie(database=_db, document_models=[Game, User])
+    except OperationFailure as exc:
+        # Atlas M0 or restricted users may deny createIndex (code 8000).
+        # The indexes were already created by the Mongoose/Node backend on
+        # first deploy, so skipping auto-creation here is safe.
+        if exc.code == 8000 or "createIndex" in str(exc):
+            from app.logger import log_warn
+            log_warn(
+                "Atlas denied createIndex — starting without index sync "
+                "(indexes must already exist in the cluster). "
+                "Fix: grant 'readWrite' role on the corcodusa database in "
+                "Atlas → Database Access.",
+                code=exc.code,
+            )
+            await init_beanie(
+                database=_db,
+                document_models=[Game, User],
+                skip_index_creation=True,
+            )
+        else:
+            raise
     return _db
 
 
