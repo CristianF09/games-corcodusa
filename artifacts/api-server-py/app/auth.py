@@ -39,10 +39,13 @@ async def require_auth(request: Request) -> str:
             detail="Clerk is not configured (CLERK_SECRET_KEY missing)",
         )
 
-    request_state = _sdk.authenticate_request(
-        _to_httpx_request(request),
-        AuthenticateRequestOptions(),
-    )
+    try:
+        request_state = _sdk.authenticate_request(
+            _to_httpx_request(request),
+            AuthenticateRequestOptions(),
+        )
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
 
     if not request_state.is_signed_in or not request_state.payload:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")

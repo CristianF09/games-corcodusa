@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth, useClerk } from "@clerk/react";
 import { Game } from "@workspace/api-client-react";
@@ -12,12 +13,11 @@ export function GameCard({ game }: GameCardProps) {
   const { isSignedIn } = useAuth();
   const { openSignIn } = useClerk();
   const style = gameTileStyle(game.id);
+  const [imgFailed, setImgFailed] = useState(false);
 
   function handlePlay(e: React.MouseEvent) {
     e.stopPropagation();
     if (!isSignedIn) {
-      // New sign-ups go to /pricing to pick a plan (7-day free / monthly / annual).
-      // Returning sign-ins go straight to the game; game-detail handles the subscription gate.
       openSignIn({
         forceRedirectUrl: `/games/${game.id}`,
         signUpForceRedirectUrl: "/pricing",
@@ -29,7 +29,7 @@ export function GameCard({ game }: GameCardProps) {
 
   return (
     <div
-      className={`group relative bg-gradient-to-b ${style.gradient} rounded-3xl overflow-hidden cursor-pointer flex flex-col h-full min-h-[240px] transition-all duration-300 shadow-[0px_8px_25px_-4px_rgba(0,0,0,.35)] hover:shadow-[0px_20px_45px_-8px_rgba(0,0,0,.45)] hover:-translate-y-2`}
+      className={`group relative bg-gradient-to-b ${style.gradient} rounded-3xl overflow-hidden cursor-pointer flex flex-col h-full min-h-[260px] transition-all duration-300 shadow-[0px_8px_25px_-4px_rgba(0,0,0,.35)] hover:shadow-[0px_20px_45px_-8px_rgba(0,0,0,.45)] hover:-translate-y-2`}
       role="button"
       tabIndex={0}
       onClick={handlePlay}
@@ -59,16 +59,17 @@ export function GameCard({ game }: GameCardProps) {
         </span>
       </div>
 
-      {/* ── Short category label (top center) ── */}
-      <div className="relative px-4 pt-2 pb-0 text-center z-10">
-        <span className="text-lg font-black text-white tracking-widest drop-shadow-[0_2px_6px_rgba(0,0,0,.40)]">
-          {style.label}
-        </span>
-      </div>
-
-      {/* ── Main visual (center) ── */}
-      <div className="relative flex-1 flex items-center justify-center py-2 z-10">
-        {style.isTextVisual ? (
+      {/* ── Game image (center) ── */}
+      <div className="relative flex-1 flex items-center justify-center py-2 z-10 px-4">
+        {style.imagePath && !imgFailed ? (
+          <img
+            src={style.imagePath}
+            alt={game.title}
+            className="h-[96px] w-[96px] object-contain drop-shadow-[0_6px_16px_rgba(0,0,0,.40)] transition-transform duration-300 group-hover:scale-110 select-none rounded-xl"
+            loading="lazy"
+            onError={() => setImgFailed(true)}
+          />
+        ) : style.isTextVisual ? (
           <span className="text-[2.6rem] leading-none font-black text-white tracking-wide drop-shadow-[0_4px_12px_rgba(0,0,0,.35)] transition-transform duration-300 group-hover:scale-110 select-none">
             {style.visual}
           </span>
@@ -79,8 +80,15 @@ export function GameCard({ game }: GameCardProps) {
         )}
       </div>
 
-      {/* ── "Joacă" button — always visible, glows brighter on hover ── */}
-      <div className="relative px-4 pb-4 z-10">
+      {/* ── Game title ── */}
+      <div className="relative px-3 pb-1 z-10 text-center">
+        <p className="text-white font-black text-xs leading-tight line-clamp-2 drop-shadow-[0_1px_3px_rgba(0,0,0,.40)]">
+          {game.title}
+        </p>
+      </div>
+
+      {/* ── "Joacă" button ── */}
+      <div className="relative px-4 pb-4 pt-2 z-10">
         <button
           type="button"
           onClick={handlePlay}

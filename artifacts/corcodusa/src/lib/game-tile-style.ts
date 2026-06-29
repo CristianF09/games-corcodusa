@@ -11,9 +11,10 @@
 export interface GameTileStyle {
   gradient: string;       // tailwind "from-x to-y" gradient classes
   label: string;          // short ALL-CAPS label shown at top of tile
-  visual: string;         // main content: equation, letters, shapes, or emoji
-  isTextVisual: boolean;  // true = render as big bold text; false = big emoji
+  visual: string;         // fallback emoji / text if image fails
+  isTextVisual: boolean;  // true = render visual as big bold text; false = emoji
   tagline: string;        // short subtitle (age / category hint)
+  imagePath: string;      // static path under /games/ (served from public/)
 }
 
 export const GAME_TILE_STYLES: Record<number, GameTileStyle> = {
@@ -24,6 +25,7 @@ export const GAME_TILE_STYLES: Record<number, GameTileStyle> = {
     visual: "1 2 3",
     isTextVisual: true,
     tagline: "Numără până la 20",
+    imagePath: "/games/game-matematica-1.png",
   },
   // 2 → GameAdunare: addition, subtraction, multiplication
   2: {
@@ -32,6 +34,7 @@ export const GAME_TILE_STYLES: Record<number, GameTileStyle> = {
     visual: "2+3=5",
     isTextVisual: true,
     tagline: "Adunări și scăderi",
+    imagePath: "/games/game-matematica-2.png",
   },
   // 3 → GameAlfabet: letters & sounds
   3: {
@@ -40,6 +43,7 @@ export const GAME_TILE_STYLES: Record<number, GameTileStyle> = {
     visual: "A B C",
     isTextVisual: true,
     tagline: "Literele alfabetului",
+    imagePath: "/games/game-litere-1.png",
   },
   // 4 → GameDinozauri: dinosaur exploration
   4: {
@@ -48,6 +52,7 @@ export const GAME_TILE_STYLES: Record<number, GameTileStyle> = {
     visual: "🦕",
     isTextVisual: false,
     tagline: "Lumea dinozaurilor",
+    imagePath: "/games/game-natura-1.png",
   },
   // 5 → GameForme: shapes + color mixing
   5: {
@@ -56,6 +61,7 @@ export const GAME_TILE_STYLES: Record<number, GameTileStyle> = {
     visual: "◯ □ △",
     isTextVisual: true,
     tagline: "Forme și culori",
+    imagePath: "/games/game-culori-1.png",
   },
   // 6 → GameAnimale: animal sounds & habitats
   6: {
@@ -64,6 +70,7 @@ export const GAME_TILE_STYLES: Record<number, GameTileStyle> = {
     visual: "🐾",
     isTextVisual: false,
     tagline: "Sunete și habitate",
+    imagePath: "/games/game-natura-1.png",
   },
   // 7 → GameMuzica: rhythm & instrument sequences
   7: {
@@ -72,6 +79,7 @@ export const GAME_TILE_STYLES: Record<number, GameTileStyle> = {
     visual: "🎵",
     isTextVisual: false,
     tagline: "Ritmuri muzicale",
+    imagePath: "/games/game-muzica-1.png",
   },
   // 8 → GameMemorie: classic matching pairs
   8: {
@@ -80,6 +88,7 @@ export const GAME_TILE_STYLES: Record<number, GameTileStyle> = {
     visual: "🧠",
     isTextVisual: false,
     tagline: "Găsește perechile",
+    imagePath: "/games/game-memorie-1.png",
   },
   // 9 → GameDesen: free drawing & coloring canvas
   9: {
@@ -88,6 +97,7 @@ export const GAME_TILE_STYLES: Record<number, GameTileStyle> = {
     visual: "🎨",
     isTextVisual: false,
     tagline: "Desenează liber",
+    imagePath: "/games/game-creativitate-1.png",
   },
   // 10 → GamePuzzle: logic & matching puzzles
   10: {
@@ -96,6 +106,7 @@ export const GAME_TILE_STYLES: Record<number, GameTileStyle> = {
     visual: "🧩",
     isTextVisual: false,
     tagline: "Rezolvă & asociază",
+    imagePath: "/games/game-logica-1.png",
   },
 };
 
@@ -105,6 +116,7 @@ export const DEFAULT_TILE_STYLE: GameTileStyle = {
   visual: "🎮",
   isTextVisual: false,
   tagline: "Joacă și învață",
+  imagePath: "",
 };
 
 export function gameTileStyle(gameId: number | undefined): GameTileStyle {

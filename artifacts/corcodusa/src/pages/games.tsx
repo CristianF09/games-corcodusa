@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useListGames, useListGameCategories } from "@workspace/api-client-react";
+import { STATIC_GAMES } from "@/lib/static-games";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { GameCard } from "@/components/game-card";
@@ -11,11 +12,17 @@ export default function Games() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const { data: categories, isLoading: isLoadingCategories } = useListGameCategories();
-  const { data: games, isLoading: isLoadingGames } = useListGames({
+  const { data: apiGames, isLoading: isLoadingGames } = useListGames({
     category: activeCategory,
   });
+  // Fall back to static games when API is unreachable or returns empty (unseeded DB)
+  const baseGames = (apiGames && apiGames.length > 0)
+    ? apiGames
+    : (activeCategory
+        ? STATIC_GAMES.filter((g) => g.category === activeCategory)
+        : STATIC_GAMES);
 
-  const filteredGames = games?.filter(
+  const filteredGames = baseGames.filter(
     (g) =>
       !searchQuery ||
       g.title.toLowerCase().includes(searchQuery.toLowerCase()) ||

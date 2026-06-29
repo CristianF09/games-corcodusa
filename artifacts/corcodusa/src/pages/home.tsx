@@ -6,6 +6,7 @@ import {
   useCreateCheckoutSession,
 } from "@workspace/api-client-react";
 import { GameCard } from "@/components/game-card";
+import { STATIC_GAMES } from "@/lib/static-games";
 import { Footer } from "@/components/layout/footer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CheckCircle2 } from "lucide-react";
@@ -251,7 +252,10 @@ const FAQ_ITEMS = [
 /* ─────────────────────────────────────────────────────────────────────────── */
 
 export default function Home() {
-  const { data: allGames, isLoading: isLoadingGames } = useListGames({});
+  const { data: apiGames } = useListGames({});
+  // Fall back to static games when API is unreachable or returns empty (unseeded DB).
+  // `?? STATIC_GAMES` won't work — [] is not null/undefined.
+  const allGames = (apiGames && apiGames.length > 0) ? apiGames : STATIC_GAMES;
   const { isSignedIn } = useAuth();
   const { openSignIn } = useClerk();
 
@@ -284,18 +288,18 @@ export default function Home() {
 
         <div className="relative z-10 flex flex-col items-center gap-5 max-w-3xl mx-auto">
 
-          {/* Logo character */}
+          {/* Hero character */}
           <img
-            src="/logo-icon2.png"
+            src="/CorcodusaPLay-Photoroom.png"
             alt="Corcodușa"
-            className="h-52 w-52 md:h-64 md:w-64 object-contain drop-shadow-[0_12px_40px_rgba(0,0,0,.40)]"
+            className="h-56 w-56 md:h-72 md:w-72 object-contain drop-shadow-[0_12px_40px_rgba(0,0,0,.40)]"
           />
 
-          {/* Title logo */}
+          {/* Title logo — H2 size, directly under character */}
           <img
             src="/title.logo.games.corcodusa.ro.png"
             alt="games.corcodusa.ro"
-            className="h-10 md:h-12 object-contain brightness-0 invert opacity-90"
+            className="h-8 md:h-9 object-contain brightness-0 invert opacity-85 -mt-2"
           />
 
           {/* Main heading */}
@@ -377,14 +381,10 @@ export default function Home() {
 
           {/* Grid — 2 cols mobile / 3 tablet / 5 desktop = 2 rows for all 10 */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-5">
-            {isLoadingGames
-              ? Array.from({ length: 10 }).map((_, i) => (
-                  <Skeleton key={i} className="h-[240px] rounded-3xl bg-white/10" />
-                ))
-              : allGames
-                  ?.slice()
-                  .sort((a, b) => a.id - b.id)
-                  .map((game) => <GameCard key={game.id} game={game} />)}
+            {allGames
+              .slice()
+              .sort((a, b) => a.id - b.id)
+              .map((game) => <GameCard key={game.id} game={game} />)}
           </div>
         </div>
       </section>

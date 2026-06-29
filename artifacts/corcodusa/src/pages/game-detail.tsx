@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useParams, Link } from "wouter";
 import { useAuth, useClerk } from "@clerk/react";
 import { useGetGame, useGetUserSubscription } from "@workspace/api-client-react";
+import { STATIC_GAMES } from "@/lib/static-games";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,12 +18,14 @@ export default function GameDetail() {
   const { isLoaded: isAuthLoaded, isSignedIn } = useAuth();
   const { openSignIn } = useClerk();
 
-  const { data: game, isLoading } = useGetGame(gameId, {
+  const { data: apiGame, isLoading } = useGetGame(gameId, {
     query: {
       enabled: !!gameId,
       queryKey: getGetGameQueryKey(gameId),
     },
   });
+  // Use static fallback when API is unreachable
+  const game = apiGame ?? STATIC_GAMES.find((g) => g.id === gameId);
 
   const { data: subscription, isLoading: isLoadingSub } = useGetUserSubscription({
     query: { enabled: !!isSignedIn },
@@ -36,7 +39,9 @@ export default function GameDetail() {
     }
   }, [isAuthLoaded, isSignedIn, gameId, openSignIn]);
 
-  const hasAccess = !!subscription?.isActive || (subscription?.trialDaysLeft ?? 0) > 0;
+  // VITE_BYPASS_SUBSCRIPTION=true bypasses Stripe gate in dev/test environments
+  const bypassSubscription = import.meta.env.VITE_BYPASS_SUBSCRIPTION === "true";
+  const hasAccess = bypassSubscription || !!subscription?.isActive || (subscription?.trialDaysLeft ?? 0) > 0;
   const GameComponent = gameId ? GAME_COMPONENTS[gameId] : null;
 
   return (
@@ -93,7 +98,7 @@ export default function GameDetail() {
               <h3 className="text-xl font-black text-[#1F2937] mb-2">Conectează-te pentru a juca</h3>
               <p className="text-base text-muted-foreground">Finalizează autentificarea în fereastra apărută.</p>
             </div>
-          ) : isLoading || isLoadingSub ? (
+          ) : (isLoading && !game) || isLoadingSub ? (
             <div className="space-y-6">
               <Skeleton className="h-5 w-2/3 rounded-lg" />
               <Skeleton className="h-[500px] w-full rounded-2xl" />

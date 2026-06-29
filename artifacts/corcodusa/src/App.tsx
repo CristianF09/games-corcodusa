@@ -5,7 +5,8 @@ import {
   Show,
   useUser,
   useAuth,
-  useClerk
+  useClerk,
+  useSession,
 } from "@clerk/react";
 import { publishableKeyFromHost } from "@clerk/react/internal";
 import { shadcn } from "@clerk/themes";
@@ -14,7 +15,7 @@ import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/reac
 import { useEffect, useRef } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useUpsertUser } from "@workspace/api-client-react";
+import { useUpsertUser, setAuthTokenGetter } from "@workspace/api-client-react";
 
 import Home from "@/pages/home";
 import Games from "@/pages/games";
@@ -188,6 +189,22 @@ function UserSync() {
   return null;
 }
 
+// Wire the Clerk session JWT as Bearer token on every API call so the
+// FastAPI backend can verify the user identity via require_auth.
+function ClerkAuthTokenSync() {
+  const { session } = useSession();
+
+  useEffect(() => {
+    if (session) {
+      setAuthTokenGetter(() => session.getToken());
+    } else {
+      setAuthTokenGetter(null);
+    }
+  }, [session]);
+
+  return null;
+}
+
 function HomeRedirect() {
   // Single-page layout: everyone sees the home page.
   // Signed-in users play games directly from the grid on the home page.
@@ -227,6 +244,7 @@ function ClerkProviderWithRoutes() {
     >
       <QueryClientProvider client={queryClient}>
         <ClerkQueryClientCacheInvalidator />
+        <ClerkAuthTokenSync />
         <UserSync />
         <Switch>
           <Route path="/" component={HomeRedirect} />

@@ -55,9 +55,8 @@ async def connect_db() -> AsyncIOMotorDatabase:
     try:
         await init_beanie(database=_db, document_models=[Game, User])
     except OperationFailure as exc:
-        # Atlas M0 or restricted users may deny createIndex (code 8000).
-        # The indexes were already created by the Mongoose/Node backend on
-        # first deploy, so skipping auto-creation here is safe.
+        # Atlas M0 / restricted users deny createIndex (code 8000).
+        # Indexes already exist from first deploy — safe to skip re-creation.
         if exc.code == 8000 or "createIndex" in str(exc):
             from app.logger import log_warn
             log_warn(
@@ -67,11 +66,19 @@ async def connect_db() -> AsyncIOMotorDatabase:
                 "Atlas → Database Access.",
                 code=exc.code,
             )
-            await init_beanie(
-                database=_db,
-                document_models=[Game, User],
-                skip_index_creation=True,
-            )
+            # beanie 2.1.0 has no skip_index_creation param, so patch the
+            # Initializer class to skip index creation for this one call.
+            from beanie.odm.utils.init import Initializer
+
+            async def _noop_init_indexes(self, cls, allow_index_dropping=False):
+                pass
+
+            old_init_indexes = Initializer.init_indexes
+            Initializer.init_indexes = _noop_init_indexes  # type: ignore[method-assign]
+            try:
+                await init_beanie(database=_db, document_models=[Game, User])
+            finally:
+                Initializer.init_indexes = old_init_indexes  # type: ignore[method-assign]
         else:
             raise
     return _db
