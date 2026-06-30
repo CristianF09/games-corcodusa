@@ -34,14 +34,14 @@ function PricingSection() {
     setLocation("/games/1");
   };
 
-  const handleSubscribe = (priceId: string | undefined) => {
+  const handleSubscribe = (priceId: string | undefined, interval: string | undefined) => {
     if (!priceId) return;
     if (!isSignedIn) {
       openSignIn({ forceRedirectUrl: "/pricing", signUpForceRedirectUrl: "/pricing" });
       return;
     }
     createCheckout.mutate(
-      { data: { priceId, trialDays: 7 } },
+      { data: { priceId, interval } },
       { onSuccess: (d) => { window.location.href = d.url; } },
     );
   };
@@ -146,7 +146,7 @@ function PricingSection() {
               </ul>
               <button
                 type="button"
-                onClick={() => handleSubscribe(annual?.priceId)}
+                onClick={() => handleSubscribe(annual?.priceId, annual?.interval ?? "year")}
                 disabled={createCheckout.isPending || (!isLoading && !annual)}
                 className="w-full h-11 rounded-xl bg-gradient-to-r from-[#FF6B00] to-[#FF9A3C] text-white font-black text-sm shadow-[0px_8px_25px_rgba(255,107,0,.45)] hover:shadow-[0px_14px_35px_rgba(255,107,0,.60)] transition-all disabled:opacity-60"
               >
@@ -186,7 +186,7 @@ function PricingSection() {
               </ul>
               <button
                 type="button"
-                onClick={() => handleSubscribe(monthly?.priceId)}
+                onClick={() => handleSubscribe(monthly?.priceId, monthly?.interval ?? "month")}
                 disabled={createCheckout.isPending || (!isLoading && !monthly)}
                 className="w-full h-11 rounded-xl bg-gradient-to-r from-[#0A4D68] to-[#2C5F7A] text-white font-black text-sm shadow-[0px_6px_20px_rgba(10,77,104,.35)] hover:shadow-[0px_10px_28px_rgba(10,77,104,.50)] transition-all disabled:opacity-60"
               >
@@ -418,4 +418,4 @@ export default function Home() {
     </div>
   );
 }
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  

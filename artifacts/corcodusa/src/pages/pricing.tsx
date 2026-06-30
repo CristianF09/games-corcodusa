@@ -16,14 +16,14 @@ export default function Pricing() {
   const monthlyProduct = products?.find((p) => p.interval === "month");
   const annualProduct = products?.find((p) => p.interval === "year");
 
-  const handleSubscribe = (priceId: string | undefined) => {
+  const handleSubscribe = (priceId: string | undefined, interval: string | undefined) => {
     if (!priceId) return;
     if (!isSignedIn) {
       openSignIn({ forceRedirectUrl: "/pricing", signUpForceRedirectUrl: "/pricing" });
       return;
     }
     createCheckout.mutate(
-      { data: { priceId, trialDays: 7 } },
+      { data: { priceId, interval } },
       { onSuccess: (data) => { window.location.href = data.url; } },
     );
   };
@@ -161,7 +161,7 @@ export default function Pricing() {
                   <button
                     type="button"
                     className="w-full h-12 rounded-xl bg-gradient-to-r from-[#FF6B00] to-[#FF9A3C] text-white font-black text-sm shadow-[0px_8px_25px_rgba(255,107,0,.45)] hover:shadow-[0px_14px_35px_rgba(255,107,0,.60)] hover:from-[#E55A00] hover:to-[#E58A2C] transition-all duration-300 disabled:opacity-60"
-                    onClick={() => handleSubscribe(annualProduct?.priceId)}
+                    onClick={() => handleSubscribe(annualProduct?.priceId, annualProduct?.interval ?? "year")}
                     disabled={createCheckout.isPending || (!isLoading && !annualProduct)}
                   >
                     {createCheckout.isPending ? "Se procesează..." : "Abonează-te anual →"}
@@ -210,7 +210,7 @@ export default function Pricing() {
                   <button
                     type="button"
                     className="w-full h-12 rounded-xl bg-gradient-to-r from-[#0A4D68] to-[#2C5F7A] text-white font-black text-sm shadow-[0px_6px_20px_rgba(10,77,104,.35)] hover:shadow-[0px_10px_28px_rgba(10,77,104,.50)] hover:from-[#083D52] hover:to-[#255570] transition-all duration-300 disabled:opacity-60"
-                    onClick={() => handleSubscribe(monthlyProduct?.priceId)}
+                    onClick={() => handleSubscribe(monthlyProduct?.priceId, monthlyProduct?.interval ?? "month")}
                     disabled={createCheckout.isPending || (!isLoading && !monthlyProduct)}
                   >
                     {createCheckout.isPending ? "Se procesează..." : "Abonează-te lunar →"}
@@ -243,4 +243,4 @@ export default function Pricing() {
     </div>
   );
 }
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   

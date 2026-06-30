@@ -92,13 +92,24 @@ async def get_subscription(clerk_id: str = Depends(require_auth)):
             raise HTTPException(status_code=404, detail="User not found")
 
         trial_days_left = compute_trial_days_left(user)
-        is_active = user.subscription_tier != "free" or trial_days_left > 0
+
+        # Paid access is a one-time purchase (see app/webhooks.py), not a
+        # recurring Stripe Subscription — it's "active" only while
+        # subscription_expires_at hasn't passed yet, there's no ongoing
+        # billing status to ask Stripe for.
+        expires_at = user.subscription_expires_at
+        if expires_at and expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        has_paid_access = (
+            user.subscription_tier != "free" and expires_at is not None and expires_at > datetime.now(timezone.utc)
+        )
+        is_active = has_paid_access or trial_days_left > 0
 
         return {
-            "tier": user.subscription_tier,
+            "tier": user.subscription_tier if has_paid_access else "free",
             "isActive": is_active,
             "trialDaysLeft": trial_days_left,
-            "expiresAt": None,
+            "expiresAt": expires_at.isoformat() if has_paid_access and expires_at else None,
             "stripePriceId": None,
         }
     except HTTPException:

@@ -194,7 +194,7 @@ export const ListProductsResponse = zod.array(ListProductsResponseItem)
  */
 export const CreateCheckoutSessionBody = zod.object({
   "priceId": zod.string(),
-  "trialDays": zod.number().nullish()
+  "interval": zod.string().nullish()
 })
 
 export const CreateCheckoutSessionResponse = zod.object({
@@ -219,5 +219,4 @@ export const GetPlatformStatsResponse = zod.object({
   "totalUsers": zod.number(),
   "newGamesThisMonth": zod.number()
 })
-
 

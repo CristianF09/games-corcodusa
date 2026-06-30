@@ -9,5 +9,5 @@
 export interface CheckoutInput {
   priceId: string;
   /** @nullable */
-  trialDays?: number | null;
+  interval?: string | null;
 }
