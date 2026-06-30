@@ -43,8 +43,6 @@ export function Navbar() {
 
         {/* Auth actions */}
         <div className="flex items-center gap-3">
-          {/* Auth buttons — disabled for testing */}
-          {/*
           <Show when="signed-out">
             <Link href="/sign-in">
               <Button variant="ghost" size="default">Autentificare</Button>
@@ -57,9 +55,8 @@ export function Navbar() {
             <Link href="/dashboard" className="text-sm font-medium text-foreground hover:text-primary transition-colors hidden sm:block">
               Contul meu
             </Link>
-            <UserButton afterSignOutUrl="/" appearance={{ elements: { avatarBox: "h-9 w-9" } }} />
+            <UserButton appearance={{ elements: { avatarBox: "h-9 w-9" } }} />
           </Show>
-          */}
           {/* Mobile fallback — games shortcut */}
           <Link href="/games" className="md:hidden text-sm font-semibold px-4 py-2 rounded-lg bg-primary/10 text-primary">
             🎮 Jocuri

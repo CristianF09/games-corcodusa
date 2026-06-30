@@ -1,7 +1,7 @@
 import { Suspense, useEffect } from "react";
 import { useParams, Link } from "wouter";
 import { useAuth, useClerk } from "@clerk/react";
-import { useGetGame, useGetUserSubscription } from "@workspace/api-client-react";
+import { useGetGame, useGetUserSubscription, getGetUserSubscriptionQueryKey } from "@workspace/api-client-react";
 import { STATIC_GAMES } from "@/lib/static-games";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
@@ -30,7 +30,7 @@ export default function GameDetail() {
   // never show a loading skeleton just for the subscription query.
   const bypassSubscription = import.meta.env.VITE_BYPASS_SUBSCRIPTION === "true";
   const { data: subscription, isLoading: isLoadingSub } = useGetUserSubscription({
-    query: { enabled: !!isSignedIn && !bypassSubscription },
+    query: { enabled: !!isSignedIn && !bypassSubscription, queryKey: getGetUserSubscriptionQueryKey() },
   });
   const hasAccess =
     bypassSubscription ||

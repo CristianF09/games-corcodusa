@@ -27,7 +27,7 @@ Platformă de jocuri educaționale pentru copii români cu vârste între 3 și 
 - API: `artifacts/api-server-py` — FastAPI + Beanie/Motor, deployed to Render
 - DB: MongoDB + Beanie/Motor (Mongoose for `lib/db` seed scripts)
 - Validation: Zod (`zod/v4`)
-- Auth: Clerk (whitelabel proxy at `/clerk`) — currently **disabled** in the frontend's `ProtectedRoute` for testing; all routes are open
+- Auth: Clerk (whitelabel proxy at `/clerk`) — `ProtectedRoute` re-enabled; routes require sign-in
 - Payments: Stripe (graceful fallback when not configured; webhook signature verification works, but event handling — e.g. `checkout.session.completed` — is still a TODO)
 - API codegen: Orval (from OpenAPI spec at `lib/api-spec/openapi.yaml`)
 - Build: Vite (frontend); see `artifacts/api-server-py/README.md` for the Python API

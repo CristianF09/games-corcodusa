@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type ReactElement } from "react";
 import { playCorrect, playWrong, playCelebrate, playClick } from "@/lib/sfx";
 import { sampleMaskPoints, markCoverage, getCanvasPos, InkTracker, TRACE_COVERAGE_GOAL, TRACE_CANVAS_SIZE, type Pt } from "@/lib/tracing";
 
@@ -6,7 +6,7 @@ import { sampleMaskPoints, markCoverage, getCanvasPos, InkTracker, TRACE_COVERAG
 type ShapeName = "cerc" | "pătrat" | "triunghi" | "stea" | "dreptunghi" | "romb" | "pentagon" | "hexagon";
 type ColorName = "roșu" | "albastru" | "galben" | "verde" | "portocaliu" | "violet" | "roz" | "turcoaz";
 
-const SHAPE_SVG: Record<ShapeName, (fill: string, stroke?: string) => JSX.Element> = {
+const SHAPE_SVG: Record<ShapeName, (fill: string, stroke?: string) => ReactElement> = {
   cerc:        (f, s) => <svg viewBox="0 0 60 60" width="52" height="52"><circle cx="30" cy="30" r="27" fill={f} stroke={s ?? "none"} strokeWidth="3"/></svg>,
   pătrat:      (f, s) => <svg viewBox="0 0 60 60" width="52" height="52"><rect x="6" y="6" width="48" height="48" rx="5" fill={f} stroke={s ?? "none"} strokeWidth="3"/></svg>,
   triunghi:    (f, s) => <svg viewBox="0 0 60 60" width="52" height="52"><polygon points="30,4 57,56 3,56" fill={f} stroke={s ?? "none"} strokeWidth="3"/></svg>,

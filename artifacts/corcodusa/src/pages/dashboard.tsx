@@ -17,7 +17,7 @@ export default function Dashboard() {
 
   const handleManageSubscription = () => {
     createPortal.mutate(
-      {},
+      undefined,
       { onSuccess: (data) => { window.location.href = data.url; } },
     );
   };
