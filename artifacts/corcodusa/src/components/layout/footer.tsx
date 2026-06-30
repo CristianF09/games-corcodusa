@@ -1,10 +1,10 @@
 import { useState } from "react";
+import { Link } from "wouter";
 import { ContactDialog } from "@/components/contact-dialog";
 import { AboutDialog } from "@/components/about-dialog";
 import { TermsDialog } from "@/components/terms-dialog";
-import { PrivacyDialog } from "@/components/privacy-dialog";
 
-type ModalKey = "contact" | "about" | "terms" | "privacy" | null;
+type ModalKey = "contact" | "about" | "terms" | null;
 
 export function Footer() {
   const [modal, setModal] = useState<ModalKey>(null);
@@ -48,9 +48,12 @@ export function Footer() {
             <button type="button" onClick={open("terms")} className="text-left text-sm text-white/70 hover:text-white transition-colors">
               Termeni și Condiții
             </button>
-            <button type="button" onClick={open("privacy")} className="text-left text-sm text-white/70 hover:text-white transition-colors">
-              Confidențialitate
-            </button>
+            <Link href="/metode-de-plata" className="text-sm text-white/70 hover:text-white transition-colors">
+              Metode de Plată
+            </Link>
+            <Link href="/politica-de-confidentialitate" className="text-sm text-white/70 hover:text-white transition-colors">
+              Politica de Confidențialitate
+            </Link>
             <button type="button" onClick={open("contact")} className="text-left text-sm text-white/70 hover:text-white transition-colors">
               Contact
             </button>
@@ -66,7 +69,6 @@ export function Footer() {
       <ContactDialog open={modal === "contact"} onOpenChange={(v) => !v && close()} />
       <AboutDialog open={modal === "about"} onOpenChange={(v) => !v && close()} />
       <TermsDialog open={modal === "terms"} onOpenChange={(v) => !v && close()} />
-      <PrivacyDialog open={modal === "privacy"} onOpenChange={(v) => !v && close()} />
     </footer>
   );
 }

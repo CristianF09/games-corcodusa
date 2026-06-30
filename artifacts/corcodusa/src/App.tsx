@@ -22,6 +22,8 @@ import Games from "@/pages/games";
 import GameDetail from "@/pages/game-detail";
 import Dashboard from "@/pages/dashboard";
 import Pricing from "@/pages/pricing";
+import MetodeDePlata from "@/pages/metode-de-plata";
+import PoliticaDeConfidentialitate from "@/pages/politica-de-confidentialitate";
 import NotFound from "@/pages/not-found";
 import { roLocalization } from "@/lib/clerk-ro";
 
@@ -247,6 +249,8 @@ function ClerkProviderWithRoutes() {
           <Route path="/sign-in/*?" component={SignInPage} />
           <Route path="/sign-up/*?" component={SignUpPage} />
           <Route path="/pricing" component={Pricing} />
+          <Route path="/metode-de-plata" component={MetodeDePlata} />
+          <Route path="/politica-de-confidentialitate" component={PoliticaDeConfidentialitate} />
 
           <Route path="/games">
             {() => <ProtectedRoute component={Games} />}
