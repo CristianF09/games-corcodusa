@@ -41,7 +41,6 @@ export default function Pricing() {
     "Fără reclame, niciodată",
     "Jocuri noi adăugate lunar",
     "Funcționează pe orice dispozitiv",
-    "Poți anula oricând cu un click",
   ];
 
   return (
@@ -55,17 +54,13 @@ export default function Pricing() {
           <div className="pointer-events-none absolute -bottom-16 -left-16 h-56 w-56 rounded-full bg-[#FFD700]/10 blur-3xl" />
 
           <div className="relative">
-            <span className="inline-flex items-center gap-2 bg-white/15 text-white text-sm font-bold px-4 py-1.5 rounded-xl mb-6">
-              <span className="h-2 w-2 rounded-full bg-[#22C55E] animate-pulse" />
-              7 zile gratuite · Fără card bancar
-            </span>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white mb-4 leading-tight">
               Alege planul{" "}
               <span className="text-[#FFD700]">potrivit</span>{" "}
               pentru familia ta
             </h1>
             <p className="text-white/75 text-xl max-w-2xl mx-auto">
-              Începe gratuit 7 zile, fără nicio obligație. Anulezi oricând.
+              Începe gratuit 7 zile, fără nicio obligație.
             </p>
           </div>
         </div>
@@ -171,9 +166,6 @@ export default function Pricing() {
                   >
                     {createCheckout.isPending ? "Se procesează..." : "Abonează-te anual →"}
                   </button>
-                  <p className="text-center text-xs text-muted-foreground mt-2">
-                    Card necesar · nu se taxează 7 zile
-                  </p>
                 </div>
               </div>
             </div>
@@ -182,7 +174,7 @@ export default function Pricing() {
             <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-[0px_8px_30px_rgba(0,0,0,.08)] flex flex-col overflow-hidden">
               <div className="bg-gradient-to-r from-[#0A4D68] to-[#2C5F7A] px-6 py-5">
                 <h2 className="text-xl font-black text-white">Abonament Lunar</h2>
-                <p className="text-white/70 text-sm mt-1">Flexibil, anulezi oricând.</p>
+                <p className="text-white/70 text-sm mt-1">Flexibil, fără angajament pe termen lung.</p>
               </div>
 
               <div className="p-6 flex-1 flex flex-col">
@@ -223,9 +215,6 @@ export default function Pricing() {
                   >
                     {createCheckout.isPending ? "Se procesează..." : "Abonează-te lunar →"}
                   </button>
-                  <p className="text-center text-xs text-muted-foreground mt-2">
-                    Card necesar · nu se taxează 7 zile
-                  </p>
                 </div>
               </div>
             </div>
@@ -238,8 +227,7 @@ export default function Pricing() {
               {[
                 { icon: "🛡️", text: "Fără reclame" },
                 { icon: "👶", text: "100% sigur pentru copii" },
-                { icon: "🔒", text: "Plată securizată Stripe" },
-                { icon: "✅", text: "Anulare cu un click" },
+                { icon: "🔒", text: "Plată securizată prin Stripe" },
               ].map((item) => (
                 <div key={item.text} className="flex items-center gap-2">
                   <span className="text-xl">{item.icon}</span>
@@ -255,3 +243,4 @@ export default function Pricing() {
     </div>
   );
 }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
