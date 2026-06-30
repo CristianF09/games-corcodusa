@@ -1,23 +1,16 @@
-import GameNumarare from "./GameNumarare";
-import GameAdunare from "./GameAdunare";
-import GameAlfabet from "./GameAlfabet";
-import GameDinozauri from "./GameDinozauri";
-import GameForme from "./GameForme";
-import GameAnimale from "./GameAnimale";
-import GameMuzica from "./GameMuzica";
-import GameMemorie from "./GameMemorie";
-import GameDesen from "./GameDesen";
-import GamePuzzle from "./GamePuzzle";
+import { lazy } from "react";
 
-export const GAME_COMPONENTS: Record<number, React.ComponentType> = {
-  1: GameNumarare,
-  2: GameAdunare,
-  3: GameAlfabet,
-  4: GameDinozauri,
-  5: GameForme,
-  6: GameAnimale,
-  7: GameMuzica,
-  8: GameMemorie,
-  9: GameDesen,
-  10: GamePuzzle,
+// Code-split every game so the main bundle stays small and each game chunk
+// downloads only on first visit. Suspense fallback is handled in game-detail.tsx.
+export const GAME_COMPONENTS: Record<number, ReturnType<typeof lazy>> = {
+  1:  lazy(() => import("./GameNumarare")),
+  2:  lazy(() => import("./GameAdunare")),
+  3:  lazy(() => import("./GameAlfabet")),
+  4:  lazy(() => import("./GameDinozauri")),
+  5:  lazy(() => import("./GameForme")),
+  6:  lazy(() => import("./GameAnimale")),
+  7:  lazy(() => import("./GameMuzica")),
+  8:  lazy(() => import("./GameMemorie")),
+  9:  lazy(() => import("./GameDesen")),
+  10: lazy(() => import("./GamePuzzle")),
 };

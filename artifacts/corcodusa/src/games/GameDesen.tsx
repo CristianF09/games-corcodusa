@@ -17,7 +17,7 @@ const COLORING_PAGES = [
   {
     name: "Soare și nori",
     draw: (ctx: CanvasRenderingContext2D) => {
-      ctx.fillStyle = "#fef9f0"; ctx.fillRect(0, 0, 600, 420);
+      ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, 600, 420);
       // Sun
       ctx.strokeStyle = "#333"; ctx.lineWidth = 3;
       ctx.beginPath(); ctx.arc(300, 130, 70, 0, Math.PI * 2); ctx.stroke();
@@ -51,7 +51,7 @@ const COLORING_PAGES = [
   {
     name: "Casă drăguță",
     draw: (ctx: CanvasRenderingContext2D) => {
-      ctx.fillStyle = "#fef9f0"; ctx.fillRect(0, 0, 600, 420);
+      ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, 600, 420);
       ctx.strokeStyle = "#333"; ctx.lineWidth = 3;
       // House body
       ctx.strokeRect(150, 200, 300, 200);
@@ -77,7 +77,7 @@ const COLORING_PAGES = [
   {
     name: "Pește în mare",
     draw: (ctx: CanvasRenderingContext2D) => {
-      ctx.fillStyle = "#fef9f0"; ctx.fillRect(0, 0, 600, 420);
+      ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, 600, 420);
       ctx.strokeStyle = "#333"; ctx.lineWidth = 3;
       // Waves
       for (let y = 30; y < 420; y += 60) {
@@ -104,7 +104,7 @@ const COLORING_PAGES = [
   {
     name: "Fluture",
     draw: (ctx: CanvasRenderingContext2D) => {
-      ctx.fillStyle = "#fef9f0"; ctx.fillRect(0, 0, 600, 420);
+      ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, 600, 420);
       ctx.strokeStyle = "#333"; ctx.lineWidth = 3;
       // Body
       ctx.beginPath(); ctx.ellipse(300, 210, 10, 70, 0, 0, Math.PI * 2); ctx.stroke();
@@ -127,7 +127,7 @@ const COLORING_PAGES = [
   {
     name: "Rachetă în spațiu",
     draw: (ctx: CanvasRenderingContext2D) => {
-      ctx.fillStyle = "#fef9f0"; ctx.fillRect(0, 0, 600, 420);
+      ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, 600, 420);
       ctx.strokeStyle = "#333"; ctx.lineWidth = 3;
       // Rocket body
       ctx.beginPath();
@@ -179,7 +179,7 @@ export default function GameDesen() {
   function initCanvas() {
     const c = canvasRef.current; if (!c) return;
     const ctx = c.getContext("2d")!;
-    ctx.fillStyle = "#fef9f0"; ctx.fillRect(0, 0, c.width, c.height);
+    ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, c.width, c.height);
   }
 
   useEffect(() => { initCanvas(); }, []);
@@ -211,7 +211,8 @@ export default function GameDesen() {
     saveHistory();
     const img = ctx.getImageData(0, 0, c.width, c.height);
     const d = img.data;
-    const px = Math.round(x), py = Math.round(y);
+    const px = Math.min(c.width - 1, Math.max(0, Math.round(x)));
+    const py = Math.min(c.height - 1, Math.max(0, Math.round(y)));
     const idx = (py * c.width + px) * 4;
     const tr = d[idx], tg = d[idx+1], tb = d[idx+2], ta = d[idx+3];
     const hex = fillColor.replace("#","");
@@ -252,7 +253,7 @@ export default function GameDesen() {
     const c = canvasRef.current!; const ctx = c.getContext("2d")!;
     const pos = getPos(e);
     if (tool === "eraser") {
-      ctx.fillStyle = "#fef9f0";
+      ctx.fillStyle = "#ffffff";
       ctx.beginPath(); ctx.arc(pos.x, pos.y, size * 2, 0, Math.PI * 2); ctx.fill();
     } else if (tool === "pen" && lastPos.current) {
       ctx.strokeStyle = color; ctx.lineWidth = size; ctx.lineCap = "round"; ctx.lineJoin = "round";
@@ -265,7 +266,7 @@ export default function GameDesen() {
     const c = canvasRef.current!; const ctx = c.getContext("2d")!;
     saveHistory();
     setColoringIdx(idx);
-    ctx.fillStyle = "#fef9f0"; ctx.fillRect(0, 0, c.width, c.height);
+    ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, c.width, c.height);
     COLORING_PAGES[idx].draw(ctx);
     playClick();
   }

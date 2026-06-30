@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { playCorrect, playWrong, playCelebrate, playClick } from "@/lib/sfx";
+import { sampleMaskPoints, markCoverage, getCanvasPos, InkTracker, TRACE_COVERAGE_GOAL, TRACE_CANVAS_SIZE, type Pt } from "@/lib/tracing";
 
 /* ─── Counting game data ──────────────────────────────────── */
 const ITEM_SETS = [
@@ -40,61 +41,36 @@ const NUM_COLORS = [
   "#a855f7","#fb923c","#4ade80","#38bdf8","#c084fc",
 ];
 
-const CANVAS_SIZE = 300;
-const BRUSH_RADIUS = 15;       // pixels — coverage detection radius
-const COVERAGE_GOAL = 0.52;    // 52 % of digit pixels must be covered
-const SAMPLE_STEP  = 3;        // sample template every 3 px
-
-type Pt = { x: number; y: number };
+const CANVAS_SIZE = TRACE_CANVAS_SIZE;
 
 /** Sample which canvas pixels belong to the digit outline. */
 function sampleDigitPoints(num: number): Pt[] {
-  const fontSize = num >= 10 ? 120 : 190;
-  const off = document.createElement("canvas");
-  off.width = CANVAS_SIZE; off.height = CANVAS_SIZE;
-  const ctx = off.getContext("2d")!;
-  ctx.fillStyle = "white";
-  ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-  ctx.font = `bold ${fontSize}px 'Arial Rounded MT Bold', Arial`;
-  ctx.textAlign = "center"; ctx.textBaseline = "middle";
-  ctx.fillStyle = "black";
-  ctx.fillText(String(num), CANVAS_SIZE / 2, CANVAS_SIZE / 2 + 8);
-
-  const { data } = ctx.getImageData(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-  const pts: Pt[] = [];
-  for (let y = 0; y < CANVAS_SIZE; y += SAMPLE_STEP) {
-    for (let x = 0; x < CANVAS_SIZE; x += SAMPLE_STEP) {
-      if (data[(y * CANVAS_SIZE + x) * 4] < 100) pts.push({ x, y });
-    }
-  }
-  return pts;
-}
-
-/** Squared distance from point P to line segment (A→B). */
-function distSq(p: Pt, a: Pt, b: Pt): number {
-  const dx = b.x - a.x, dy = b.y - a.y;
-  const len2 = dx * dx + dy * dy;
-  if (len2 < 0.001) return (p.x - a.x) ** 2 + (p.y - a.y) ** 2;
-  const t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / len2));
-  return (p.x - a.x - t * dx) ** 2 + (p.y - a.y - t * dy) ** 2;
+  const fontSize = num >= 10 ? 160 : 250;
+  return sampleMaskPoints((ctx, size) => {
+    ctx.font = `bold ${fontSize}px 'Arial Rounded MT Bold', Arial`;
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(String(num), size / 2, size / 2 + 8);
+  }, CANVAS_SIZE);
 }
 
 function NumberTracingCanvas({ num, onComplete }: { num: number; onComplete: () => void }) {
   const canvasRef  = useRef<HTMLCanvasElement>(null);
   const ptsRef     = useRef<Pt[]>([]);
   const coveredRef = useRef<Set<number>>(new Set());
+  const inkRef     = useRef(new InkTracker());
   const [coverage, setCoverage] = useState(0);
   const [done, setDone]         = useState(false);
   const [onTrack, setOnTrack]   = useState(false);
+  const [error, setError]       = useState(false);
   const drawing  = useRef(false);
   const lastPos  = useRef<Pt | null>(null);
   const color    = NUM_COLORS[(num - 1) % NUM_COLORS.length];
-  const fontSize = num >= 10 ? 120 : 190;
+  const fontSize = num >= 10 ? 160 : 250;
 
   const drawTemplate = useCallback(() => {
     const c = canvasRef.current!; const ctx = c.getContext("2d")!;
     ctx.clearRect(0, 0, c.width, c.height);
-    ctx.fillStyle = "#fef9f0"; ctx.fillRect(0, 0, c.width, c.height);
+    ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, c.width, c.height);
     ctx.font = `bold ${fontSize}px 'Arial Rounded MT Bold', Arial`;
     ctx.textAlign = "center"; ctx.textBaseline = "middle";
     // Filled ghost
@@ -113,52 +89,50 @@ function NumberTracingCanvas({ num, onComplete }: { num: number; onComplete: () 
   useEffect(() => {
     ptsRef.current     = sampleDigitPoints(num);
     coveredRef.current = new Set();
+    inkRef.current.reset();
     drawTemplate();
-    setCoverage(0); setDone(false); setOnTrack(false);
+    setCoverage(0); setDone(false); setOnTrack(false); setError(false);
     lastPos.current = null; drawing.current = false;
   }, [num, drawTemplate]);
 
   function getPos(e: React.MouseEvent | React.TouchEvent): Pt {
-    const c = canvasRef.current!; const r = c.getBoundingClientRect();
-    const s = c.width / r.width;
-    if ("touches" in e)
-      return { x: (e.touches[0].clientX - r.left) * s, y: (e.touches[0].clientY - r.top) * s };
-    return { x: (e.clientX - r.left) * s, y: (e.clientY - r.top) * s };
-  }
-
-  function markCoverage(from: Pt, to: Pt) {
-    const pts = ptsRef.current; const cov = coveredRef.current;
-    const R2  = BRUSH_RADIUS * BRUSH_RADIUS;
-    let nearDigit = false;
-    for (let i = 0; i < pts.length; i++) {
-      const d2 = distSq(pts[i], from, to);
-      if (d2 <= R2 * 4) nearDigit = true;   // within 2× radius → on-track feedback
-      if (d2 <= R2 && !cov.has(i)) cov.add(i);
-    }
-    const pct = pts.length ? cov.size / pts.length : 0;
-    return { pct, nearDigit };
+    return getCanvasPos(e, canvasRef.current!);
   }
 
   function startDraw(e: React.MouseEvent | React.TouchEvent) {
-    if (done) return; e.preventDefault();
+    if (done || error) return; e.preventDefault();
     drawing.current = true; lastPos.current = getPos(e);
   }
 
+  function failAndRetry() {
+    setError(true);
+    drawing.current = false; lastPos.current = null; setOnTrack(false);
+    setTimeout(() => {
+      drawTemplate();
+      coveredRef.current = new Set();
+      inkRef.current.reset();
+      setCoverage(0); setError(false);
+    }, 1300);
+  }
+
   function doDraw(e: React.MouseEvent | React.TouchEvent) {
-    if (!drawing.current || done) return; e.preventDefault();
+    if (!drawing.current || done || error) return; e.preventDefault();
     const c = canvasRef.current!; const ctx = c.getContext("2d")!;
     const pos = getPos(e);
     if (lastPos.current) {
-      ctx.strokeStyle = color; ctx.lineWidth = 26;
+      ctx.strokeStyle = color; ctx.lineWidth = 34;
       ctx.lineCap = "round"; ctx.lineJoin = "round";
       ctx.globalAlpha = 0.88;
       ctx.beginPath(); ctx.moveTo(lastPos.current.x, lastPos.current.y);
       ctx.lineTo(pos.x, pos.y); ctx.stroke(); ctx.globalAlpha = 1;
 
-      const { pct, nearDigit } = markCoverage(lastPos.current, pos);
-      setCoverage(pct); setOnTrack(nearDigit);
+      const { pct, onTrack: near, offTrack, segLen } = markCoverage(ptsRef.current, coveredRef.current, lastPos.current, pos);
+      setCoverage(pct); setOnTrack(near);
+      inkRef.current.add(segLen, offTrack);
 
-      if (pct >= COVERAGE_GOAL && !done) {
+      if (inkRef.current.isError() && !done) { failAndRetry(); return; }
+
+      if (pct >= TRACE_COVERAGE_GOAL && !done) {
         setDone(true);
         setTimeout(onComplete, 800);
       }
@@ -171,19 +145,21 @@ function NumberTracingCanvas({ num, onComplete }: { num: number; onComplete: () 
   function reset() {
     drawTemplate();
     coveredRef.current = new Set();
-    setCoverage(0); setDone(false); setOnTrack(false);
+    inkRef.current.reset();
+    setCoverage(0); setDone(false); setOnTrack(false); setError(false);
   }
 
   const pct = Math.min(100, Math.round(coverage * 100));
-  const goalPct = Math.round(COVERAGE_GOAL * 100);
+  const goalPct = Math.round(TRACE_COVERAGE_GOAL * 100);
 
   return (
     <div className="flex flex-col items-center gap-3">
       {/* Canvas */}
       <div className="relative">
         <canvas ref={canvasRef} width={CANVAS_SIZE} height={CANVAS_SIZE}
-          className={`rounded-3xl border-2 shadow-xl touch-none cursor-crosshair transition-all duration-300 w-64 h-64
-            ${done ? "border-green-400 shadow-[0_0_24px_rgba(34,197,94,.35)]" :
+          className={`rounded-3xl border-2 shadow-xl touch-none cursor-crosshair transition-all duration-300 w-80 h-80 sm:w-96 sm:h-96
+            ${error ? "border-red-400 shadow-[0_0_24px_rgba(239,68,68,.35)]" :
+              done ? "border-green-400 shadow-[0_0_24px_rgba(34,197,94,.35)]" :
               onTrack ? "border-[var(--track-color)] shadow-lg" : "border-border"}`}
           style={{ "--track-color": color } as React.CSSProperties}
           onMouseDown={startDraw} onMouseMove={doDraw}
@@ -191,16 +167,26 @@ function NumberTracingCanvas({ num, onComplete }: { num: number; onComplete: () 
           onTouchStart={startDraw} onTouchMove={doDraw} onTouchEnd={stopDraw} />
 
         {/* On-track indicator */}
-        {onTrack && !done && (
+        {onTrack && !done && !error && (
           <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-white text-xs font-bold animate-pulse"
             style={{ background: color }}>
             ✓ Pe cifră!
           </div>
         )}
+
+        {/* Error overlay */}
+        {error && (
+          <div className="absolute inset-0 flex items-center justify-center rounded-3xl bg-red-500/10 animate-in fade-in">
+            <div className="bg-white border-2 border-red-300 rounded-2xl px-4 py-3 text-center shadow-lg">
+              <div className="text-2xl">❌</div>
+              <div className="text-sm font-bold text-red-600">Nu e pe cifră.<br/>Încearcă din nou!</div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Progress bar */}
-      <div className="flex items-center gap-3 w-64">
+      <div className="flex items-center gap-3 w-80 sm:w-96">
         <div className="flex-1 h-3.5 bg-muted rounded-full overflow-hidden relative">
           {/* Goal marker */}
           <div className="absolute top-0 h-full w-0.5 bg-orange-300/60 z-10"

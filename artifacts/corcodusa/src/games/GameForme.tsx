@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { playCorrect, playWrong, playCelebrate, playClick } from "@/lib/sfx";
+import { sampleMaskPoints, markCoverage, getCanvasPos, InkTracker, TRACE_COVERAGE_GOAL, TRACE_CANVAS_SIZE, type Pt } from "@/lib/tracing";
 
 /* ─── Shape SVGs ─────────────────────────────────────────── */
 type ShapeName = "cerc" | "pătrat" | "triunghi" | "stea" | "dreptunghi" | "romb" | "pentagon" | "hexagon";
@@ -25,32 +26,67 @@ const COLOR_HEX: Record<ColorName, string> = {
 };
 const SHAPES: ShapeName[] = ["cerc","pătrat","triunghi","stea","dreptunghi","romb","pentagon","hexagon"];
 const COLORS: ColorName[] = ["roșu","albastru","galben","verde","portocaliu","violet","roz","turcoaz"];
-const COLOR_MIXING = [
-  { a:"roșu" as ColorName, b:"albastru" as ColorName, result:"violet" as ColorName, desc:"🔴 + 🔵 = Violet" },
-  { a:"roșu" as ColorName,  b:"galben" as ColorName, result:"portocaliu" as ColorName, desc:"🔴 + 🟡 = Portocaliu" },
-  { a:"albastru" as ColorName, b:"galben" as ColorName, result:"verde" as ColorName, desc:"🔵 + 🟡 = Verde" },
-  { a:"roșu" as ColorName, b:"roz" as ColorName, result:"roșu" as ColorName, desc:"🔴 + 🩷 = Roșu intens" },
+
+/** Real-world objects with their natural color, for "Colors to be a little
+ *  more real" — color questions grounded in recognizable things, not just
+ *  abstract shapes. */
+const REAL_OBJECTS: { name: string; emoji: string; color: ColorName; q: string }[] = [
+  { name: "stea",      emoji: "⭐", color: "galben",     q: "Ce culoare are o stea?" },
+  { name: "nor",       emoji: "☁️", color: "albastru",   q: "Ce culoare are cerul cu un nor?" },
+  { name: "copac",     emoji: "🌳", color: "verde",      q: "Ce culoare are un copac?" },
+  { name: "măr",       emoji: "🍎", color: "roșu",       q: "Ce culoare are un măr?" },
+  { name: "portocală", emoji: "🍊", color: "portocaliu", q: "Ce culoare are o portocală?" },
+  { name: "strugure",  emoji: "🍇", color: "violet",     q: "Ce culoare are un strugure?" },
+  { name: "flamingo",  emoji: "🦩", color: "roz",        q: "Ce culoare are un flamingo?" },
+  { name: "val",       emoji: "🌊", color: "turcoaz",    q: "Ce culoare are un val de ocean?" },
 ];
+
+/** Color-theory-accurate primary mixes only — keeps the quiz trustworthy. */
+const COLOR_MIXING = [
+  { a:"roșu" as ColorName,     b:"albastru" as ColorName, result:"violet" as ColorName,     desc:"🔴 + 🔵 = Violet" },
+  { a:"roșu" as ColorName,     b:"galben" as ColorName,   result:"portocaliu" as ColorName, desc:"🔴 + 🟡 = Portocaliu" },
+  { a:"albastru" as ColorName, b:"galben" as ColorName,   result:"verde" as ColorName,       desc:"🔵 + 🟡 = Verde" },
+];
+
+/** Romanian rainbow mnemonic — ROGVAIV (Roșu Portocaliu Galben Verde Albastru Indigo Violet). */
+type RainbowColor = "roșu" | "portocaliu" | "galben" | "verde" | "albastru" | "indigo" | "violet";
+const RAINBOW_ORDER: RainbowColor[] = ["roșu", "portocaliu", "galben", "verde", "albastru", "indigo", "violet"];
+const RAINBOW_HEX: Record<RainbowColor, string> = {
+  roșu: "#ef4444", portocaliu: "#f97316", galben: "#eab308", verde: "#22c55e",
+  albastru: "#3b82f6", indigo: "#4f46e5", violet: "#8b5cf6",
+};
 
 function shuffle<T>(arr: T[]): T[] { return [...arr].sort(() => Math.random() - 0.5); }
 
 /* ─── Tracing for shapes ─────────────────────────────────── */
-type TracableShape = "cerc" | "pătrat" | "triunghi" | "stea" | "dreptunghi" | "romb";
-const TRACEABLE: TracableShape[] = ["cerc", "pătrat", "triunghi", "stea", "dreptunghi", "romb"];
+// Ordered easiest → hardest: round, then simple polygons, then more vertices, star last (concave points are trickiest).
+type TracableShape = "cerc" | "pătrat" | "triunghi" | "dreptunghi" | "romb" | "pentagon" | "hexagon" | "stea";
+const TRACEABLE: TracableShape[] = ["cerc", "pătrat", "triunghi", "dreptunghi", "romb", "pentagon", "hexagon", "stea"];
 const SHAPE_TRACE_COLORS: Record<TracableShape, string> = {
-  cerc:"#ef4444", pătrat:"#3b82f6", triunghi:"#22c55e", stea:"#eab308", dreptunghi:"#8b5cf6", romb:"#f97316",
+  cerc:"#ef4444", pătrat:"#3b82f6", triunghi:"#22c55e", dreptunghi:"#8b5cf6",
+  romb:"#f97316", pentagon:"#06b6d4", hexagon:"#ec4899", stea:"#eab308",
 };
-const MIN_SHAPE_TRACE = 260;
 
-function drawShapeTemplate(ctx: CanvasRenderingContext2D, shape: TracableShape, size: number) {
+function regularPolygonPath(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, sides: number) {
+  for (let i = 0; i < sides; i++) {
+    const a = -Math.PI / 2 + (i * Math.PI * 2) / sides;
+    const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+}
+
+/** Builds the shape's outline path (no fill/stroke styling applied) so the
+ *  decorative template and the sampling mask trace the exact same geometry. */
+function buildShapePath(ctx: CanvasRenderingContext2D, shape: TracableShape, size: number) {
   const cx = size / 2, cy = size / 2, r = size * 0.36;
-  ctx.setLineDash([10, 8]);
-  ctx.strokeStyle = "rgba(99,102,241,0.30)"; ctx.lineWidth = 4; ctx.fillStyle = "rgba(99,102,241,0.06)";
   ctx.beginPath();
   if (shape === "cerc") { ctx.arc(cx, cy, r, 0, Math.PI * 2); }
   else if (shape === "pătrat") { const s2 = r * 1.35; ctx.rect(cx - s2, cy - s2, s2 * 2, s2 * 2); }
   else if (shape === "dreptunghi") { ctx.rect(cx - r * 1.6, cy - r * 0.9, r * 3.2, r * 1.8); }
   else if (shape === "triunghi") { ctx.moveTo(cx, cy - r * 1.2); ctx.lineTo(cx + r * 1.1, cy + r * 0.9); ctx.lineTo(cx - r * 1.1, cy + r * 0.9); ctx.closePath(); }
+  else if (shape === "pentagon") { regularPolygonPath(ctx, cx, cy, r * 1.05, 5); }
+  else if (shape === "hexagon") { regularPolygonPath(ctx, cx, cy, r * 1.05, 6); }
   else if (shape === "stea") {
     for (let i = 0; i < 5; i++) {
       const a = (i * Math.PI * 2) / 5 - Math.PI / 2;
@@ -61,61 +97,136 @@ function drawShapeTemplate(ctx: CanvasRenderingContext2D, shape: TracableShape, 
     }
     ctx.closePath();
   } else if (shape === "romb") { ctx.moveTo(cx, cy - r * 1.2); ctx.lineTo(cx + r * 0.9, cy); ctx.lineTo(cx, cy + r * 1.2); ctx.lineTo(cx - r * 0.9, cy); ctx.closePath(); }
+}
+
+function drawShapeTemplate(ctx: CanvasRenderingContext2D, shape: TracableShape, size: number) {
+  ctx.setLineDash([10, 8]);
+  ctx.strokeStyle = "rgba(99,102,241,0.30)"; ctx.lineWidth = 4; ctx.fillStyle = "rgba(99,102,241,0.06)";
+  buildShapePath(ctx, shape, size);
   ctx.fill(); ctx.stroke(); ctx.setLineDash([]);
 }
 
+/** Sample which canvas pixels belong to the shape's outline band — tracing
+ *  means following the boundary line, not filling the whole interior. */
+function sampleShapePoints(shape: TracableShape): Pt[] {
+  return sampleMaskPoints((ctx, size) => {
+    buildShapePath(ctx, shape, size);
+    ctx.lineWidth = 40; ctx.lineJoin = "round"; ctx.lineCap = "round";
+    ctx.stroke();
+  }, TRACE_CANVAS_SIZE);
+}
+
 function ShapeTracingCanvas({ shape, onComplete }: { shape: TracableShape; onComplete: () => void }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [pathLen, setPathLen] = useState(0);
+  const canvasRef  = useRef<HTMLCanvasElement>(null);
+  const ptsRef     = useRef<Pt[]>([]);
+  const coveredRef = useRef<Set<number>>(new Set());
+  const inkRef     = useRef(new InkTracker());
+  const [coverage, setCoverage] = useState(0);
   const [done, setDone] = useState(false);
   const [drawing, setDrawing] = useState(false);
-  const lastPos = useRef<{ x: number; y: number } | null>(null);
+  const [onTrack, setOnTrack] = useState(false);
+  const [error, setError] = useState(false);
+  const lastPos = useRef<Pt | null>(null);
   const color = SHAPE_TRACE_COLORS[shape];
-  const SIZE = 300;
+  const SIZE = TRACE_CANVAS_SIZE;
 
   function drawTemplate() {
     const c = canvasRef.current!; const ctx = c.getContext("2d")!;
-    ctx.clearRect(0, 0, SIZE, SIZE); ctx.fillStyle = "#fef9f0"; ctx.fillRect(0, 0, SIZE, SIZE);
+    ctx.clearRect(0, 0, SIZE, SIZE); ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, SIZE, SIZE);
     drawShapeTemplate(ctx, shape, SIZE);
   }
 
-  useEffect(() => { drawTemplate(); setPathLen(0); setDone(false); lastPos.current = null; }, [shape]);
+  useEffect(() => {
+    ptsRef.current = sampleShapePoints(shape);
+    coveredRef.current = new Set();
+    inkRef.current.reset();
+    drawTemplate();
+    setCoverage(0); setDone(false); setOnTrack(false); setError(false);
+    lastPos.current = null;
+  }, [shape]);
 
-  function getPos(e: React.MouseEvent | React.TouchEvent) {
-    const c = canvasRef.current!; const r = c.getBoundingClientRect(); const s = SIZE / r.width;
-    if ("touches" in e) return { x: (e.touches[0].clientX - r.left) * s, y: (e.touches[0].clientY - r.top) * s };
-    return { x: (e.clientX - r.left) * s, y: (e.clientY - r.top) * s };
+  function getPos(e: React.MouseEvent | React.TouchEvent): Pt {
+    return getCanvasPos(e, canvasRef.current!);
   }
 
-  function startDraw(e: React.MouseEvent | React.TouchEvent) { if (done) return; setDrawing(true); lastPos.current = getPos(e); }
+  function startDraw(e: React.MouseEvent | React.TouchEvent) { if (done || error) return; setDrawing(true); lastPos.current = getPos(e); }
+
+  function failAndRetry() {
+    setError(true);
+    setDrawing(false); lastPos.current = null; setOnTrack(false);
+    setTimeout(() => {
+      drawTemplate();
+      coveredRef.current = new Set();
+      inkRef.current.reset();
+      setCoverage(0); setError(false);
+    }, 1300);
+  }
+
   function doDraw(e: React.MouseEvent | React.TouchEvent) {
-    if (!drawing || done) return;
+    if (!drawing || done || error) return;
     const c = canvasRef.current!; const ctx = c.getContext("2d")!;
     const pos = getPos(e);
     if (lastPos.current) {
-      ctx.strokeStyle = color; ctx.lineWidth = 22; ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.globalAlpha = 0.75;
+      ctx.strokeStyle = color; ctx.lineWidth = 30; ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.globalAlpha = 0.75;
       ctx.beginPath(); ctx.moveTo(lastPos.current.x, lastPos.current.y); ctx.lineTo(pos.x, pos.y); ctx.stroke(); ctx.globalAlpha = 1;
-      const d = Math.hypot(pos.x - lastPos.current.x, pos.y - lastPos.current.y);
-      setPathLen(p => { const nl = p + d; if (nl >= MIN_SHAPE_TRACE && !done) { setDone(true); setTimeout(onComplete, 900); } return nl; });
+
+      const { pct, onTrack: near, offTrack, segLen } = markCoverage(ptsRef.current, coveredRef.current, lastPos.current, pos);
+      setCoverage(pct); setOnTrack(near);
+      inkRef.current.add(segLen, offTrack);
+
+      if (inkRef.current.isError() && !done) { failAndRetry(); return; }
+
+      if (pct >= TRACE_COVERAGE_GOAL && !done) { setDone(true); setTimeout(onComplete, 900); }
     }
     lastPos.current = pos;
   }
-  function stopDraw() { setDrawing(false); lastPos.current = null; }
+  function stopDraw() { setDrawing(false); lastPos.current = null; setOnTrack(false); }
 
-  const pct = Math.min(100, Math.round((pathLen / MIN_SHAPE_TRACE) * 100));
+  function reset() {
+    drawTemplate();
+    coveredRef.current = new Set();
+    inkRef.current.reset();
+    setCoverage(0); setDone(false); setOnTrack(false); setError(false);
+  }
+
+  const pct = Math.min(100, Math.round(coverage * 100));
+  const goalPct = Math.round(TRACE_COVERAGE_GOAL * 100);
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <canvas ref={canvasRef} width={SIZE} height={SIZE}
-        className={`rounded-3xl border-2 shadow-xl touch-none cursor-crosshair transition-all duration-300 w-64 h-64
-          ${done ? "border-green-400 shadow-green-100" : "border-border"}`}
-        onMouseDown={startDraw} onMouseMove={doDraw} onMouseUp={stopDraw} onMouseLeave={stopDraw}
-        onTouchStart={startDraw} onTouchMove={doDraw} onTouchEnd={stopDraw} />
-      <div className="flex items-center gap-3 w-64">
-        <div className="flex-1 h-3 bg-muted rounded-full overflow-hidden">
-          <div className="h-full rounded-full transition-all duration-300" style={{ width: `${pct}%`, background: color }} />
+      <div className="relative">
+        <canvas ref={canvasRef} width={SIZE} height={SIZE}
+          className={`rounded-3xl border-3 shadow-xl touch-none cursor-crosshair transition-all duration-300 w-80 h-80 sm:w-96 sm:h-96
+            ${error ? "border-red-400 shadow-[0_0_24px_rgba(239,68,68,.35)]" :
+              done ? "border-green-400 shadow-green-100" : onTrack ? "border-[var(--track-color)] shadow-lg" : "border-border"}`}
+          style={{ "--track-color": color } as React.CSSProperties}
+          onMouseDown={startDraw} onMouseMove={doDraw} onMouseUp={stopDraw} onMouseLeave={stopDraw}
+          onTouchStart={startDraw} onTouchMove={doDraw} onTouchEnd={stopDraw} />
+        {onTrack && !done && !error && (
+          <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-white text-xs font-bold animate-pulse"
+            style={{ background: color }}>
+            ✓ Pe formă!
+          </div>
+        )}
+        {error && (
+          <div className="absolute inset-0 flex items-center justify-center rounded-3xl bg-red-500/10 animate-in fade-in">
+            <div className="bg-white border-2 border-red-300 rounded-2xl px-4 py-3 text-center shadow-lg">
+              <div className="text-2xl">❌</div>
+              <div className="text-sm font-bold text-red-600">Nu e pe formă.<br/>Încearcă din nou!</div>
+            </div>
+          </div>
+        )}
+      </div>
+      <div className="flex items-center gap-3 w-80 sm:w-96">
+        <div className="flex-1 h-3.5 bg-muted rounded-full overflow-hidden relative">
+          <div className="absolute top-0 h-full w-0.5 bg-indigo-300/60 z-10" style={{ left: `${goalPct}%` }} />
+          <div className="h-full rounded-full transition-all duration-200"
+            style={{ width: `${pct}%`, background: pct >= goalPct ? "#22c55e" : color }} />
         </div>
-        <button onClick={() => { drawTemplate(); setPathLen(0); setDone(false); }} className="text-sm text-muted-foreground hover:text-foreground">↺</button>
+        <span className="text-sm font-black w-10 text-right transition-colors" style={{ color: pct >= goalPct ? "#22c55e" : color }}>
+          {pct}%
+        </span>
+        <button onClick={reset} title="Șterge și încearcă din nou" className="text-sm text-muted-foreground hover:text-foreground">↺</button>
       </div>
       {done && <div className="text-2xl font-bold text-green-600 animate-bounce">✅ Bravo! Forma {SHAPE_NAMES[shape]}!</div>}
     </div>
@@ -123,14 +234,22 @@ function ShapeTracingCanvas({ shape, onComplete }: { shape: TracableShape; onCom
 }
 
 /* ─── Quiz helpers ───────────────────────────────────────── */
-function genColorRound() {
+type ColorRound =
+  | { kind: "shape"; shape: ShapeName; color: ColorName; options: ColorName[] }
+  | { kind: "object"; obj: typeof REAL_OBJECTS[number]; color: ColorName; options: ColorName[] };
+
+function genColorRound(): ColorRound {
+  if (Math.random() < 0.5) {
+    const obj = REAL_OBJECTS[Math.floor(Math.random() * REAL_OBJECTS.length)];
+    return { kind: "object", obj, color: obj.color, options: shuffle([obj.color, ...shuffle(COLORS.filter(c => c !== obj.color)).slice(0, 3)]) };
+  }
   const shape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
   const color = COLORS[Math.floor(Math.random() * COLORS.length)];
-  return {
-    shape, color,
-    options: shuffle([color, ...shuffle(COLORS.filter(c => c !== color)).slice(0,3)]),
-    shapeOptions: shuffle([shape, ...shuffle(SHAPES.filter(s => s !== shape)).slice(0,3)]),
-  };
+  return { kind: "shape", shape, color, options: shuffle([color, ...shuffle(COLORS.filter(c => c !== color)).slice(0, 3)]) };
+}
+function genShapeRound() {
+  const shape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
+  return { shape, options: shuffle([shape, ...shuffle(SHAPES.filter(s => s !== shape)).slice(0, 3)]) };
 }
 function genCountRound() {
   const shape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
@@ -140,32 +259,39 @@ function genCountRound() {
   while (wrong.size < 4) { const w = Math.max(1, count + Math.floor(Math.random() * 5) - 2); if (w !== count) wrong.add(w); }
   return { shape, count, color, options: shuffle([...wrong]) };
 }
-function genShadowRound() {
-  const shape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
-  return { shape, options: shuffle([shape, ...shuffle(SHAPES.filter(s => s !== shape)).slice(0,3)]) };
+function genMixRound() {
+  const m = COLOR_MIXING[Math.floor(Math.random() * COLOR_MIXING.length)];
+  return { ...m, options: shuffle([m.result, ...shuffle(COLORS.filter(c => c !== m.result)).slice(0, 3)]) };
+}
+function genRainbowRound() {
+  const idx = Math.floor(Math.random() * RAINBOW_ORDER.length);
+  const correct = RAINBOW_ORDER[idx];
+  const wrong = shuffle(RAINBOW_ORDER.filter(c => c !== correct)).slice(0, 3);
+  return { idx, correct, options: shuffle([correct, ...wrong]) };
 }
 
 /* ─── Main ────────────────────────────────────────────────── */
-type Mode = "color" | "shape" | "count" | "mixing" | "shadow" | "trace";
+type Mode = "color" | "shape" | "count" | "mixing" | "rainbow" | "trace";
 
 export default function GameForme() {
   const [mode, setMode] = useState<Mode>("color");
   const [colorR, setColorR] = useState(genColorRound);
+  const [shapeR, setShapeR] = useState(genShapeRound);
   const [countR, setCountR] = useState(genCountRound);
-  const [shadowR, setShadowR] = useState(genShadowRound);
+  const [mixR, setMixR] = useState(genMixRound);
+  const [rainbowR, setRainbowR] = useState(genRainbowRound);
   const [chosen, setChosen] = useState<string | null>(null);
   const [score, setScore] = useState(0);
   const [total, setTotal] = useState(0);
-  const [mixIdx, setMixIdx] = useState(0);
-  const [mixRevealed, setMixRevealed] = useState(false);
   // Trace
   const [traceIdx, setTraceIdx] = useState(0);
   const [traceScore, setTraceScore] = useState(0);
   const [traceCelebrate, setTraceCelebrate] = useState(false);
 
   function nextRound() {
-    setColorR(genColorRound()); setCountR(genCountRound()); setShadowR(genShadowRound());
-    setChosen(null); setMixRevealed(false);
+    setColorR(genColorRound()); setShapeR(genShapeRound()); setCountR(genCountRound());
+    setMixR(genMixRound()); setRainbowR(genRainbowRound());
+    setChosen(null);
   }
   function handleAnswer(val: string, correct: string) {
     if (chosen) return; setChosen(val); setTotal(t => t + 1);
@@ -178,14 +304,15 @@ export default function GameForme() {
 
   const TABS: [Mode, string, string][] = [
     ["color","🎨","Culori"], ["shape","🔷","Forme"], ["count","🔢","Numără"],
-    ["mixing","🧪","Amestec"], ["shadow","👻","Umbra"], ["trace","✏️","Trasează"],
+    ["mixing","🧪","Amestec"], ["rainbow","🌈","Curcubeu"], ["trace","✏️","Trasează"],
   ];
 
   function getCorrectVal() {
     if (mode === "color") return colorR.color;
-    if (mode === "shape") return colorR.shape;
+    if (mode === "shape") return shapeR.shape;
     if (mode === "count") return String(countR.count);
-    return shadowR.shape;
+    if (mode === "mixing") return mixR.result;
+    return rainbowR.correct;
   }
   const isCorrect = chosen !== null && chosen === getCorrectVal();
 
@@ -202,16 +329,18 @@ export default function GameForme() {
         ))}
       </div>
 
-      {mode !== "trace" && mode !== "mixing" && (
+      {mode !== "trace" && (
         <div className="text-sm font-bold text-primary">⭐ {score}/{total}</div>
       )}
 
       {/* ── COLOR MODE ── */}
       {mode === "color" && (
         <>
-          <p className="font-bold text-lg text-center">Ce culoare are această formă?</p>
+          <p className="font-bold text-lg text-center">
+            {colorR.kind === "object" ? colorR.obj.q : "Ce culoare are această formă?"}
+          </p>
           <div className="bg-card rounded-3xl border-2 border-border p-8 shadow-inner flex items-center justify-center">
-            {SHAPE_SVG[colorR.shape](COLOR_HEX[colorR.color])}
+            {colorR.kind === "object" ? <span className="text-6xl">{colorR.obj.emoji}</span> : SHAPE_SVG[colorR.shape](COLOR_HEX[colorR.color])}
           </div>
           <div className="grid grid-cols-2 gap-3 w-full max-w-xs">
             {colorR.options.map(c => (
@@ -235,18 +364,18 @@ export default function GameForme() {
         <>
           <p className="font-bold text-lg text-center">Cum se numește această formă?</p>
           <div className="bg-card rounded-3xl border-2 border-border p-8 shadow-inner flex items-center justify-center">
-            {SHAPE_SVG[colorR.shape]("#6366f1")}
+            {SHAPE_SVG[shapeR.shape]("#6366f1")}
           </div>
           <div className="grid grid-cols-2 gap-3 w-full max-w-xs">
-            {colorR.shapeOptions.map(s => (
-              <button key={s} onClick={() => handleAnswer(s, colorR.shape)} disabled={!!chosen}
+            {shapeR.options.map(s => (
+              <button key={s} onClick={() => handleAnswer(s, shapeR.shape)} disabled={!!chosen}
                 className={`flex items-center gap-2 px-4 py-3 rounded-2xl border-2 font-bold text-sm capitalize transition-all duration-300 shadow-md
                   ${!chosen ? "bg-white hover:scale-105 hover:border-primary border-border" : ""}
-                  ${chosen === s && s === colorR.shape ? "bg-green-100 border-green-400 text-green-700 scale-105" : ""}
-                  ${chosen === s && s !== colorR.shape ? "bg-red-100 border-red-400" : ""}
-                  ${chosen && s === colorR.shape && chosen !== s ? "bg-green-100 border-green-400 text-green-700" : ""}
+                  ${chosen === s && s === shapeR.shape ? "bg-green-100 border-green-400 text-green-700 scale-105" : ""}
+                  ${chosen === s && s !== shapeR.shape ? "bg-red-100 border-red-400" : ""}
+                  ${chosen && s === shapeR.shape && chosen !== s ? "bg-green-100 border-green-400 text-green-700" : ""}
                 `}>
-                {SHAPE_SVG[s as ShapeName](chosen && s === colorR.shape ? "#22c55e" : "#94a3b8")}
+                {SHAPE_SVG[s as ShapeName](chosen && s === shapeR.shape ? "#22c55e" : "#94a3b8")}
                 <span>{SHAPE_NAMES[s as ShapeName]}</span>
               </button>
             ))}
@@ -279,59 +408,74 @@ export default function GameForme() {
         </>
       )}
 
-      {/* ── MIXING MODE ── */}
+      {/* ── MIXING MODE (interactive quiz) ── */}
       {mode === "mixing" && (
-        <div className="flex flex-col items-center gap-4 w-full max-w-sm">
+        <>
           <p className="font-bold text-lg text-center">🧪 Ce culoare obții amestecând?</p>
-          <div className="flex items-center gap-3 bg-card rounded-3xl border-2 border-border p-6 shadow-inner w-full justify-center">
-            {[COLOR_MIXING[mixIdx % COLOR_MIXING.length].a, COLOR_MIXING[mixIdx % COLOR_MIXING.length].b].map((c, ci) => (
-              <div key={c + ci} className="flex flex-col items-center gap-1">
-                <div className="w-14 h-14 rounded-full border-4 border-white shadow-lg" style={{ background: COLOR_HEX[c] }} />
-                <span className="text-xs font-bold capitalize">{c}</span>
-              </div>
-            )).reduce((acc, el, i) => i === 0 ? [el] : [...acc, <span key="plus" className="text-3xl font-bold text-muted-foreground">+</span>, el], [] as JSX.Element[])}
+          <div className="flex items-center gap-3 bg-card rounded-3xl border-2 border-border p-6 shadow-inner w-full max-w-sm justify-center">
+            <div className="flex flex-col items-center gap-1">
+              <div className="w-14 h-14 rounded-full border-4 border-white shadow-lg" style={{ background: COLOR_HEX[mixR.a] }} />
+              <span className="text-xs font-bold capitalize">{mixR.a}</span>
+            </div>
+            <span className="text-3xl font-bold text-muted-foreground">+</span>
+            <div className="flex flex-col items-center gap-1">
+              <div className="w-14 h-14 rounded-full border-4 border-white shadow-lg" style={{ background: COLOR_HEX[mixR.b] }} />
+              <span className="text-xs font-bold capitalize">{mixR.b}</span>
+            </div>
             <span className="text-3xl font-bold text-muted-foreground">=</span>
             <div className="flex flex-col items-center gap-1">
-              <button onClick={() => { setMixRevealed(true); playCelebrate(); }}
-                className={`w-14 h-14 rounded-full border-4 border-white shadow-lg transition-all duration-500 ${mixRevealed ? "" : "bg-gradient-to-br from-muted to-muted/60 animate-pulse"}`}
-                style={mixRevealed ? { background: COLOR_HEX[COLOR_MIXING[mixIdx % COLOR_MIXING.length].result] } : {}} />
-              <span className="text-xs font-bold text-muted-foreground">{mixRevealed ? COLOR_MIXING[mixIdx % COLOR_MIXING.length].result : "?"}</span>
+              <div className={`w-14 h-14 rounded-full border-4 border-white shadow-lg transition-all duration-500 ${chosen ? "" : "bg-gradient-to-br from-muted to-muted/60 animate-pulse"}`}
+                style={chosen ? { background: COLOR_HEX[mixR.result] } : {}} />
+              <span className="text-xs font-bold text-muted-foreground">{chosen ? mixR.result : "?"}</span>
             </div>
           </div>
-          {mixRevealed ? (
-            <div className="text-center">
-              <p className="text-xl font-bold text-green-600">{COLOR_MIXING[mixIdx % COLOR_MIXING.length].desc}</p>
-              <button onClick={() => { playClick(); setMixIdx(i => i + 1); setMixRevealed(false); }}
-                className="mt-3 px-6 py-2 bg-primary text-white font-bold rounded-full shadow hover:-translate-y-0.5 transition-all">
-                Următoarea ▶
+          <div className="grid grid-cols-2 gap-3 w-full max-w-xs">
+            {mixR.options.map(c => (
+              <button key={c} onClick={() => handleAnswer(c, mixR.result)} disabled={!!chosen}
+                className={`flex items-center gap-2 px-4 py-3 rounded-2xl border-2 font-bold text-sm transition-all duration-300 shadow-md
+                  ${!chosen ? "bg-white hover:scale-105 hover:border-primary border-border" : ""}
+                  ${chosen === c && c === mixR.result ? "bg-green-100 border-green-400 text-green-700 scale-105" : ""}
+                  ${chosen === c && c !== mixR.result ? "bg-red-100 border-red-400" : ""}
+                  ${chosen && c === mixR.result && chosen !== c ? "bg-green-100 border-green-400 text-green-700" : ""}
+                `}>
+                <span className="w-5 h-5 rounded-full border border-white shadow-sm flex-shrink-0" style={{ background: COLOR_HEX[c as ColorName] }} />
+                <span className="capitalize">{c}</span>
               </button>
-            </div>
-          ) : <p className="text-sm text-muted-foreground">Apasă pe cercul cu ? ca să vezi rezultatul!</p>}
-          <div className="text-sm bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-2xl p-4 w-full text-center">
+            ))}
+          </div>
+          <div className="text-sm bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-2xl p-4 w-full max-w-sm text-center">
             <strong>🎨 Culorile primare:</strong> Roșu · Galben · Albastru<br/>
             <span className="text-xs text-muted-foreground">Din ele se fac toate celelalte culori!</span>
           </div>
-        </div>
+        </>
       )}
 
-      {/* ── SHADOW MODE ── */}
-      {mode === "shadow" && (
+      {/* ── RAINBOW MODE ── */}
+      {mode === "rainbow" && (
         <>
-          <p className="font-bold text-lg text-center">Care formă are această umbră?</p>
-          <div className="bg-card rounded-3xl border-2 border-border p-8 shadow-inner flex items-center justify-center">
-            {SHAPE_SVG[shadowR.shape]("#1f2937")}
+          <p className="font-bold text-lg text-center">🌈 Ce culoare completează curcubeul?</p>
+          <div className="flex gap-1.5 sm:gap-2 bg-card rounded-3xl border-2 border-border p-6 shadow-inner items-end">
+            {RAINBOW_ORDER.map((c, i) => (
+              <div key={c}
+                className={`w-7 sm:w-9 h-16 rounded-full transition-all flex items-center justify-center
+                  ${i === rainbowR.idx ? "border-2 border-dashed border-muted-foreground/40 bg-muted/40" : ""}`}
+                style={i === rainbowR.idx ? {} : { background: RAINBOW_HEX[c] }}>
+                {i === rainbowR.idx && <span className="text-lg font-black text-muted-foreground">?</span>}
+              </div>
+            ))}
           </div>
+          <p className="text-xs text-muted-foreground text-center max-w-xs">Roșu, Portocaliu, Galben, Verde, Albastru, Indigo, Violet</p>
           <div className="grid grid-cols-2 gap-3 w-full max-w-xs">
-            {shadowR.options.map(s => (
-              <button key={s} onClick={() => handleAnswer(s, shadowR.shape)} disabled={!!chosen}
-                className={`flex flex-col items-center gap-1 py-3 rounded-2xl border-2 font-bold text-xs capitalize transition-all duration-300 shadow-md
+            {rainbowR.options.map(c => (
+              <button key={c} onClick={() => handleAnswer(c, rainbowR.correct)} disabled={!!chosen}
+                className={`flex items-center gap-2 px-4 py-3 rounded-2xl border-2 font-bold text-sm transition-all duration-300 shadow-md
                   ${!chosen ? "bg-white hover:scale-105 hover:border-primary border-border" : ""}
-                  ${chosen === s && s === shadowR.shape ? "bg-green-100 border-green-400 text-green-700 scale-105" : ""}
-                  ${chosen === s && s !== shadowR.shape ? "bg-red-100 border-red-400" : ""}
-                  ${chosen && s === shadowR.shape && chosen !== s ? "bg-green-100 border-green-400 text-green-700" : ""}
+                  ${chosen === c && c === rainbowR.correct ? "bg-green-100 border-green-400 text-green-700 scale-105" : ""}
+                  ${chosen === c && c !== rainbowR.correct ? "bg-red-100 border-red-400" : ""}
+                  ${chosen && c === rainbowR.correct && chosen !== c ? "bg-green-100 border-green-400 text-green-700" : ""}
                 `}>
-                {SHAPE_SVG[s as ShapeName]("#6366f1")}
-                {SHAPE_NAMES[s as ShapeName]}
+                <span className="w-5 h-5 rounded-full border border-white shadow-sm flex-shrink-0" style={{ background: RAINBOW_HEX[c] }} />
+                <span className="capitalize">{c}</span>
               </button>
             ))}
           </div>
@@ -389,7 +533,7 @@ export default function GameForme() {
       )}
 
       {/* Feedback for quiz modes */}
-      {chosen !== null && !["mixing","trace"].includes(mode) && (
+      {chosen !== null && mode !== "trace" && (
         <div className={`text-xl font-bold animate-in zoom-in duration-300 ${isCorrect ? "text-green-600" : "text-red-500"}`}>
           {isCorrect ? "🎉 Corect! Bravo!" : "❌ Mai încearcă!"}
         </div>
