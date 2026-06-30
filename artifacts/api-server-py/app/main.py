@@ -51,6 +51,14 @@ app.include_router(users.router, prefix="/api")
 app.include_router(payments.router, prefix="/api")
 app.include_router(contact.router, prefix="/api")
 
+
+@app.get("/")
+async def root():
+    """Friendly response on the bare domain instead of a 404 — covers
+    Render's own health-check pings (HEAD /) and anyone opening the API
+    domain directly in a browser. Real endpoints live under /api/*."""
+    return {"service": "Corcodusa API", "status": "ok", "docs": "/docs"}
+
 # Mirrors `app.use("/api/assets", express.static(...))` — serves
 # attached_assets/ (repo root) at /api/assets/*, same as the Node backend.
 _workspace_root = Path(__file__).resolve().parents[2]
