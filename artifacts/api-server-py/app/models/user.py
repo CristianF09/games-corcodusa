@@ -28,6 +28,11 @@ class User(Document):
     avatar_url: Optional[str] = Field(default=None, alias="avatarUrl")
     subscription_tier: str = Field(default="free", alias="subscriptionTier")
     trial_started_at: Optional[datetime] = Field(default=None, alias="trialStartedAt")
+    # When a one-time purchase's paid access runs out (see app/webhooks.py —
+    # Checkout Sessions are mode="payment", not a recurring Stripe
+    # Subscription, so this is the only thing that gates access, there's no
+    # Stripe-side renewal to track).
+    subscription_expires_at: Optional[datetime] = Field(default=None, alias="subscriptionExpiresAt")
     stripe_customer_id: Optional[str] = Field(default=None, alias="stripeCustomerId")
     stripe_subscription_id: Optional[str] = Field(default=None, alias="stripeSubscriptionId")
 

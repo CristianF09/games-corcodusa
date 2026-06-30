@@ -381,8 +381,12 @@ components:
       properties:
         priceId:
           type: string
-        trialDays:
-          type: ["integer", "null"]
+        # "month" or "year" — which plan was bought. Checkout now runs as a
+        # one-time payment (mode="payment", see api-server-py/app/routers/
+        # payments.py), so this tells the webhook how many days of access
+        # to grant; there's no Stripe-side trial/renewal anymore.
+        interval:
+          type: ["string", "null"]
 
     CheckoutSession:
       type: object

@@ -3,7 +3,7 @@ import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useGetUserSubscription, useCreateCustomerPortal, useGetCurrentUser } from "@workspace/api-client-react";
+import { useGetUserSubscription, useGetCurrentUser } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
 import { ro } from "date-fns/locale";
@@ -13,14 +13,6 @@ export default function Dashboard() {
   const { user: clerkUser } = useUser();
   const { data: dbUser, isLoading: isLoadingDbUser } = useGetCurrentUser();
   const { data: subscription, isLoading: isLoadingSub } = useGetUserSubscription();
-  const createPortal = useCreateCustomerPortal();
-
-  const handleManageSubscription = () => {
-    createPortal.mutate(
-      undefined,
-      { onSuccess: (data) => { window.location.href = data.url; } },
-    );
-  };
 
   const isLoading = isLoadingSub || isLoadingDbUser;
 
@@ -121,7 +113,7 @@ export default function Dashboard() {
 
                     {subscription?.expiresAt && (
                       <div className="p-4 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl">
-                        <p className="text-sm font-bold text-muted-foreground mb-1">Următoarea facturare / Expirare</p>
+                        <p className="text-sm font-bold text-muted-foreground mb-1">Acces valabil până la</p>
                         <p className="font-black text-[#1F2937]">
                           {format(new Date(subscription.expiresAt), "d MMMM yyyy", { locale: ro })}
                         </p>
@@ -129,21 +121,11 @@ export default function Dashboard() {
                     )}
 
                     <div className="pt-2">
-                      {subscription?.stripePriceId ? (
-                        <button
-                          onClick={handleManageSubscription}
-                          disabled={createPortal.isPending}
-                          className="h-12 px-6 rounded-xl bg-gradient-to-r from-[#0A4D68] to-[#2C5F7A] text-white font-black text-base shadow-[0px_6px_20px_rgba(10,77,104,.30)] hover:shadow-[0px_10px_28px_rgba(10,77,104,.45)] hover:from-[#083D52] hover:to-[#255570] transition-all duration-300 disabled:opacity-60"
-                        >
-                          {createPortal.isPending ? "Se încarcă..." : "Gestionează abonamentul →"}
+                      <Link href="/pricing">
+                        <button className="h-12 px-6 rounded-xl bg-gradient-to-r from-[#FF6B00] to-[#FF9A3C] text-white font-black text-base shadow-[0px_6px_20px_rgba(255,107,0,.35)] hover:shadow-[0px_10px_28px_rgba(255,107,0,.50)] hover:from-[#E55A00] hover:to-[#E58A2C] transition-all duration-300">
+                          {subscription?.isActive ? "Reînnoiește accesul →" : "Alege un plan →"}
                         </button>
-                      ) : (
-                        <Link href="/pricing">
-                          <button className="h-12 px-6 rounded-xl bg-gradient-to-r from-[#FF6B00] to-[#FF9A3C] text-white font-black text-base shadow-[0px_6px_20px_rgba(255,107,0,.35)] hover:shadow-[0px_10px_28px_rgba(255,107,0,.50)] hover:from-[#E55A00] hover:to-[#E58A2C] transition-all duration-300">
-                            Alege un abonament →
-                          </button>
-                        </Link>
-                      )}
+                      </Link>
                     </div>
                   </div>
                 )}

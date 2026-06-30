@@ -49,6 +49,14 @@ async def list_products():
         for product in products.data:
             prices = await client.v1.prices.list_async(params={"product": product.id, "active": True})
             price = prices.data[0] if prices.data else None
+            metadata = product.metadata or {}
+            # Checkout now runs in mode="payment" (one-time charge — see
+            # create_checkout below), so these Prices should be one-time,
+            # not recurring, and won't carry a `.recurring.interval`.
+            # "month"/"year" comes from the Product's own metadata instead
+            # (set this in the Stripe Dashboard on each Product). Recurring
+            # prices are still read as a fallback for older Stripe setups.
+            interval = metadata.get("interval") or (price.recurring.interval if price and price.recurring else None)
             result.append(
                 {
                     "id": product.id,
@@ -57,8 +65,8 @@ async def list_products():
                     "priceId": price.id if price else "",
                     "amount": price.unit_amount if price else 0,
                     "currency": price.currency if price else "ron",
-                    "interval": price.recurring.interval if price and price.recurring else None,
-                    "isPopular": (product.metadata or {}).get("isPopular") == "true",
+                    "interval": interval,
+                    "isPopular": metadata.get("isPopular") == "true",
                 }
             )
         return result
@@ -68,7 +76,7 @@ async def list_products():
             {
                 "id": "prod_monthly",
                 "name": "Abonament Lunar",
-                "description": "Acces nelimitat la toate jocurile, anulezi oricând",
+                "description": "Acces nelimitat la toate jocurile timp de 30 de zile",
                 "priceId": "",
                 "amount": 6700,
                 "currency": "ron",
@@ -92,7 +100,11 @@ async def list_products():
 async def create_checkout(body: dict = Body(...), clerk_id: str = Depends(require_auth)):
     try:
         price_id = body.get("priceId")
-        trial_days = body.get("trialDays")
+        # "month" or "year" — which plan was bought, so the webhook knows how
+        # many days of access to grant once payment completes (see
+        # app/webhooks.py). Sent by the frontend from the product it fetched
+        # via /payments/products.
+        interval = body.get("interval")
 
         user = await User.find_one(User.clerk_id == clerk_id)
         if not user:
@@ -108,16 +120,21 @@ async def create_checkout(body: dict = Body(...), clerk_id: str = Depends(requir
             customer_id = customer.id
             await user.touch_and_save(stripe_customer_id=customer_id)
 
+        # mode="payment" — a single instant charge, not a recurring Stripe
+        # Subscription. There's nothing to auto-renew and nothing to
+        # "cancel" later; access just runs out after PLAN_DURATION_DAYS
+        # (app/webhooks.py) unless the customer buys again. The Price
+        # behind `price_id` must therefore be a one-time Price in Stripe —
+        # mode="payment" rejects a recurring Price.
         session_params = {
             "customer": customer_id,
             "payment_method_types": ["card"],
             "line_items": [{"price": price_id, "quantity": 1}],
-            "mode": "subscription",
+            "mode": "payment",
             "success_url": f"{base_url}/?checkout=success",
             "cancel_url": f"{base_url}/pricing",
+            "metadata": {"clerkId": clerk_id, "interval": interval or ""},
         }
-        if trial_days and trial_days > 0:
-            session_params["subscription_data"] = {"trial_period_days": trial_days}
 
         session = await client.v1.checkout.sessions.create_async(params=session_params)
         return {"url": session.url}

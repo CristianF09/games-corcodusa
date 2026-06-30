@@ -85,7 +85,7 @@ export interface Product {
 export interface CheckoutInput {
   priceId: string;
   /** @nullable */
-  trialDays?: number | null;
+  interval?: string | null;
 }
 
 export interface CheckoutSession {
@@ -109,4 +109,5 @@ ageMin?: number;
 ageMax?: number;
 featured?: boolean;
 };
+
 
