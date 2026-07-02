@@ -44,6 +44,14 @@ const MELODIES: { name: string; notes: number[]; tempo: number }[] = [
   { name: "🎵 Gamă rapidă", notes: [0,1,2,3,4,5,6,7], tempo: 180 },
 ];
 
+/** Echo-game playback speed — seconds between notes. Slower = easier to
+ *  memorize; Rapid is a genuine challenge for older kids. */
+const ECHO_SPEEDS = [
+  { id: "lent",   label: "🐢 Lent",   gap: 0.95 },
+  { id: "normal", label: "🚶 Normal", gap: 0.65 },
+  { id: "rapid",  label: "🐇 Rapid",  gap: 0.42 },
+];
+
 const RHYTHMS: { name: string; pattern: boolean[]; bpm: number }[] = [
   { name: "Simplu", pattern: [true,false,true,false,true,false,true,false], bpm: 80 },
   { name: "Vals", pattern: [true,false,false,true,false,false,true,false,false], bpm: 100 },
@@ -72,6 +80,8 @@ export default function GameMuzica() {
   const [echoBest, setEchoBest] = useState(0);
   const [echoCelebrate, setEchoCelebrate] = useState(false);
   const [echoFail, setEchoFail] = useState(false);
+  const [echoSpeedId, setEchoSpeedId] = useState("normal");
+  const echoGap = ECHO_SPEEDS.find(s => s.id === echoSpeedId)!.gap;
 
   function getCtx() {
     if (!ctxRef.current || ctxRef.current.state === "closed") {
@@ -141,10 +151,10 @@ export default function GameMuzica() {
     }, interval);
   }
 
-  function playSequence(seq: number[]) {
+  function playSequence(seq: number[], gap = echoGap) {
     setEchoPlaying(true);
-    seq.forEach((n, i) => playNote(n, i * 0.65, 0.5));
-    setTimeout(() => setEchoPlaying(false), seq.length * 650 + 250);
+    seq.forEach((n, i) => playNote(n, i * gap, Math.min(0.5, gap * 0.8)));
+    setTimeout(() => setEchoPlaying(false), seq.length * gap * 1000 + 250);
   }
 
   function startEcho(level: number) {
@@ -209,6 +219,15 @@ export default function GameMuzica() {
       {/* ── ECHO CHALLENGE ── */}
       {gmode === "joc" && (
         <div className="flex flex-col items-center gap-3 w-full max-w-xl">
+          {/* Speed difficulty */}
+          <div className="flex gap-2">
+            {ECHO_SPEEDS.map(s => (
+              <button key={s.id} onClick={() => setEchoSpeedId(s.id)}
+                className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${echoSpeedId === s.id ? "bg-secondary text-secondary-foreground shadow" : "bg-muted text-muted-foreground"}`}>
+                {s.label}
+              </button>
+            ))}
+          </div>
           <div className="flex items-center justify-between w-full">
             <div className="flex gap-1">
               {Array.from({ length: 3 }).map((_, i) => (

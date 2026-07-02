@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { playCorrect, playWrong, playCelebrate } from "@/lib/sfx";
+import { KidEmoji } from "@/components/kid-emoji";
+import { DeckMap, shuffle } from "@/lib/exercise-deck";
 
 /* ─── Confetti ────────────────────────────────────────────── */
 function Confetti() {
@@ -18,71 +20,150 @@ function Confetti() {
   );
 }
 
-const ANIMALS = [
-  { name: "Vacă",    emoji: "🐄", sound: "Muu!",       habitat: "ferma",   legs: 4, food: "plante", baby: "vițel" },
-  { name: "Porc",    emoji: "🐷", sound: "Groh!",      habitat: "ferma",   legs: 4, food: "orice",  baby: "purcel" },
-  { name: "Câine",   emoji: "🐶", sound: "Ham!",       habitat: "casa",    legs: 4, food: "carne",  baby: "cățel" },
-  { name: "Pisică",  emoji: "🐱", sound: "Miau!",      habitat: "casa",    legs: 4, food: "carne",  baby: "pisicuță" },
-  { name: "Oaie",    emoji: "🐑", sound: "Bee!",       habitat: "ferma",   legs: 4, food: "plante", baby: "miel" },
-  { name: "Cal",     emoji: "🐴", sound: "Iîîî!",      habitat: "ferma",   legs: 4, food: "plante", baby: "mânz" },
-  { name: "Rață",    emoji: "🦆", sound: "Mac!",       habitat: "apa",     legs: 2, food: "plante", baby: "rățușcă" },
-  { name: "Cocoș",   emoji: "🐓", sound: "Cucuriguu!", habitat: "ferma",   legs: 2, food: "seminte",baby: "pui" },
-  { name: "Delfin",  emoji: "🐬", sound: "Clic-clic!", habitat: "ocean",   legs: 0, food: "pești",  baby: "delfinel" },
-  { name: "Leu",     emoji: "🦁", sound: "Roarrr!",    habitat: "savana",  legs: 4, food: "carne",  baby: "pui de leu" },
-  { name: "Elefant", emoji: "🐘", sound: "Barrr!",     habitat: "savana",  legs: 4, food: "plante", baby: "puiul de elefant" },
-  { name: "Pinguin", emoji: "🐧", sound: "Scârțâit!",  habitat: "arctic",  legs: 2, food: "pești",  baby: "pui de pinguin" },
+/* ─── Data ────────────────────────────────────────────────── */
+type Category = "domestice" | "salbatice" | "pasari" | "insecte";
+
+const CATEGORY_TABS: { id: Category; label: string }[] = [
+  { id: "domestice", label: "🏡 Domestice" },
+  { id: "salbatice", label: "🌲 Sălbatice" },
+  { id: "pasari",    label: "🐦 Păsări" },
+  { id: "insecte",   label: "🐝 Insecte și gâze" },
 ];
 
-type Mode = "sound" | "habitat" | "legs" | "baby";
+type Animal = {
+  name: string; emoji: string; cat: Category;
+  habitat: string; food: string; sound?: string;
+};
 
-const HABITATS = ["ferma", "casa", "apa", "ocean", "savana", "arctic"];
-const HABITAT_LABELS: Record<string, string> = { ferma: "🌾 Fermă", casa: "🏠 Casă", apa: "💧 Apă", ocean: "🌊 Ocean", savana: "🌍 Savană", arctic: "🧊 Arctic" };
-const LEGS_OPTIONS = [0, 2, 4, 6, 8];
+const ANIMALS: Animal[] = [
+  // Domestice
+  { name: "Vacă",      emoji: "🐄", cat: "domestice", habitat: "ferma",  food: "iarbă și fân",           sound: "Muu!" },
+  { name: "Porc",      emoji: "🐷", cat: "domestice", habitat: "ferma",  food: "orice — e omnivor",      sound: "Groh!" },
+  { name: "Câine",     emoji: "🐶", cat: "domestice", habitat: "casa",   food: "carne și oase",          sound: "Ham-ham!" },
+  { name: "Pisică",    emoji: "🐱", cat: "domestice", habitat: "casa",   food: "carne și pește",         sound: "Miau!" },
+  { name: "Oaie",      emoji: "🐑", cat: "domestice", habitat: "ferma",  food: "iarbă",                  sound: "Bee!" },
+  { name: "Cal",       emoji: "🐴", cat: "domestice", habitat: "ferma",  food: "iarbă, fân și ovăz",     sound: "Iîîî!" },
+  { name: "Capră",     emoji: "🐐", cat: "domestice", habitat: "ferma",  food: "iarbă și frunze",        sound: "Mee!" },
+  { name: "Iepure",    emoji: "🐰", cat: "domestice", habitat: "casa",   food: "morcovi și salată" },
+  // Sălbatice
+  { name: "Lup",       emoji: "🐺", cat: "salbatice", habitat: "padure", food: "carne",                  sound: "Auuu!" },
+  { name: "Urs",       emoji: "🐻", cat: "salbatice", habitat: "padure", food: "miere, fructe și pește", sound: "Morrr!" },
+  { name: "Vulpe",     emoji: "🦊", cat: "salbatice", habitat: "padure", food: "șoareci și păsări mici" },
+  { name: "Cerb",      emoji: "🦌", cat: "salbatice", habitat: "padure", food: "iarbă și frunze" },
+  { name: "Leu",       emoji: "🦁", cat: "salbatice", habitat: "savana", food: "carne",                  sound: "Roarrr!" },
+  { name: "Elefant",   emoji: "🐘", cat: "salbatice", habitat: "savana", food: "iarbă și frunze",        sound: "Barrr!" },
+  { name: "Girafă",    emoji: "🦒", cat: "salbatice", habitat: "savana", food: "frunze de copac" },
+  { name: "Delfin",    emoji: "🐬", cat: "salbatice", habitat: "ocean",  food: "pești",                  sound: "Clic-clic!" },
+  { name: "Balenă",    emoji: "🐳", cat: "salbatice", habitat: "ocean",  food: "plancton și pești mici", sound: "Uuuum!" },
+  // Păsări
+  { name: "Găină",     emoji: "🐔", cat: "pasari",    habitat: "ferma",  food: "semințe și grăunțe",     sound: "Cot-cot-cot!" },
+  { name: "Rață",      emoji: "🦆", cat: "pasari",    habitat: "ferma",  food: "plante de apă",          sound: "Mac-mac!" },
+  { name: "Cocoș",     emoji: "🐓", cat: "pasari",    habitat: "ferma",  food: "semințe",                sound: "Cucuriguu!" },
+  { name: "Bufniță",   emoji: "🦉", cat: "pasari",    habitat: "padure", food: "șoareci",                sound: "U-hu! U-hu!" },
+  { name: "Papagal",   emoji: "🦜", cat: "pasari",    habitat: "casa",   food: "semințe și fructe",      sound: "Vorbește ca omul!" },
+  { name: "Porumbel",  emoji: "🕊️", cat: "pasari",    habitat: "aer",    food: "semințe și firimituri",  sound: "Gru-gru!" },
+  { name: "Vultur",    emoji: "🦅", cat: "pasari",    habitat: "aer",    food: "carne" },
+  { name: "Pinguin",   emoji: "🐧", cat: "pasari",    habitat: "ocean",  food: "pești" },
+  // Insecte și gâze
+  { name: "Albină",    emoji: "🐝", cat: "insecte",   habitat: "aer",    food: "nectar din flori",       sound: "Bzzz!" },
+  { name: "Fluture",   emoji: "🦋", cat: "insecte",   habitat: "aer",    food: "nectar" },
+  { name: "Buburuză",  emoji: "🐞", cat: "insecte",   habitat: "padure", food: "insecte foarte mici" },
+  { name: "Furnică",   emoji: "🐜", cat: "insecte",   habitat: "padure", food: "semințe și firimituri" },
+  { name: "Greier",    emoji: "🦗", cat: "insecte",   habitat: "padure", food: "iarbă și frunze",        sound: "Cri-cri!" },
+  { name: "Păianjen",  emoji: "🕷️", cat: "insecte",   habitat: "casa",   food: "insecte prinse în pânză" },
+];
 
-function shuffle<T>(arr: T[]): T[] { return [...arr].sort(() => Math.random() - 0.5); }
+type Mode = "identifica" | "habitat" | "hrana" | "sunete";
 
-function generateRound(mode: Mode) {
-  const target = ANIMALS[Math.floor(Math.random() * ANIMALS.length)];
+const MODE_TABS: [Mode, string][] = [
+  ["identifica", "🔍 Ce animal e?"],
+  ["habitat",    "🏡 Unde trăiește?"],
+  ["hrana",      "🍽️ Ce mănâncă?"],
+  ["sunete",     "🔊 Sunete"],
+];
+
+const HABITATS = ["ferma", "casa", "padure", "ocean", "aer", "savana"];
+const HABITAT_LABELS: Record<string, string> = {
+  ferma: "🌾 La fermă", casa: "🏠 În casa omului", padure: "🌲 În pădure",
+  ocean: "🌊 În ocean", aer: "☁️ În aer", savana: "🌍 În savană",
+};
+
+const DIFFICULTIES = [
+  { id: "usor",  label: "🌱 Ușor",  options: 3 },
+  { id: "mediu", label: "🌿 Mediu", options: 4 },
+  { id: "greu",  label: "🌳 Greu",  options: 6 },
+];
+
+/** Animals are dealt from a per-category+mode deck: every animal in the
+ *  category appears once before any repeats. */
+const ANIMAL_DECKS = new DeckMap<Animal>((key) => {
+  const [cat, mode] = key.split(":");
+  const pool = ANIMALS.filter(a => a.cat === cat);
+  return mode === "sunete" ? pool.filter(a => a.sound) : pool;
+});
+
+function generateRound(mode: Mode, cat: Category, diffId: string) {
+  const wrongCount = DIFFICULTIES.find(d => d.id === diffId)!.options - 1;
+  const target = ANIMAL_DECKS.next(`${cat}:${mode}`);
+  const pool = ANIMALS.filter(a => a.cat === cat);
+
   if (mode === "habitat") {
-    const wrongHabitats = shuffle(HABITATS.filter(h => h !== target.habitat)).slice(0, 3);
-    return { target, options: shuffle([target.habitat, ...wrongHabitats]) };
+    const wrong = shuffle(HABITATS.filter(h => h !== target.habitat)).slice(0, wrongCount);
+    return { target, options: shuffle([target.habitat, ...wrong]) };
   }
-  if (mode === "legs") {
-    const wrongLegs = shuffle(LEGS_OPTIONS.filter(l => l !== target.legs)).slice(0, 3);
-    return { target, options: shuffle([target.legs, ...wrongLegs]).map(String) };
+  if (mode === "hrana") {
+    // Wrong choices come from ALL animals' foods so there's always variety.
+    const foods = [...new Set(ANIMALS.map(a => a.food).filter(f => f !== target.food))];
+    return { target, options: shuffle([target.food, ...shuffle(foods).slice(0, wrongCount)]) };
   }
-  if (mode === "baby") {
-    const wrongBabies = shuffle(ANIMALS.filter(a => a.baby !== target.baby)).slice(0, 3).map(a => a.baby);
-    return { target, options: shuffle([target.baby, ...wrongBabies]) };
-  }
-  // sound
-  const wrong = shuffle(ANIMALS.filter(a => a.name !== target.name)).slice(0, 3);
+  // "identifica" and "sunete" — the answer is the animal's name.
+  const wrong = shuffle(pool.filter(a => a.name !== target.name)).slice(0, wrongCount);
   return { target, options: shuffle([target.name, ...wrong.map(a => a.name)]) };
 }
 
 export default function GameAnimale() {
-  const [mode, setMode] = useState<Mode>("sound");
-  const [round, setRound] = useState(() => generateRound("sound"));
+  const [mode, setMode] = useState<Mode>("identifica");
+  const [cat, setCat] = useState<Category>("domestice");
+  const [diffId, setDiffId] = useState("usor");
+  const [round, setRound] = useState(() => generateRound("identifica", "domestice", "usor"));
   const [chosen, setChosen] = useState<string | null>(null);
   const [score, setScore] = useState(0);
   const [total, setTotal] = useState(0);
   const [streak, setStreak] = useState(0);
   const [celebrate, setCelebrate] = useState(false);
 
-  function nextRound(m = mode) {
-    setRound(generateRound(m));
+  // The sounds quiz needs at least 3 animals with a sound in the category.
+  const soundPoolSize = ANIMALS.filter(a => a.cat === cat && a.sound).length;
+  const visibleModes = MODE_TABS.filter(([m]) => m !== "sunete" || soundPoolSize >= 3);
+
+  function nextRound(m = mode, c = cat, d = diffId) {
+    setRound(generateRound(m, c, d));
     setChosen(null);
   }
+
+  function resetScore() { setScore(0); setTotal(0); setStreak(0); }
+
+  function changeMode(m: Mode) { setMode(m); resetScore(); nextRound(m, cat, diffId); }
+  function changeCat(c: Category) {
+    setCat(c);
+    resetScore();
+    // A category without enough sounds can't keep the sounds quiz.
+    const m = mode === "sunete" && ANIMALS.filter(a => a.cat === c && a.sound).length < 3 ? "identifica" : mode;
+    setMode(m);
+    nextRound(m, c, diffId);
+  }
+  function changeDifficulty(d: string) { setDiffId(d); resetScore(); nextRound(mode, cat, d); }
+
+  const correctValue =
+    mode === "habitat" ? round.target.habitat :
+    mode === "hrana" ? round.target.food :
+    round.target.name;
 
   function handleChoice(val: string) {
     if (chosen) return;
     setChosen(val);
     setTotal(t => t + 1);
-    const correct = mode === "sound" ? val === round.target.name
-      : mode === "habitat" ? val === round.target.habitat
-      : mode === "legs" ? val === String(round.target.legs)
-      : val === round.target.baby;
-    if (correct) {
+    if (val === correctValue) {
       setScore(s => s + 1);
       setStreak(s => {
         const next = s + 1;
@@ -94,92 +175,86 @@ export default function GameAnimale() {
       setStreak(0);
       playWrong();
     }
-    setTimeout(() => nextRound(), 1800);
+    setTimeout(() => nextRound(), 2000);
   }
 
-  function changeMode(m: Mode) {
-    setMode(m);
-    setScore(0);
-    setTotal(0);
-    setStreak(0);
-    nextRound(m);
-  }
-
-  const isCorrect = (val: string) =>
-    mode === "sound" ? val === round.target.name
-    : mode === "habitat" ? val === round.target.habitat
-    : mode === "legs" ? val === String(round.target.legs)
-    : val === round.target.baby;
-
-  const correct = chosen !== null && isCorrect(chosen);
+  const correct = chosen !== null && chosen === correctValue;
 
   return (
-    <div className="flex flex-col items-center gap-5 p-4 select-none">
+    <div className="flex flex-col items-center gap-4 p-4 select-none">
       {celebrate && <Confetti />}
-      {/* Mode tabs */}
+
+      {/* Animal categories */}
       <div className="flex gap-2 flex-wrap justify-center">
-        {([["sound","🔊 Sunete"],["habitat","🏡 Habitat"],["legs","🦵 Picioare"],["baby","👶 Pui"]] as [Mode,string][]).map(([m, lbl]) => (
+        {CATEGORY_TABS.map(c => (
+          <button key={c.id} onClick={() => changeCat(c.id)}
+            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all border-2 ${cat === c.id ? "bg-primary text-white border-primary shadow" : "bg-white border-border text-muted-foreground hover:border-primary/50"}`}>
+            {c.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Quiz modes */}
+      <div className="flex gap-2 flex-wrap justify-center">
+        {visibleModes.map(([m, lbl]) => (
           <button key={m} onClick={() => changeMode(m)}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all border-2 ${mode === m ? "bg-primary text-white border-primary shadow" : "bg-white border-border text-muted-foreground hover:border-primary/50"}`}>
+            className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${mode === m ? "bg-secondary text-secondary-foreground shadow" : "bg-muted text-muted-foreground"}`}>
             {lbl}
           </button>
         ))}
       </div>
 
-      <div className="flex items-center gap-2">
-        <span className="text-sm font-bold text-primary">⭐ {score} / {total}</span>
+      {/* Difficulty */}
+      <div className="flex gap-2 items-center">
+        {DIFFICULTIES.map(d => (
+          <button key={d.id} onClick={() => changeDifficulty(d.id)}
+            className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${diffId === d.id ? "bg-secondary text-secondary-foreground shadow" : "bg-muted text-muted-foreground"}`}>
+            {d.label}
+          </button>
+        ))}
+        <span className="text-sm font-bold text-primary ml-2">⭐ {score}/{total}</span>
         {streak >= 2 && <span className="text-xs font-bold text-orange-500 animate-pulse">🔥 {streak}</span>}
       </div>
 
       {/* Question card */}
       <div className="bg-card rounded-3xl border-2 border-border p-6 w-full max-w-xs text-center shadow-inner">
-        {mode === "sound" && (
+        {mode === "sunete" ? (
           <>
             <p className="text-sm text-muted-foreground mb-3">Ce animal face sunetul:</p>
-            <div className="text-3xl font-display font-bold text-primary bg-primary/10 px-6 py-3 rounded-2xl inline-block">
+            <div className="text-2xl font-display font-bold text-primary bg-primary/10 px-6 py-3 rounded-2xl inline-block">
               {round.target.sound}
             </div>
           </>
-        )}
-        {mode === "habitat" && (
+        ) : (
           <>
-            <p className="text-sm text-muted-foreground mb-3">Unde trăiește:</p>
-            <div className="text-7xl">{round.target.emoji}</div>
-            <div className="text-xl font-bold mt-2">{round.target.name}</div>
-          </>
-        )}
-        {mode === "legs" && (
-          <>
-            <p className="text-sm text-muted-foreground mb-3">Câte picioare are:</p>
-            <div className="text-7xl">{round.target.emoji}</div>
-            <div className="text-xl font-bold mt-2">{round.target.name}</div>
-          </>
-        )}
-        {mode === "baby" && (
-          <>
-            <p className="text-sm text-muted-foreground mb-3">Cum se numește puiul de:</p>
-            <div className="text-7xl">{round.target.emoji}</div>
-            <div className="text-xl font-bold mt-2">{round.target.name}</div>
+            <p className="text-sm text-muted-foreground mb-3">
+              {mode === "identifica" ? "Ce animal este în imagine?" :
+               mode === "habitat" ? "Unde trăiește acest animal?" :
+               "Ce mănâncă acest animal?"}
+            </p>
+            <div className="flex justify-center"><KidEmoji emoji={round.target.emoji} size={90} /></div>
+            {mode !== "identifica" && (
+              <div className="text-xl font-bold mt-2">{round.target.name}</div>
+            )}
           </>
         )}
       </div>
 
       {/* Options */}
       <div className="grid grid-cols-2 gap-3 w-full max-w-sm">
-        {(round.options as string[]).map((opt) => {
-          const display = mode === "sound" ? ANIMALS.find(a => a.name === opt)?.emoji + " " + opt
-            : mode === "habitat" ? HABITAT_LABELS[opt] ?? opt
-            : mode === "legs" ? opt + " picioare"
-            : opt;
-          const ic = isCorrect(opt);
+        {round.options.map(opt => {
+          const display =
+            mode === "habitat" ? HABITAT_LABELS[opt] ?? opt :
+            mode === "sunete" ? `${ANIMALS.find(a => a.name === opt)?.emoji ?? ""} ${opt}` :
+            opt;
+          const isRight = opt === correctValue;
           return (
-            <button key={opt} onClick={() => handleChoice(opt)}
-              disabled={!!chosen}
-              className={`py-4 px-3 rounded-2xl border-2 font-bold text-sm transition-all duration-300 shadow-md text-center
+            <button key={opt} onClick={() => handleChoice(opt)} disabled={!!chosen}
+              className={`py-3 px-3 rounded-2xl border-2 font-bold text-sm transition-all duration-300 shadow-md text-center
                 ${!chosen ? "bg-white hover:scale-105 hover:border-primary border-border" : ""}
-                ${chosen === opt && ic ? "bg-green-100 border-green-400 text-green-700 scale-105" : ""}
-                ${chosen === opt && !ic ? "bg-red-100 border-red-400 text-red-600" : ""}
-                ${chosen && ic && chosen !== opt ? "bg-green-100 border-green-400 text-green-700" : ""}
+                ${chosen === opt && isRight ? "bg-green-100 border-green-400 text-green-700 scale-105" : ""}
+                ${chosen === opt && !isRight ? "bg-red-100 border-red-400 text-red-600" : ""}
+                ${chosen && isRight && chosen !== opt ? "bg-green-100 border-green-400 text-green-700" : ""}
               `}>
               {display}
             </button>
@@ -190,18 +265,17 @@ export default function GameAnimale() {
       {chosen && (
         <div className={`text-xl font-bold animate-in zoom-in duration-300 ${correct ? "text-green-600" : "text-red-500"}`}>
           {correct ? "🎉 Corect! Bravo!" : (
-            mode === "sound" ? `❌ Era ${round.target.name}` :
-            mode === "habitat" ? `❌ Trăiește la ${HABITAT_LABELS[round.target.habitat]}` :
-            mode === "legs" ? `❌ Are ${round.target.legs} picioare` :
-            `❌ Puiul se numește ${round.target.baby}`
+            mode === "habitat" ? `❌ Trăiește ${HABITAT_LABELS[round.target.habitat].toLowerCase()}` :
+            mode === "hrana" ? `❌ Mănâncă ${round.target.food}` :
+            `❌ Era ${round.target.name}`
           )}
         </div>
       )}
 
-      {/* Fun fact */}
+      {/* Fun fact after a correct answer */}
       {chosen && correct && (
         <div className="text-sm bg-blue-50 border border-blue-200 rounded-xl px-4 py-2 text-blue-800 text-center max-w-sm">
-          🌟 Știai că {round.target.name.toLowerCase()} {round.target.food === "plante" ? "mănâncă plante (e ierbivor)" : round.target.food === "carne" ? "mănâncă carne (e carnivor)" : "mănâncă orice (e omnivor)"}?
+          🌟 {round.target.name} trăiește {HABITAT_LABELS[round.target.habitat].toLowerCase()} și mănâncă {round.target.food}.
         </div>
       )}
     </div>

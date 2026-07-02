@@ -2,12 +2,15 @@ import { useState } from "react";
 import { playCorrect, playWrong, playClick, playCelebrate } from "@/lib/sfx";
 import StepTraceCanvas from "@/components/step-trace-canvas";
 import { LETTER_STROKES } from "@/lib/stroke-data";
+import { KidEmoji } from "@/components/kid-emoji";
 
 /* ─── Data ───────────────────────────────────────────────── */
 const LETTERS_DATA: Record<string, { word: string; emoji: string; desc: string; type: "vocala" | "consoana" }> = {
   A: { word: "Arici",    emoji: "🦔", desc: "Animal mic cu țepi",               type: "vocala"   },
-  Ă: { word: "Ăsta",     emoji: "👆", desc: "Cuvânt de indicat",                type: "vocala"   },
-  Â: { word: "Âncă",     emoji: "🔁", desc: "Mai mult, în plus",                type: "vocala"   },
+  // Ă and Â never start Romanian words — show a word that CONTAINS them,
+  // which is how school primers teach these letters.
+  Ă: { word: "Măr",      emoji: "🍎", desc: "Fruct dulce — «ă» e în mijloc: m-ă-r", type: "vocala" },
+  Â: { word: "Pâine",    emoji: "🍞", desc: "«â» stă mereu în mijloc: p-â-ine",  type: "vocala"   },
   B: { word: "Broscuță", emoji: "🐸", desc: "Sare și croncăne la baltă",        type: "consoana" },
   C: { word: "Cal",      emoji: "🐴", desc: "Animal care nechează",             type: "consoana" },
   D: { word: "Delfin",   emoji: "🐬", desc: "Înoată în ocean",                  type: "consoana" },
@@ -22,7 +25,7 @@ const LETTERS_DATA: Record<string, { word: string; emoji: string; desc: string; 
   L: { word: "Leu",      emoji: "🦁", desc: "Regele junglei",                   type: "consoana" },
   M: { word: "Maimuță",  emoji: "🐒", desc: "Se cațără în copaci",              type: "consoana" },
   N: { word: "Nufăr",    emoji: "🪷", desc: "Floare pe apă",                    type: "consoana" },
-  O: { word: "Oaie",     emoji: "🐑", desc: "Dă lână și bâie",                  type: "vocala"   },
+  O: { word: "Oaie",     emoji: "🐑", desc: "Dă lână și behăie",                type: "vocala"   },
   P: { word: "Pisică",   emoji: "🐱", desc: "Toarce și prinde șoareci",          type: "consoana" },
   Q: { word: "Quokka",   emoji: "🦘", desc: "Animal mic și fericit din Australia", type: "consoana" },
   R: { word: "Rățușcă",  emoji: "🦆", desc: "Înoată și face mac-mac",           type: "consoana" },
@@ -94,18 +97,28 @@ function genWordRound(order: number[], pos: number) {
   return { item, options: genWordOptions(item.letter) };
 }
 
-/* ─── Cute "letter buddy" face — the funny-happy styling ────── */
-function LetterBuddy({ color, size = 28 }: { color: string; size?: number }) {
+/* ─── Cartoon letter with a face — googly eyes + smile drawn ON the letter
+       itself, like classic kids' alphabet posters. ─────────── */
+function LetterFace({ letter, color, size = 110 }: { letter: string; color: string; size?: number }) {
   return (
-    <svg viewBox="0 0 40 40" width={size} height={size} className="drop-shadow-sm flex-shrink-0">
-      <circle cx="20" cy="20" r="18" fill={color} />
-      <circle cx="9" cy="24" r="2.8" fill="white" opacity="0.35" />
-      <circle cx="31" cy="24" r="2.8" fill="white" opacity="0.35" />
-      <circle cx="13" cy="17" r="3.2" fill="white" />
-      <circle cx="27" cy="17" r="3.2" fill="white" />
-      <circle cx="13.3" cy="17.3" r="1.6" fill="#1f2937" />
-      <circle cx="27.3" cy="17.3" r="1.6" fill="#1f2937" />
-      <path d="M12 25 Q20 32 28 25" stroke="#1f2937" strokeWidth="2.2" fill="none" strokeLinecap="round" />
+    <svg viewBox="0 0 100 100" width={size} height={size} className="drop-shadow-md flex-shrink-0">
+      {/* Fat colorful letter body with dark outline */}
+      <text x="50" y="82" fontSize="88" fontWeight="900" textAnchor="middle"
+        fontFamily="'Arial Rounded MT Bold', 'Comic Sans MS', Arial, sans-serif"
+        fill={color} stroke="#273043" strokeWidth="2.5" paintOrder="stroke">
+        {letter}
+      </text>
+      {/* Googly eyes */}
+      <circle cx="38" cy="34" r="10.5" fill="white" stroke="#273043" strokeWidth="2.2" />
+      <circle cx="62" cy="34" r="10.5" fill="white" stroke="#273043" strokeWidth="2.2" />
+      <circle cx="40.5" cy="36.5" r="4.6" fill="#273043" />
+      <circle cx="64.5" cy="36.5" r="4.6" fill="#273043" />
+      <circle cx="42" cy="35" r="1.6" fill="white" />
+      <circle cx="66" cy="35" r="1.6" fill="white" />
+      {/* Smile + rosy cheeks */}
+      <path d="M41 55 Q50 65 59 55" stroke="#273043" strokeWidth="3.2" fill="none" strokeLinecap="round" />
+      <circle cx="30" cy="50" r="4" fill="#f87171" opacity="0.55" />
+      <circle cx="70" cy="50" r="4" fill="#f87171" opacity="0.55" />
     </svg>
   );
 }
@@ -212,17 +225,21 @@ export default function GameAlfabet() {
           </div>
 
           {selected && LETTERS_DATA[selected] && (
-            <div className="w-full max-w-sm bg-gradient-to-br from-primary/10 via-white to-secondary/10 rounded-3xl border-2 border-primary/20 p-6 text-center shadow-xl animate-in zoom-in duration-300">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <LetterBuddy color={LETTER_COLORS[ALL_LETTERS.indexOf(selected) % LETTER_COLORS.length]} size={56} />
-                <div className="text-7xl drop-shadow-sm">{LETTERS_DATA[selected].emoji}</div>
+            <div className="w-full max-w-md bg-gradient-to-br from-primary/10 via-white to-secondary/10 rounded-3xl border-2 border-primary/20 p-6 shadow-xl animate-in zoom-in duration-300">
+              <div className="flex items-center justify-center gap-5">
+                {/* Left: the letter with its funny face */}
+                <LetterFace letter={selected}
+                  color={LETTER_COLORS[ALL_LETTERS.indexOf(selected) % LETTER_COLORS.length]} size={120} />
+                {/* Right: the example image + details */}
+                <div className="flex flex-col items-center text-center gap-1 min-w-0">
+                  <KidEmoji emoji={LETTERS_DATA[selected].emoji} size={80} />
+                  <div className="text-2xl font-bold text-foreground">{LETTERS_DATA[selected].word}</div>
+                  <span className={`px-3 py-0.5 rounded-full text-xs font-bold ${LETTERS_DATA[selected].type === "vocala" ? "bg-blue-100 text-blue-700" : "bg-orange-100 text-orange-700"}`}>
+                    {LETTERS_DATA[selected].type === "vocala" ? "🔵 Vocală" : "🟠 Consoană"}
+                  </span>
+                  <div className="text-sm text-muted-foreground italic">{LETTERS_DATA[selected].desc}</div>
+                </div>
               </div>
-              <div className="text-7xl font-display font-black text-primary leading-none mb-1 drop-shadow">{selected}</div>
-              <div className="text-2xl font-bold text-foreground">{LETTERS_DATA[selected].word}</div>
-              <div className="text-sm text-muted-foreground mt-1 italic">{LETTERS_DATA[selected].desc}</div>
-              <span className={`mt-3 inline-block px-4 py-1 rounded-full text-xs font-bold ${LETTERS_DATA[selected].type === "vocala" ? "bg-blue-100 text-blue-700" : "bg-orange-100 text-orange-700"}`}>
-                {LETTERS_DATA[selected].type === "vocala" ? "🔵 Vocală" : "🟠 Consoană"}
-              </span>
             </div>
           )}
 

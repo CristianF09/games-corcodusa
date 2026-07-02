@@ -1,5 +1,9 @@
 import { useState } from "react";
 import { playCorrect, playWrong, playCelebrate } from "@/lib/sfx";
+import {
+  DeckMap, shuffle, orient, additionSpace, subtractionSpace,
+  multiplicationSpace, divisionSpace, type MathEx,
+} from "@/lib/exercise-deck";
 
 const EMOJI_SETS = ["🍎","🍋","🍓","🍇","🌟","🎈","🐥","🦋","🍩","🪄"];
 
@@ -26,28 +30,24 @@ const LEVELS = [
   { id: 3, label: "Scădere 1–10",   desc: "Scădere simplă", op: "sub",  max: 10 },
   { id: 4, label: "Amestecat",      desc: "Adunare + Scădere", op: "mix",  max: 15 },
   { id: 5, label: "Înmulțire ×2–5", desc: "Primele tabele", op: "mul",  max: 5  },
+  { id: 6, label: "Împărțire :2–5", desc: "Împărțire în grupe egale", op: "div", max: 5 },
 ];
 
-function shuffle<T>(arr: T[]): T[] { return [...arr].sort(() => Math.random() - 0.5); }
+/** Every level deals from its complete exercise space (a shuffled deck), so
+ *  ALL number combinations appear before anything repeats — no more "3+1"
+ *  followed straight away by "1+3". */
+const EXERCISE_DECKS = new DeckMap<MathEx>((levelKey) => {
+  const lvl = LEVELS[Number(levelKey) - 1];
+  if (lvl.op === "div") return divisionSpace(lvl.max);
+  if (lvl.op === "mul") return multiplicationSpace(lvl.max);
+  if (lvl.op === "sub") return subtractionSpace(lvl.max);
+  if (lvl.op === "mix") return [...additionSpace(lvl.max), ...subtractionSpace(lvl.max)];
+  return additionSpace(lvl.max);
+});
 
 function generateRound(levelId: number) {
-  const lvl = LEVELS[levelId - 1];
+  const { a, b, op, answer } = orient(EXERCISE_DECKS.next(String(levelId)));
   const emoji = EMOJI_SETS[Math.floor(Math.random() * EMOJI_SETS.length)];
-  let a: number, b: number, op: string, answer: number;
-
-  if (lvl.op === "mul") {
-    a = Math.floor(Math.random() * 4) + 2; // 2–5
-    b = Math.floor(Math.random() * lvl.max) + 1;
-    op = "×"; answer = a * b;
-  } else if (lvl.op === "sub" || (lvl.op === "mix" && Math.random() > 0.5)) {
-    a = Math.floor(Math.random() * lvl.max) + 2;
-    b = Math.floor(Math.random() * a) + 1;
-    op = "−"; answer = a - b;
-  } else {
-    a = Math.floor(Math.random() * (lvl.max - 1)) + 1;
-    b = Math.floor(Math.random() * Math.max(1, lvl.max - a)) + 1;
-    op = "+"; answer = a + b;
-  }
 
   const wrong = new Set([answer]);
   while (wrong.size < 4) {
@@ -61,6 +61,7 @@ const WORD_PROBLEMS: Record<string, (a: number, b: number, emoji: string) => str
   "+": (a, b, e) => `Maria are ${a} ${e}. Primește încă ${b}. Câte are acum?`,
   "−": (a, b, e) => `Sunt ${a} ${e} pe masă. Se mănâncă ${b}. Câte rămân?`,
   "×": (a, b, e) => `Sunt ${a} coșuri cu câte ${b} ${e}. Câte sunt în total?`,
+  "÷": (a, b, e) => `Sunt ${a} ${e} împărțite egal la ${b} copii. Câte primește fiecare?`,
 };
 
 export default function GameAdunare() {
@@ -114,7 +115,7 @@ export default function GameAdunare() {
 
   const correct = chosen === round.answer;
   const maxVisual = 10;
-  const showVisual = round.op !== "×" && round.a <= maxVisual && round.b <= maxVisual;
+  const showVisual = round.op !== "×" && round.op !== "÷" && round.a <= maxVisual && round.b <= maxVisual;
 
   return (
     <div className="flex flex-col items-center gap-5 p-4 select-none">
@@ -201,7 +202,9 @@ export default function GameAdunare() {
       )}
       {showExplain && (
         <div className="text-sm bg-blue-50 border border-blue-200 rounded-xl px-4 py-2 text-blue-800 max-w-sm text-center">
-          {round.op === "×"
+          {round.op === "÷"
+            ? `Împărțirea = grupe egale. Gândește-te: ${round.b} × ? = ${round.a}`
+            : round.op === "×"
             ? `Înmulțirea = adunare repetată. ${round.a} × ${round.b} = ${Array.from({length: round.a}, () => round.b).join(" + ")}`
             : round.op === "−"
             ? `Gândește-te: ${round.b} + ? = ${round.a}`

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { playClick, playSwap, playCelebrate } from "@/lib/sfx";
+import { KidEmoji } from "@/components/kid-emoji";
 
 /* ─── Confetti ────────────────────────────────────────────── */
 function Confetti() {
@@ -22,43 +23,38 @@ const GRIDS = [
   { id: "2x2", label: "2×2", cols: 2, rows: 2 },
   { id: "3x3", label: "3×3", cols: 3, rows: 3 },
   { id: "4x4", label: "4×4", cols: 4, rows: 4 },
+  { id: "5x5", label: "5×5 Expert", cols: 5, rows: 5 },
 ];
 
-const THEMES: Record<string, { label: string; emoji: string; grid: string[][] }> = {
+/** 25 unique pieces per theme — a 2×2 puzzle uses the first 4, 5×5 all 25,
+ *  so every grid size gets a genuinely different picture to rebuild. */
+const THEMES: Record<string, { label: string; emoji: string; pieces: string[] }> = {
   jungle: {
     label: "Junglă", emoji: "🌴",
-    grid: [
-      ["🦁","🐯","🐘","🦒"],
-      ["🦊","🦓","🦏","🐆"],
-      ["🐊","🦛","🐒","🦥"],
-      ["🌴","🌿","🍃","🌺"],
+    pieces: [
+      "🦁","🐯","🐘","🦒","🦊","🦓","🦏","🐆","🐊","🦛","🐒","🦥","🌴","🌿","🍃","🌺",
+      "🦜","🐍","🦋","🐜","🌸","🍌","🥥","🦍","🪵",
     ],
   },
   ocean: {
     label: "Ocean", emoji: "🌊",
-    grid: [
-      ["🐳","🐬","🦈","🐙"],
-      ["🦑","🐠","🦀","🐡"],
-      ["🐟","🦞","🦐","🐚"],
-      ["🌊","🐋","🦦","🦭"],
+    pieces: [
+      "🐳","🐬","🦈","🐙","🦑","🐠","🦀","🐡","🐟","🦞","🦐","🐚","🌊","🐋","🦦","🦭",
+      "🪸","⚓","🐢","🏝️","🚤","🎣","🧜‍♀️","🌅","🪼",
     ],
   },
   space: {
     label: "Spațiu", emoji: "🚀",
-    grid: [
-      ["🚀","⭐","🌙","☀️"],
-      ["🪐","🌍","🌟","☄️"],
-      ["🛸","👨‍🚀","🔭","🌌"],
-      ["💫","🌠","🛰️","🪨"],
+    pieces: [
+      "🚀","⭐","🌙","☀️","🪐","🌍","🌟","☄️","🛸","👨‍🚀","🔭","🌌","💫","🌠","🛰️","🪨",
+      "👽","🌕","🌝","🌚","💥","🎆","⚡","🌈","🎇",
     ],
   },
   farm: {
     label: "Fermă", emoji: "🚜",
-    grid: [
-      ["🐄","🐷","🐔","🐑"],
-      ["🐴","🦆","🐇","🐐"],
-      ["🌾","🌻","🥕","🌽"],
-      ["🚜","🏡","🌳","🌸"],
+    pieces: [
+      "🐄","🐷","🐔","🐑","🐴","🦆","🐇","🐐","🌾","🌻","🥕","🌽","🚜","🏡","🌳","🌸",
+      "🦃","🐝","🍎","🍓","🥔","🧑‍🌾","🐕","🛖","🌰",
     ],
   },
 };
@@ -68,9 +64,7 @@ function shuffle<T>(arr: T[]): T[] { return [...arr].sort(() => Math.random() - 
 interface PieceState { id: number; emoji: string; correctPos: number; currentPos: number }
 
 function createPuzzle(themeKey: string, cols: number, rows: number): PieceState[] {
-  const theme = THEMES[themeKey];
-  const pieces: string[] = [];
-  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) pieces.push(theme.grid[r][c]);
+  const pieces = THEMES[themeKey].pieces.slice(0, cols * rows);
   const shuffled = shuffle(pieces.map((emoji, id) => ({ id, emoji, correctPos: id, currentPos: id })));
   return shuffled.map((p, i) => ({ ...p, currentPos: i }));
 }
@@ -185,9 +179,9 @@ export default function GamePuzzle() {
         <div className="grid gap-0.5 rounded-xl overflow-hidden border-2 border-dashed border-primary/30"
           style={{ gridTemplateColumns: `repeat(${grid.cols}, minmax(0, 1fr))` }}>
           {Array.from({ length: total }, (_, i) => pieces.find(p => p.correctPos === i)!).map((p, i) => (
-            <div key={i} className="flex items-center justify-center bg-primary/5 text-xl"
+            <div key={i} className="flex items-center justify-center bg-primary/5"
               style={{ width: 36, height: 36 }}>
-              {p.emoji}
+              <KidEmoji emoji={p.emoji} size={24} />
             </div>
           ))}
         </div>
@@ -212,7 +206,7 @@ export default function GamePuzzle() {
               const isCorrect = piece.correctPos === pos;
               const isSelected = selected === pos;
               const isHighlighted = highlighted === pos;
-              const sz = gridId === "4x4" ? 68 : gridId === "3x3" ? 80 : 100;
+              const sz = gridId === "5x5" ? 56 : gridId === "4x4" ? 68 : gridId === "3x3" ? 80 : 100;
               return (
                 <button key={pos} onClick={() => handleTile(pos)}
                   className={`flex items-center justify-center rounded-2xl border-3 transition-all duration-200 font-bold shadow-md
@@ -221,8 +215,8 @@ export default function GamePuzzle() {
                       isHighlighted ? "border-yellow-400 bg-yellow-50 scale-105 ring-2 ring-yellow-300 animate-pulse" :
                       "border-border bg-white hover:border-primary/50 hover:scale-105 hover:shadow-lg cursor-pointer"}
                   `}
-                  style={{ width: sz, height: sz, fontSize: sz * 0.44 }}>
-                  {piece.emoji}
+                  style={{ width: sz, height: sz }}>
+                  <KidEmoji emoji={piece.emoji} size={sz * 0.55} />
                 </button>
               );
             })}

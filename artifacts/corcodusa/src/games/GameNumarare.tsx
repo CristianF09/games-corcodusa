@@ -2,6 +2,8 @@ import { useState, useRef } from "react";
 import { playCorrect, playWrong, playCelebrate, playClick } from "@/lib/sfx";
 import StepTraceCanvas from "@/components/step-trace-canvas";
 import { numberStrokes } from "@/lib/stroke-data";
+import { KidEmoji } from "@/components/kid-emoji";
+import { DeckMap } from "@/lib/exercise-deck";
 
 /* ─── Counting game data ──────────────────────────────────── */
 const ITEM_SETS = [
@@ -20,11 +22,17 @@ const COUNT_LEVELS = [
   { id: 5, label: "Zeci",  min: 10, max: 50, desc: "Multiplii de 10", tens: true    },
 ];
 function shuffle<T>(arr: T[]): T[] { return [...arr].sort(() => Math.random() - 0.5); }
+
+/** Deal counts from the level's full number range (shuffled deck) so every
+ *  number appears before any repeats — no more rushed duplicate rounds. */
+const COUNT_DECKS = new DeckMap<number>((levelKey) => {
+  const lvl = COUNT_LEVELS[Number(levelKey) - 1];
+  if (lvl.tens) return [10, 20, 30, 40, 50];
+  return Array.from({ length: lvl.max - lvl.min + 1 }, (_, i) => lvl.min + i);
+});
+
 function generateRound(lv: number) {
-  const lvl = COUNT_LEVELS[lv - 1];
-  const count = lvl.tens
-    ? (Math.floor(Math.random() * 5) + 1) * 10
-    : Math.floor(Math.random() * (lvl.max - lvl.min + 1)) + lvl.min;
+  const count = COUNT_DECKS.next(String(lv));
   const set = ITEM_SETS[Math.floor(Math.random() * ITEM_SETS.length)];
   const wrong = new Set<number>([count]);
   while (wrong.size < 4) {
@@ -169,8 +177,8 @@ export default function GameNumarare() {
             {Array.from({ length: round.count }).map((_, i) => (
               <button key={i}
                 onClick={() => { if (answered) return; playClick(); setClicked(p => { const n = new Set(p); n.has(i) ? n.delete(i) : n.add(i); return n; }); }}
-                className={`text-3xl transition-all duration-200 active:scale-75 ${clicked.has(i) ? "opacity-30 scale-90" : "hover:scale-110"}`}>
-                {round.emoji}
+                className={`transition-all duration-200 active:scale-75 ${clicked.has(i) ? "opacity-30 scale-90" : "hover:scale-110"}`}>
+                <KidEmoji emoji={round.emoji} size={34} />
               </button>
             ))}
           </div>

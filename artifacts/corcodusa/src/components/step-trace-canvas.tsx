@@ -236,15 +236,17 @@ export default function StepTraceCanvas({ strokes, color, onComplete }: {
       )}
 
       <div className="relative">
+        {/* Square canvas that fills the portrait viewport width on phones
+            (HTML5 canvas, CSS-scaled — getCanvasPos corrects coordinates). */}
         <canvas ref={canvasRef} width={SIZE} height={SIZE}
-          className={`rounded-3xl border-2 shadow-xl touch-none cursor-crosshair transition-all duration-300 w-80 h-80 sm:w-96 sm:h-96
+          className={`rounded-3xl border-2 shadow-xl touch-none cursor-crosshair transition-all duration-300 w-[min(92vw,24rem)] h-[min(92vw,24rem)]
             ${done ? "border-green-400 shadow-[0_0_24px_rgba(34,197,94,.35)]" : "border-border"}`}
           onMouseDown={pointerDown} onMouseMove={pointerMove} onMouseUp={pointerUp} onMouseLeave={pointerUp}
           onTouchStart={pointerDown} onTouchMove={pointerMove} onTouchEnd={pointerUp} />
       </div>
 
       {mode === "steps" ? (
-        <div className="flex items-center gap-3 w-80 sm:w-96">
+        <div className="flex items-center gap-3 w-[min(92vw,24rem)]">
           <div className="flex-1 h-3.5 bg-muted rounded-full overflow-hidden">
             <div className="h-full rounded-full transition-all duration-200"
               style={{ width: `${pct}%`, background: done ? "#22c55e" : color }} />
@@ -254,7 +256,7 @@ export default function StepTraceCanvas({ strokes, color, onComplete }: {
             className="text-base text-muted-foreground hover:text-foreground transition-colors">↺</button>
         </div>
       ) : (
-        <div className="flex items-center gap-2 flex-wrap justify-center w-80 sm:w-96">
+        <div className="flex items-center gap-2 flex-wrap justify-center w-[min(92vw,24rem)]">
           {FREE_COLORS.map(c => (
             <button key={c} onClick={() => { playClick(); setFreeColor(c); }}
               className={`w-8 h-8 rounded-full border-2 transition-all ${freeColor === c ? "scale-125 border-foreground shadow" : "border-white shadow-sm hover:scale-110"}`}

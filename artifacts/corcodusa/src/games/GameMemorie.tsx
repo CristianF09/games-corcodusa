@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { playFlip, playCorrect, playWrong, playCelebrate } from "@/lib/sfx";
+import { KidEmoji } from "@/components/kid-emoji";
 
 /* ─── Confetti ────────────────────────────────────────────── */
 function Confetti() {
@@ -208,7 +209,9 @@ export default function GameMemorie() {
                 height: diffId === "hard" ? "58px" : "70px",
                 fontSize: diffId === "hard" ? "24px" : "28px",
               }}>
-              {card.flipped || card.matched ? card.emoji : "❓"}
+              {card.flipped || card.matched
+                ? <KidEmoji emoji={card.emoji} size={diffId === "hard" ? 32 : 40} />
+                : "❓"}
             </button>
           ))}
         </div>
