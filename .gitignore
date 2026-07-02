@@ -55,6 +55,9 @@ firebase-debug.log
 .env
 .env.*
 !.env.example
+# Safe to commit: only the public API base URL + bypass-off flag, and
+# production builds are wrong without it (see artifacts/corcodusa/.env.production)
+!.env.production
 
 # Python (artifacts/api-server-py)
 __pycache__/
