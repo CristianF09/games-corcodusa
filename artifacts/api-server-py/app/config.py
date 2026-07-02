@@ -33,6 +33,12 @@ STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY")
 STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET")
 APP_BASE_URL = os.environ.get("APP_BASE_URL", "http://localhost:5173")
 
+# The two plans sold on /pricing. Defaults are the live-mode Stripe IDs
+# (Abonament Lunar: prod_UoSALnnNfV0wRO, Abonament Anual: prod_UoUatUiQNrN8qM);
+# override via env when testing against a different Stripe account.
+STRIPE_PRICE_ID_MONTHLY = os.environ.get("STRIPE_PRICE_ID_MONTHLY", "price_1TopGIK6Qc2WK3kdDj0jfMlI")
+STRIPE_PRICE_ID_ANNUAL = os.environ.get("STRIPE_PRICE_ID_ANNUAL", "price_1TorbBK6Qc2WK3kdMIBQmGQ8")
+
 # Contact form (POST /api/contact) — sent via Resend's HTTP API. Soft-degrades
 # like Stripe/Clerk above: missing key means the route 500s with a clear
 # message instead of crashing the whole server at import time.

@@ -11,13 +11,25 @@ side, but the comment is kept for parity/context).
 from fastapi import APIRouter, Body, Depends, HTTPException, Request
 
 from app.auth import require_auth
-from app.config import APP_BASE_URL
+from app.config import APP_BASE_URL, STRIPE_PRICE_ID_ANNUAL, STRIPE_PRICE_ID_MONTHLY
 from app.logger import log_error, log_info, log_warn
 from app.models.user import User
 from app.stripe_client import get_stripe_client
 from app.webhooks import process_webhook
 
 router = APIRouter()
+
+# The exact Prices sold on /pricing, so the endpoint never depends on
+# listing the whole Stripe account (which may hold unrelated products) or on
+# `interval` metadata being set in the Dashboard. Stripe Payment Links exist
+# for these plans too (buy.stripe.com/28E6oI7MWeav8h5h0EeZ20d lunar,
+# buy.stripe.com/eVq28s0kuc2neFt9yceZ20e anual) but are NOT used in-app:
+# access is granted by the webhook from Checkout Session metadata (clerkId),
+# which Payment Links don't carry.
+KNOWN_PLANS = (
+    {"price_id": STRIPE_PRICE_ID_MONTHLY, "interval": "month", "is_popular": False},
+    {"price_id": STRIPE_PRICE_ID_ANNUAL, "interval": "year", "is_popular": True},
+)
 
 
 def get_base_url() -> str:
@@ -43,51 +55,44 @@ async def stripe_webhook(request: Request):
 async def list_products():
     try:
         client = get_stripe_client()
-        products = await client.v1.products.list_async(params={"active": True, "expand": ["data.default_price"]})
 
         result = []
-        for product in products.data:
-            prices = await client.v1.prices.list_async(params={"product": product.id, "active": True})
-            price = prices.data[0] if prices.data else None
-            metadata = product.metadata or {}
-            # Checkout now runs in mode="payment" (one-time charge — see
-            # create_checkout below), so these Prices should be one-time,
-            # not recurring, and won't carry a `.recurring.interval`.
-            # "month"/"year" comes from the Product's own metadata instead
-            # (set this in the Stripe Dashboard on each Product). Recurring
-            # prices are still read as a fallback for older Stripe setups.
-            interval = metadata.get("interval") or (price.recurring.interval if price and price.recurring else None)
+        for plan in KNOWN_PLANS:
+            price = await client.v1.prices.retrieve_async(plan["price_id"], params={"expand": ["product"]})
+            product = price.product
             result.append(
                 {
                     "id": product.id,
                     "name": product.name,
                     "description": product.description or "",
-                    "priceId": price.id if price else "",
-                    "amount": price.unit_amount if price else 0,
-                    "currency": price.currency if price else "ron",
-                    "interval": interval,
-                    "isPopular": metadata.get("isPopular") == "true",
+                    "priceId": price.id,
+                    "amount": price.unit_amount or 0,
+                    "currency": price.currency,
+                    "interval": plan["interval"],
+                    "isPopular": plan["is_popular"],
                 }
             )
         return result
     except Exception as err:  # noqa: BLE001
         log_warn("Stripe products not available", err=str(err))
+        # Fallback still carries the real price IDs so the pricing page's
+        # subscribe buttons work even when the listing call above fails.
         return [
             {
-                "id": "prod_monthly",
+                "id": "prod_UoSALnnNfV0wRO",
                 "name": "Abonament Lunar",
                 "description": "Acces nelimitat la toate jocurile timp de 30 de zile",
-                "priceId": "",
+                "priceId": STRIPE_PRICE_ID_MONTHLY,
                 "amount": 6700,
                 "currency": "ron",
                 "interval": "month",
                 "isPopular": False,
             },
             {
-                "id": "prod_annual",
+                "id": "prod_UoUatUiQNrN8qM",
                 "name": "Abonament Anual",
                 "description": "Acces nelimitat la toate jocurile, -25% față de plata lunară",
-                "priceId": "",
+                "priceId": STRIPE_PRICE_ID_ANNUAL,
                 "amount": 60300,
                 "currency": "ron",
                 "interval": "year",
