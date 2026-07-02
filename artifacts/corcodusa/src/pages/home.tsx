@@ -274,21 +274,14 @@ export default function Home() {
         <div className="pointer-events-none absolute bottom-32 left-20 h-2 w-2 rounded-full bg-[#FFD700]/50" />
         <div className="pointer-events-none absolute bottom-20 right-24 h-3 w-3 rounded-full bg-white/30" />
 
+        {/* Title logo — top-left corner */}
+        <img
+          src="/title.logo.games.corcodusa.ro.png"
+          alt="games.corcodusa.ro"
+          className="absolute top-5 left-5 md:top-6 md:left-8 z-20 h-7 md:h-9 object-contain brightness-0 invert opacity-85"
+        />
+
         <div className="relative z-10 flex flex-col items-center gap-5 max-w-3xl mx-auto">
-
-          {/* Hero character */}
-          <img
-            src="/CorcodusaPLay-Photoroom.png"
-            alt="Corcodușa"
-            className="h-56 w-56 md:h-72 md:w-72 object-contain drop-shadow-[0_12px_40px_rgba(0,0,0,.40)]"
-          />
-
-          {/* Title logo — H2 size, directly under character */}
-          <img
-            src="/title.logo.games.corcodusa.ro.png"
-            alt="games.corcodusa.ro"
-            className="h-8 md:h-9 object-contain brightness-0 invert opacity-85 -mt-2"
-          />
 
           {/* Main heading */}
           <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black leading-none tracking-tight">
@@ -308,6 +301,13 @@ export default function Home() {
               ÎNVAȚĂ
             </span>
           </h1>
+
+          {/* Hero image — directly under the title */}
+          <img
+            src="/corcodusagames.png"
+            alt="Corcodușa"
+            className="h-56 w-56 md:h-72 md:w-72 object-contain drop-shadow-[0_12px_40px_rgba(0,0,0,.40)]"
+          />
 
           {/* Subtitle */}
           <p className="text-white/75 text-lg md:text-xl max-w-md leading-relaxed">
@@ -331,18 +331,6 @@ export default function Home() {
               Vezi abonamentele
             </a>
           </div>
-
-          {/* Trust pill */}
-          <div className="flex items-center gap-3 bg-white/10 border border-white/15 px-5 py-2.5 rounded-xl text-sm text-white/80 font-medium">
-            <span className="h-2 w-2 rounded-full bg-[#22C55E] animate-pulse" />
-            Fără card bancar pentru 7 zile gratuite
-          </div>
-        </div>
-
-        {/* Scroll indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 text-white/40 animate-bounce">
-          <span className="text-xs font-medium">Scroll</span>
-          <span className="text-lg">↓</span>
         </div>
       </section>
 
