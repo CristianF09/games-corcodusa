@@ -1,32 +1,43 @@
 import { useState } from "react";
 import { useListGames, useListGameCategories } from "@workspace/api-client-react";
 import { STATIC_GAMES } from "@/lib/static-games";
+import { CATEGORY_EMOJIS } from "@/lib/category-colors";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { GameCard } from "@/components/game-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Search } from "lucide-react";
 
+// Rendered immediately so category buttons never wait on the API.
+const STATIC_CATEGORIES = [
+  { name: "matematica", label: "Matematică" },
+  { name: "litere", label: "Litere" },
+  { name: "culori", label: "Culori" },
+  { name: "natura", label: "Natură" },
+  { name: "muzica", label: "Muzică" },
+  { name: "memorie", label: "Memorie" },
+  { name: "creativitate", label: "Creativitate" },
+  { name: "logica", label: "Logică" },
+].map((c) => ({ ...c, emoji: CATEGORY_EMOJIS[c.name] }));
+
 export default function Games() {
   const [activeCategory, setActiveCategory] = useState<string | undefined>();
   const [searchQuery, setSearchQuery] = useState("");
 
-  const { data: categories, isLoading: isLoadingCategories } = useListGameCategories();
-  const { data: apiGames, isLoading: isLoadingGames } = useListGames({
-    category: activeCategory,
-  });
+  const { data: apiCategories } = useListGameCategories();
+  // Fetch the full list once; category filtering happens client-side so
+  // switching categories is instant instead of a network round-trip per click.
+  const { data: apiGames, isLoading: isLoadingGames } = useListGames({});
+  const categories = (apiCategories && apiCategories.length > 0) ? apiCategories : STATIC_CATEGORIES;
   // Fall back to static games when API is unreachable or returns empty (unseeded DB)
-  const baseGames = (apiGames && apiGames.length > 0)
-    ? apiGames
-    : (activeCategory
-        ? STATIC_GAMES.filter((g) => g.category === activeCategory)
-        : STATIC_GAMES);
+  const baseGames = (apiGames && apiGames.length > 0) ? apiGames : STATIC_GAMES;
 
   const filteredGames = baseGames.filter(
     (g) =>
-      !searchQuery ||
-      g.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      g.description.toLowerCase().includes(searchQuery.toLowerCase()),
+      (!activeCategory || g.category === activeCategory) &&
+      (!searchQuery ||
+        g.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        g.description.toLowerCase().includes(searchQuery.toLowerCase())),
   );
 
   return (
@@ -78,24 +89,20 @@ export default function Games() {
               Toate jocurile
             </button>
 
-            {isLoadingCategories
-              ? Array.from({ length: 4 }).map((_, i) => (
-                  <Skeleton key={i} className="h-10 w-28 rounded-xl" />
-                ))
-              : categories?.map((category) => (
-                  <button
-                    key={category.name}
-                    onClick={() => setActiveCategory(category.name)}
-                    className={[
-                      "h-10 px-4 text-sm font-bold rounded-xl transition-all border",
-                      activeCategory === category.name
-                        ? "bg-gradient-to-r from-[#FF6B00] to-[#FF9A3C] text-white border-transparent shadow-[0px_4px_15px_rgba(255,107,0,.35)]"
-                        : "bg-white text-[#374151] border-[#E5E7EB] hover:border-[#FF6B00] hover:text-[#FF6B00] shadow-[0px_2px_8px_rgba(0,0,0,.05)]",
-                    ].join(" ")}
-                  >
-                    {category.emoji} {category.label}
-                  </button>
-                ))}
+            {categories.map((category) => (
+              <button
+                key={category.name}
+                onClick={() => setActiveCategory(category.name)}
+                className={[
+                  "h-10 px-4 text-sm font-bold rounded-xl transition-all border",
+                  activeCategory === category.name
+                    ? "bg-gradient-to-r from-[#FF6B00] to-[#FF9A3C] text-white border-transparent shadow-[0px_4px_15px_rgba(255,107,0,.35)]"
+                    : "bg-white text-[#374151] border-[#E5E7EB] hover:border-[#FF6B00] hover:text-[#FF6B00] shadow-[0px_2px_8px_rgba(0,0,0,.05)]",
+                ].join(" ")}
+              >
+                {category.emoji} {category.label}
+              </button>
+            ))}
           </div>
 
           {/* Game grid */}
