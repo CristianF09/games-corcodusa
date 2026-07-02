@@ -43,8 +43,23 @@ const DIFFICULTIES = [
   { id: "hard",   label: "Greu",  pairs: 12, cols: 6 },
 ];
 
-function createCards(pairs: string[], count: number) {
-  const chosen = pairs.slice(0, count);
+/* Non-repeating draw per theme — works like a shuffled deck: deal `count`
+   emojis off the top, and only reshuffle used ones back in when the deck runs
+   low. Consecutive rounds therefore never show the exact same set of cards
+   (before this, `pairs.slice(0, count)` gave the SAME emojis every round). */
+const decks = new Map<string, string[]>();
+function drawPairs(themeKey: string, pool: string[], count: number): string[] {
+  let deck = decks.get(themeKey) ?? [];
+  if (deck.length < count) {
+    const refill = pool.filter(e => !deck.includes(e)).sort(() => Math.random() - 0.5);
+    deck = [...deck, ...refill];
+  }
+  decks.set(themeKey, deck.slice(count));
+  return deck.slice(0, count);
+}
+
+function createCards(themeKey: string, pairs: string[], count: number) {
+  const chosen = drawPairs(themeKey, pairs, count);
   return [...chosen, ...chosen]
     .map((emoji, id) => ({ id, emoji, flipped: false, matched: false }))
     .sort(() => Math.random() - 0.5);
@@ -56,7 +71,7 @@ export default function GameMemorie() {
   const diff = DIFFICULTIES.find(d => d.id === diffId)!;
   const theme = THEMES[themeKey];
 
-  const [cards, setCards] = useState(() => createCards(theme.pairs, diff.pairs));
+  const [cards, setCards] = useState(() => createCards(themeKey, theme.pairs, diff.pairs));
   const [flipped, setFlipped] = useState<number[]>([]);
   const [moves, setMoves] = useState(0);
   const [locked, setLocked] = useState(false);
@@ -75,7 +90,7 @@ export default function GameMemorie() {
   function restart(t = themeKey, d = diffId) {
     const theme = THEMES[t];
     const diff = DIFFICULTIES.find(x => x.id === d)!;
-    setCards(createCards(theme.pairs, diff.pairs));
+    setCards(createCards(t, theme.pairs, diff.pairs));
     setFlipped([]);
     setMoves(0);
     setLocked(false);

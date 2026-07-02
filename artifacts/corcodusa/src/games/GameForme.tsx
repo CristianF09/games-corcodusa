@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef, type ReactElement } from "react";
-import { playCorrect, playWrong, playCelebrate, playClick } from "@/lib/sfx";
-import { sampleMaskPoints, markCoverage, getCanvasPos, InkTracker, TRACE_COVERAGE_GOAL, TRACE_CANVAS_SIZE, type Pt } from "@/lib/tracing";
+import { useState, type ReactElement } from "react";
+import { playCorrect, playWrong, playCelebrate } from "@/lib/sfx";
+import StepTraceCanvas from "@/components/step-trace-canvas";
+import { shapeStrokes } from "@/lib/stroke-data";
 
 /* ─── Shape SVGs ─────────────────────────────────────────── */
 type ShapeName = "cerc" | "pătrat" | "triunghi" | "stea" | "dreptunghi" | "romb" | "pentagon" | "hexagon";
@@ -67,171 +68,6 @@ const SHAPE_TRACE_COLORS: Record<TracableShape, string> = {
   romb:"#f97316", pentagon:"#06b6d4", hexagon:"#ec4899", stea:"#eab308",
 };
 
-function regularPolygonPath(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, sides: number) {
-  for (let i = 0; i < sides; i++) {
-    const a = -Math.PI / 2 + (i * Math.PI * 2) / sides;
-    const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r;
-    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-  }
-  ctx.closePath();
-}
-
-/** Builds the shape's outline path (no fill/stroke styling applied) so the
- *  decorative template and the sampling mask trace the exact same geometry. */
-function buildShapePath(ctx: CanvasRenderingContext2D, shape: TracableShape, size: number) {
-  const cx = size / 2, cy = size / 2, r = size * 0.36;
-  ctx.beginPath();
-  if (shape === "cerc") { ctx.arc(cx, cy, r, 0, Math.PI * 2); }
-  else if (shape === "pătrat") { const s2 = r * 1.35; ctx.rect(cx - s2, cy - s2, s2 * 2, s2 * 2); }
-  else if (shape === "dreptunghi") { ctx.rect(cx - r * 1.6, cy - r * 0.9, r * 3.2, r * 1.8); }
-  else if (shape === "triunghi") { ctx.moveTo(cx, cy - r * 1.2); ctx.lineTo(cx + r * 1.1, cy + r * 0.9); ctx.lineTo(cx - r * 1.1, cy + r * 0.9); ctx.closePath(); }
-  else if (shape === "pentagon") { regularPolygonPath(ctx, cx, cy, r * 1.05, 5); }
-  else if (shape === "hexagon") { regularPolygonPath(ctx, cx, cy, r * 1.05, 6); }
-  else if (shape === "stea") {
-    for (let i = 0; i < 5; i++) {
-      const a = (i * Math.PI * 2) / 5 - Math.PI / 2;
-      const a2 = ((i + 0.5) * Math.PI * 2) / 5 - Math.PI / 2;
-      if (i === 0) ctx.moveTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
-      else ctx.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
-      ctx.lineTo(cx + Math.cos(a2) * r * 0.42, cy + Math.sin(a2) * r * 0.42);
-    }
-    ctx.closePath();
-  } else if (shape === "romb") { ctx.moveTo(cx, cy - r * 1.2); ctx.lineTo(cx + r * 0.9, cy); ctx.lineTo(cx, cy + r * 1.2); ctx.lineTo(cx - r * 0.9, cy); ctx.closePath(); }
-}
-
-function drawShapeTemplate(ctx: CanvasRenderingContext2D, shape: TracableShape, size: number) {
-  ctx.setLineDash([10, 8]);
-  ctx.strokeStyle = "rgba(99,102,241,0.30)"; ctx.lineWidth = 4; ctx.fillStyle = "rgba(99,102,241,0.06)";
-  buildShapePath(ctx, shape, size);
-  ctx.fill(); ctx.stroke(); ctx.setLineDash([]);
-}
-
-/** Sample which canvas pixels belong to the shape's outline band — tracing
- *  means following the boundary line, not filling the whole interior. */
-function sampleShapePoints(shape: TracableShape): Pt[] {
-  return sampleMaskPoints((ctx, size) => {
-    buildShapePath(ctx, shape, size);
-    ctx.lineWidth = 40; ctx.lineJoin = "round"; ctx.lineCap = "round";
-    ctx.stroke();
-  }, TRACE_CANVAS_SIZE);
-}
-
-function ShapeTracingCanvas({ shape, onComplete }: { shape: TracableShape; onComplete: () => void }) {
-  const canvasRef  = useRef<HTMLCanvasElement>(null);
-  const ptsRef     = useRef<Pt[]>([]);
-  const coveredRef = useRef<Set<number>>(new Set());
-  const inkRef     = useRef(new InkTracker());
-  const [coverage, setCoverage] = useState(0);
-  const [done, setDone] = useState(false);
-  const [drawing, setDrawing] = useState(false);
-  const [onTrack, setOnTrack] = useState(false);
-  const [error, setError] = useState(false);
-  const lastPos = useRef<Pt | null>(null);
-  const color = SHAPE_TRACE_COLORS[shape];
-  const SIZE = TRACE_CANVAS_SIZE;
-
-  function drawTemplate() {
-    const c = canvasRef.current!; const ctx = c.getContext("2d")!;
-    ctx.clearRect(0, 0, SIZE, SIZE); ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, SIZE, SIZE);
-    drawShapeTemplate(ctx, shape, SIZE);
-  }
-
-  useEffect(() => {
-    ptsRef.current = sampleShapePoints(shape);
-    coveredRef.current = new Set();
-    inkRef.current.reset();
-    drawTemplate();
-    setCoverage(0); setDone(false); setOnTrack(false); setError(false);
-    lastPos.current = null;
-  }, [shape]);
-
-  function getPos(e: React.MouseEvent | React.TouchEvent): Pt {
-    return getCanvasPos(e, canvasRef.current!);
-  }
-
-  function startDraw(e: React.MouseEvent | React.TouchEvent) { if (done || error) return; setDrawing(true); lastPos.current = getPos(e); }
-
-  function failAndRetry() {
-    setError(true);
-    setDrawing(false); lastPos.current = null; setOnTrack(false);
-    setTimeout(() => {
-      drawTemplate();
-      coveredRef.current = new Set();
-      inkRef.current.reset();
-      setCoverage(0); setError(false);
-    }, 1300);
-  }
-
-  function doDraw(e: React.MouseEvent | React.TouchEvent) {
-    if (!drawing || done || error) return;
-    const c = canvasRef.current!; const ctx = c.getContext("2d")!;
-    const pos = getPos(e);
-    if (lastPos.current) {
-      ctx.strokeStyle = color; ctx.lineWidth = 30; ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.globalAlpha = 0.75;
-      ctx.beginPath(); ctx.moveTo(lastPos.current.x, lastPos.current.y); ctx.lineTo(pos.x, pos.y); ctx.stroke(); ctx.globalAlpha = 1;
-
-      const { pct, onTrack: near, offTrack, segLen } = markCoverage(ptsRef.current, coveredRef.current, lastPos.current, pos);
-      setCoverage(pct); setOnTrack(near);
-      inkRef.current.add(segLen, offTrack);
-
-      if (inkRef.current.isError() && !done) { failAndRetry(); return; }
-
-      if (pct >= TRACE_COVERAGE_GOAL && !done) { setDone(true); setTimeout(onComplete, 900); }
-    }
-    lastPos.current = pos;
-  }
-  function stopDraw() { setDrawing(false); lastPos.current = null; setOnTrack(false); }
-
-  function reset() {
-    drawTemplate();
-    coveredRef.current = new Set();
-    inkRef.current.reset();
-    setCoverage(0); setDone(false); setOnTrack(false); setError(false);
-  }
-
-  const pct = Math.min(100, Math.round(coverage * 100));
-  const goalPct = Math.round(TRACE_COVERAGE_GOAL * 100);
-
-  return (
-    <div className="flex flex-col items-center gap-3">
-      <div className="relative">
-        <canvas ref={canvasRef} width={SIZE} height={SIZE}
-          className={`rounded-3xl border-3 shadow-xl touch-none cursor-crosshair transition-all duration-300 w-80 h-80 sm:w-96 sm:h-96
-            ${error ? "border-red-400 shadow-[0_0_24px_rgba(239,68,68,.35)]" :
-              done ? "border-green-400 shadow-green-100" : onTrack ? "border-[var(--track-color)] shadow-lg" : "border-border"}`}
-          style={{ "--track-color": color } as React.CSSProperties}
-          onMouseDown={startDraw} onMouseMove={doDraw} onMouseUp={stopDraw} onMouseLeave={stopDraw}
-          onTouchStart={startDraw} onTouchMove={doDraw} onTouchEnd={stopDraw} />
-        {onTrack && !done && !error && (
-          <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-white text-xs font-bold animate-pulse"
-            style={{ background: color }}>
-            ✓ Pe formă!
-          </div>
-        )}
-        {error && (
-          <div className="absolute inset-0 flex items-center justify-center rounded-3xl bg-red-500/10 animate-in fade-in">
-            <div className="bg-white border-2 border-red-300 rounded-2xl px-4 py-3 text-center shadow-lg">
-              <div className="text-2xl">❌</div>
-              <div className="text-sm font-bold text-red-600">Nu e pe formă.<br/>Încearcă din nou!</div>
-            </div>
-          </div>
-        )}
-      </div>
-      <div className="flex items-center gap-3 w-80 sm:w-96">
-        <div className="flex-1 h-3.5 bg-muted rounded-full overflow-hidden relative">
-          <div className="absolute top-0 h-full w-0.5 bg-indigo-300/60 z-10" style={{ left: `${goalPct}%` }} />
-          <div className="h-full rounded-full transition-all duration-200"
-            style={{ width: `${pct}%`, background: pct >= goalPct ? "#22c55e" : color }} />
-        </div>
-        <span className="text-sm font-black w-10 text-right transition-colors" style={{ color: pct >= goalPct ? "#22c55e" : color }}>
-          {pct}%
-        </span>
-        <button onClick={reset} title="Șterge și încearcă din nou" className="text-sm text-muted-foreground hover:text-foreground">↺</button>
-      </div>
-      {done && <div className="text-2xl font-bold text-green-600 animate-bounce">✅ Bravo! Forma {SHAPE_NAMES[shape]}!</div>}
-    </div>
-  );
-}
 
 /* ─── Quiz helpers ───────────────────────────────────────── */
 type ColorRound =
@@ -488,7 +324,7 @@ export default function GameForme() {
           <div className="flex items-center justify-between w-full max-w-sm">
             <div>
               <div className="text-sm font-bold text-foreground">Trasează forma: <span className="text-primary capitalize">{SHAPE_NAMES[curShape]}</span></div>
-              <div className="text-xs text-muted-foreground">Urmărește conturul cu mouse-ul sau degetul!</div>
+              <div className="text-xs text-muted-foreground">Urmează pașii numerotați — sau colorează liber!</div>
             </div>
             <span className="text-sm font-bold text-primary">⭐ {traceScore}/{TRACEABLE.length}</span>
           </div>
@@ -513,7 +349,8 @@ export default function GameForme() {
               <div className="text-2xl font-bold text-green-600">Bravo! {SHAPE_NAMES[curShape]} e gata!</div>
             </div>
           ) : (
-            <ShapeTracingCanvas key={curShape} shape={curShape} onComplete={() => {
+            <StepTraceCanvas key={curShape} strokes={shapeStrokes(curShape)}
+              color={SHAPE_TRACE_COLORS[curShape]} onComplete={() => {
               setTraceCelebrate(true); setTraceScore(s => s + 1); playCelebrate();
               setTimeout(() => { setTraceCelebrate(false); if (traceIdx < TRACEABLE.length - 1) setTraceIdx(i => i + 1); }, 1200);
             }} />

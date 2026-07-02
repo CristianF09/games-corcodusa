@@ -18,15 +18,17 @@ import type { MouseEvent, TouchEvent } from "react";
 
 export type Pt = { x: number; y: number };
 
-export const TRACE_BRUSH_RADIUS = 20; // px — coverage detection radius
+export const TRACE_BRUSH_RADIUS = 32; // px — coverage detection radius; generous on purpose (toddler fine-motor skills)
 export const TRACE_COVERAGE_GOAL = 0.52; // 52% of template pixels must be covered
 export const TRACE_SAMPLE_STEP = 3; // sample template every 3px
 export const TRACE_CANVAS_SIZE = 400; // backing-resolution canvas size — bigger = easier for small hands to trace
 
 // "Wrong attempt" detection — used to give an explicit error + force a retry
 // instead of silently waiting forever for coverage to reach the goal.
-export const TRACE_ERROR_MIN_INK = 260; // px of ink drawn before we start judging (avoids early false positives)
-export const TRACE_ERROR_RATIO = 0.55; // if ≥55% of ink drawn so far missed the template → flag an error
+// Thresholds are lenient: a 3-year-old's wobbly stroke must not trigger ❌,
+// only a clearly-wrong scribble away from the template should.
+export const TRACE_ERROR_MIN_INK = 380; // px of ink drawn before we start judging (avoids early false positives)
+export const TRACE_ERROR_RATIO = 0.7; // if ≥70% of ink drawn so far missed the template → flag an error
 
 /** Render a template as a solid black mask on white into an offscreen
  *  canvas, then sample the dark pixels as a sparse point cloud. */

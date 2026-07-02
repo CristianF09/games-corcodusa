@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { playCorrect, playWrong, playClick, playCelebrate } from "@/lib/sfx";
-import { sampleMaskPoints, markCoverage, getCanvasPos, InkTracker, TRACE_COVERAGE_GOAL, TRACE_CANVAS_SIZE, type Pt } from "@/lib/tracing";
+import StepTraceCanvas from "@/components/step-trace-canvas";
+import { LETTER_STROKES } from "@/lib/stroke-data";
 
 /* ─── Data ───────────────────────────────────────────────── */
 const LETTERS_DATA: Record<string, { word: string; emoji: string; desc: string; type: "vocala" | "consoana" }> = {
@@ -109,161 +110,11 @@ function LetterBuddy({ color, size = 28 }: { color: string; size?: number }) {
   );
 }
 
-/* ─── TracingCanvas ──────────────────────────────────────── */
+/* ─── Trace colors ───────────────────────────────────────── */
 const LETTER_COLORS = [
   "#ef4444","#f97316","#eab308","#22c55e","#06b6d4","#3b82f6","#8b5cf6","#ec4899",
   "#f43f5e","#10b981","#0ea5e9","#a855f7",
 ];
-const LETTER_FONT_SIZE = 250;
-
-/** Sample which canvas pixels belong to the letter's glyph. */
-function sampleLetterPoints(template: string): Pt[] {
-  return sampleMaskPoints((ctx, size) => {
-    ctx.font = `bold ${LETTER_FONT_SIZE}px 'Arial Rounded MT Bold', Arial, sans-serif`;
-    ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    ctx.fillText(template, size / 2, size / 2 + 8);
-  }, TRACE_CANVAS_SIZE);
-}
-
-function TracingCanvas({ template, colorIdx, onComplete }: { template: string; colorIdx: number; onComplete: () => void }) {
-  const canvasRef  = useRef<HTMLCanvasElement>(null);
-  const ptsRef     = useRef<Pt[]>([]);
-  const coveredRef = useRef<Set<number>>(new Set());
-  const inkRef     = useRef(new InkTracker());
-  const [coverage, setCoverage] = useState(0);
-  const [drawing, setDrawing] = useState(false);
-  const [done, setDone] = useState(false);
-  const [onTrack, setOnTrack] = useState(false);
-  const [error, setError] = useState(false);
-  const lastPos = useRef<Pt | null>(null);
-  const color = LETTER_COLORS[colorIdx % LETTER_COLORS.length];
-
-  function drawTemplate() {
-    const c = canvasRef.current!; const ctx = c.getContext("2d")!;
-    ctx.clearRect(0, 0, c.width, c.height);
-    ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, c.width, c.height);
-    ctx.font = `bold ${LETTER_FONT_SIZE}px 'Arial Rounded MT Bold', Arial, sans-serif`;
-    ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    // Shadow
-    ctx.shadowColor = "rgba(99,102,241,0.1)"; ctx.shadowBlur = 20;
-    ctx.fillStyle = "rgba(99,102,241,0.10)"; ctx.fillText(template, c.width / 2, c.height / 2 + 8);
-    ctx.shadowBlur = 0;
-    ctx.strokeStyle = "rgba(99,102,241,0.22)"; ctx.lineWidth = 3;
-    ctx.strokeText(template, c.width / 2, c.height / 2 + 8);
-    // Dotted guide
-    ctx.setLineDash([6, 6]); ctx.lineWidth = 2;
-    ctx.strokeStyle = "rgba(99,102,241,0.18)";
-    ctx.strokeText(template, c.width / 2, c.height / 2 + 8);
-    ctx.setLineDash([]);
-  }
-
-  useEffect(() => {
-    ptsRef.current = sampleLetterPoints(template);
-    coveredRef.current = new Set();
-    inkRef.current.reset();
-    drawTemplate();
-    setCoverage(0); setDone(false); setOnTrack(false); setError(false);
-    lastPos.current = null;
-  }, [template]);
-
-  function getPos(e: React.MouseEvent | React.TouchEvent): Pt {
-    return getCanvasPos(e, canvasRef.current!);
-  }
-
-  function startDraw(e: React.MouseEvent | React.TouchEvent) {
-    if (done || error) return;
-    setDrawing(true); lastPos.current = getPos(e);
-  }
-
-  function failAndRetry() {
-    setError(true);
-    setDrawing(false); lastPos.current = null; setOnTrack(false);
-    setTimeout(() => {
-      drawTemplate();
-      coveredRef.current = new Set();
-      inkRef.current.reset();
-      setCoverage(0); setError(false);
-    }, 1300);
-  }
-
-  function doDraw(e: React.MouseEvent | React.TouchEvent) {
-    if (!drawing || done || error) return;
-    const c = canvasRef.current!; const ctx = c.getContext("2d")!;
-    const pos = getPos(e);
-    if (lastPos.current) {
-      ctx.strokeStyle = color; ctx.lineWidth = 30; ctx.lineCap = "round"; ctx.lineJoin = "round";
-      ctx.globalAlpha = 0.75;
-      ctx.beginPath(); ctx.moveTo(lastPos.current.x, lastPos.current.y); ctx.lineTo(pos.x, pos.y); ctx.stroke();
-      ctx.globalAlpha = 1;
-
-      const { pct, onTrack: near, offTrack, segLen } = markCoverage(ptsRef.current, coveredRef.current, lastPos.current, pos);
-      setCoverage(pct); setOnTrack(near);
-      inkRef.current.add(segLen, offTrack);
-
-      if (inkRef.current.isError() && !done) { failAndRetry(); return; }
-
-      if (pct >= TRACE_COVERAGE_GOAL && !done) { setDone(true); setTimeout(onComplete, 900); }
-    }
-    lastPos.current = pos;
-  }
-
-  function stopDraw() { setDrawing(false); lastPos.current = null; setOnTrack(false); }
-
-  function reset() {
-    drawTemplate();
-    coveredRef.current = new Set();
-    inkRef.current.reset();
-    setCoverage(0); setDone(false); setOnTrack(false); setError(false);
-  }
-
-  const pct = Math.min(100, Math.round(coverage * 100));
-  const goalPct = Math.round(TRACE_COVERAGE_GOAL * 100);
-
-  return (
-    <div className="flex flex-col items-center gap-3">
-      <div className="relative">
-        <canvas ref={canvasRef} width={TRACE_CANVAS_SIZE} height={TRACE_CANVAS_SIZE}
-          className={`rounded-3xl border-3 shadow-xl touch-none cursor-crosshair transition-all duration-300 w-80 h-80 sm:w-96 sm:h-96
-            ${error ? "border-red-400 shadow-[0_0_24px_rgba(239,68,68,.35)]" :
-              done ? "border-green-400 shadow-green-100" : onTrack ? "border-[var(--track-color)] shadow-lg" : "border-border"}`}
-          style={{ "--track-color": color } as React.CSSProperties}
-          onMouseDown={startDraw} onMouseMove={doDraw} onMouseUp={stopDraw} onMouseLeave={stopDraw}
-          onTouchStart={startDraw} onTouchMove={doDraw} onTouchEnd={stopDraw} />
-        {onTrack && !done && !error && (
-          <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-white text-xs font-bold animate-pulse"
-            style={{ background: color }}>
-            ✓ Pe literă!
-          </div>
-        )}
-        {error && (
-          <div className="absolute inset-0 flex items-center justify-center rounded-3xl bg-red-500/10 animate-in fade-in">
-            <div className="bg-white border-2 border-red-300 rounded-2xl px-4 py-3 text-center shadow-lg">
-              <div className="text-2xl">❌</div>
-              <div className="text-sm font-bold text-red-600">Nu e pe literă.<br/>Încearcă din nou!</div>
-            </div>
-          </div>
-        )}
-      </div>
-      <div className="flex items-center gap-3 w-80 sm:w-96">
-        <div className="flex-1 h-3.5 bg-muted rounded-full overflow-hidden relative">
-          <div className="absolute top-0 h-full w-0.5 bg-indigo-300/60 z-10" style={{ left: `${goalPct}%` }} />
-          <div className="h-full rounded-full transition-all duration-200"
-            style={{ width: `${pct}%`, background: pct >= goalPct ? "#22c55e" : color }} />
-        </div>
-        <span className="text-sm font-black w-10 text-right transition-colors" style={{ color: pct >= goalPct ? "#22c55e" : color }}>
-          {pct}%
-        </span>
-        <button onClick={reset} title="Șterge și încearcă din nou"
-          className="text-sm text-muted-foreground hover:text-foreground transition-colors">↺</button>
-      </div>
-      {done && (
-        <div className="text-2xl font-bold text-green-600 animate-bounce">
-          ✅ Perfect! Litera {template}!
-        </div>
-      )}
-    </div>
-  );
-}
 
 /* ─── Main Component ──────────────────────────────────────── */
 type Mode = "discover" | "trace" | "wordgame";
@@ -447,12 +298,12 @@ export default function GameAlfabet() {
           ) : (
             <div className="flex flex-col items-center gap-2">
               <p className="text-sm text-muted-foreground font-medium">
-                Urmărește conturul literei cu degetul sau mouse-ul!
+                Urmează pașii numerotați — sau colorează liber!
               </p>
-              <TracingCanvas
+              <StepTraceCanvas
                 key={curLetter}
-                template={curLetter}
-                colorIdx={traceIdx}
+                strokes={LETTER_STROKES[curLetter]}
+                color={LETTER_COLORS[traceIdx % LETTER_COLORS.length]}
                 onComplete={handleTraceComplete} />
             </div>
           )}
