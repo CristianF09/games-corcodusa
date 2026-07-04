@@ -16,5 +16,4 @@ export const GAME_COMPONENTS: Record<number, ReturnType<typeof lazy>> = {
   11: lazy(() => import("./GameLabirint")),
   12: lazy(() => import("./GameCuvinte")),
   13: lazy(() => import("./GameUnestePunctele")),
-  14: lazy(() => import("./GameZipZap")),
-};
+  1
