@@ -5,6 +5,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { CheckCircle2 } from "lucide-react";
 import { useAuth, useClerk } from "@clerk/react";
 import { useLocation } from "wouter";
+import { useEffect, useRef, useState } from "react";
+import { API_BASE_URL } from "@/lib/api-base";
 
 export default function Pricing() {
   const { data: products, isLoading } = useListProducts();
@@ -12,6 +14,17 @@ export default function Pricing() {
   const { isSignedIn } = useAuth();
   const { openSignIn } = useClerk();
   const [, setLocation] = useLocation();
+  const [checkoutWaking, setCheckoutWaking] = useState(false);
+  const warmedRef = useRef(false);
+
+  // Pre-warm the API server as soon as the pricing page loads so the
+  // subscribe button responds instantly even after a Render cold-start.
+  useEffect(() => {
+    if (warmedRef.current) return;
+    warmedRef.current = true;
+    fetch(`${API_BASE_URL}/api/health`, { method: "GET", signal: AbortSignal.timeout(20_000) })
+      .catch(() => { /* ignore — this is best-effort */ });
+  }, []);
 
   const monthlyProduct = products?.find((p) => p.interval === "month");
   const annualProduct = products?.find((p) => p.interval === "year");
@@ -22,9 +35,31 @@ export default function Pricing() {
       openSignIn({ forceRedirectUrl: "/pricing", signUpForceRedirectUrl: "/pricing" });
       return;
     }
+    setCheckoutWaking(false);
     createCheckout.mutate(
       { data: { priceId, interval } },
-      { onSuccess: (data) => { window.location.href = data.url; } },
+      {
+        onSuccess: (data) => { window.location.href = data.url; },
+        onError: async (err: unknown) => {
+          // If it looks like a gateway/network error, wait for the server
+          // to wake up and retry once automatically.
+          const isGateway =
+            err instanceof Error &&
+            (err.message.includes("502") ||
+              err.message.includes("503") ||
+              err.message.includes("fetch") ||
+              err.message.toLowerCase().includes("network"));
+          if (isGateway && !checkoutWaking) {
+            setCheckoutWaking(true);
+            await new Promise((r) => setTimeout(r, 6_000));
+            setCheckoutWaking(false);
+            createCheckout.mutate(
+              { data: { priceId, interval } },
+              { onSuccess: (data) => { window.location.href = data.url; } },
+            );
+          }
+        },
+      },
     );
   };
 
@@ -162,9 +197,9 @@ export default function Pricing() {
                     type="button"
                     className="w-full h-12 rounded-xl bg-gradient-to-r from-[#FF6B00] to-[#FF9A3C] text-white font-black text-sm shadow-[0px_8px_25px_rgba(255,107,0,.45)] hover:shadow-[0px_14px_35px_rgba(255,107,0,.60)] hover:from-[#E55A00] hover:to-[#E58A2C] transition-all duration-300 disabled:opacity-60"
                     onClick={() => handleSubscribe(annualProduct?.priceId, annualProduct?.interval ?? "year")}
-                    disabled={createCheckout.isPending || (!isLoading && !annualProduct)}
+                    disabled={createCheckout.isPending || checkoutWaking || (!isLoading && !annualProduct)}
                   >
-                    {createCheckout.isPending ? "Se procesează..." : "Abonează-te anual →"}
+                    {checkoutWaking ? "⏳ Serverul pornește..." : createCheckout.isPending ? "Se procesează..." : "Abonează-te anual →"}
                   </button>
                 </div>
               </div>
@@ -209,37 +244,4 @@ export default function Pricing() {
                 <div className="mt-6">
                   <button
                     type="button"
-                    className="w-full h-12 rounded-xl bg-gradient-to-r from-[#0A4D68] to-[#2C5F7A] text-white font-black text-sm shadow-[0px_6px_20px_rgba(10,77,104,.35)] hover:shadow-[0px_10px_28px_rgba(10,77,104,.50)] hover:from-[#083D52] hover:to-[#255570] transition-all duration-300 disabled:opacity-60"
-                    onClick={() => handleSubscribe(monthlyProduct?.priceId, monthlyProduct?.interval ?? "month")}
-                    disabled={createCheckout.isPending || (!isLoading && !monthlyProduct)}
-                  >
-                    {createCheckout.isPending ? "Se procesează..." : "Abonează-te lunar →"}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-          </div>
-
-          {/* ── Reassurance strip ── */}
-          <div className="mt-14 flex justify-center">
-            <div className="inline-flex flex-wrap justify-center gap-6 bg-white rounded-2xl border border-[#E5E7EB] px-8 py-5 shadow-[0px_4px_15px_rgba(0,0,0,.06)]">
-              {[
-                { icon: "🛡️", text: "Fără reclame" },
-                { icon: "👶", text: "100% sigur pentru copii" },
-                { icon: "🔒", text: "Plată securizată prin Stripe" },
-              ].map((item) => (
-                <div key={item.text} className="flex items-center gap-2">
-                  <span className="text-xl">{item.icon}</span>
-                  <span className="text-sm font-semibold text-[#374151]">{item.text}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </main>
-
-      <Footer />
-    </div>
-  );
-}
+                    className="w-full h-12 rounded-xl bg-gradient-to-r from-[#0A4D68] to-[#2C5F7A] text-white font-

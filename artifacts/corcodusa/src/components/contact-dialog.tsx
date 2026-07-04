@@ -17,7 +17,18 @@ interface ContactDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-type Status = "idle" | "submitting" | "success" | "error";
+type Status = "idle" | "submitting" | "waking" | "success" | "error";
+
+/** Retry once on 502/503 (Render cold-start) with a short delay. */
+async function fetchWithWakeUp(url: string, opts: RequestInit): Promise<Response> {
+  const res = await fetch(url, { ...opts, signal: AbortSignal.timeout(15_000) });
+  if (res.status === 502 || res.status === 503) {
+    // Server was sleeping — wait for it to boot, then retry once
+    await new Promise((r) => setTimeout(r, 6_000));
+    return fetch(url, { ...opts, signal: AbortSignal.timeout(20_000) });
+  }
+  return res;
+}
 
 export function ContactDialog({ open, onOpenChange }: ContactDialogProps) {
   const [name, setName] = useState("");
@@ -40,11 +51,25 @@ export function ContactDialog({ open, onOpenChange }: ContactDialogProps) {
     setStatus("submitting");
     setErrorMsg("");
     try {
-      const res = await fetch(`${API_BASE_URL}/api/contact`, {
+      const opts: RequestInit = {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email, message }),
+      };
+      // First attempt — if 502 (server sleeping), switch to "waking" state and retry
+      const firstRes = await fetch(`${API_BASE_URL}/api/contact`, {
+        ...opts,
+        signal: AbortSignal.timeout(15_000),
       });
+      let res = firstRes;
+      if (firstRes.status === 502 || firstRes.status === 503) {
+        setStatus("waking");
+        await new Promise((r) => setTimeout(r, 6_000));
+        res = await fetch(`${API_BASE_URL}/api/contact`, {
+          ...opts,
+          signal: AbortSignal.timeout(20_000),
+        });
+      }
       if (!res.ok) {
         const data = await res.json().catch(() => null);
         throw new Error(data?.detail || "A apărut o eroare. Încearcă din nou.");
@@ -108,30 +133,4 @@ export function ContactDialog({ open, onOpenChange }: ContactDialogProps) {
                 <Textarea
                   id="contact-message"
                   value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Cu ce te putem ajuta?"
-                  required
-                  minLength={5}
-                  maxLength={5000}
-                  rows={4}
-                />
-              </div>
-
-              {status === "error" && (
-                <p className="text-sm font-semibold text-[#EF4444]">{errorMsg}</p>
-              )}
-
-              <button
-                type="submit"
-                disabled={status === "submitting"}
-                className="w-full h-12 rounded-xl bg-gradient-to-r from-[#FF6B00] to-[#FF9A3C] text-white font-black text-base shadow-[0px_6px_20px_rgba(255,107,0,.35)] hover:shadow-[0px_10px_28px_rgba(255,107,0,.50)] hover:from-[#E55A00] hover:to-[#E58A2C] transition-all duration-300 disabled:opacity-60"
-              >
-                {status === "submitting" ? "Se trimite..." : "Trimite mesajul"}
-              </button>
-            </form>
-          </>
-        )}
-      </DialogContent>
-    </Dialog>
-  );
-}
+          
