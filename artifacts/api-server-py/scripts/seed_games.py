@@ -159,6 +159,18 @@ GAMES = [
         "is_featured": True,
         "requires_subscription": True,
     },
+    {
+        # id 13 -> GameUnestePunctele: dot-to-dot for numbers 1-20, letters, images.
+        "title": "Unește Punctele",
+        "description": "Conectează punctele în ordine și desenează cifre 1-20, litere și imagini amuzante!",
+        "category": "litere",
+        "age_min": 3,
+        "age_max": 7,
+        "image_url": "/api/assets/game-uneste-1.png",
+        "is_new_game": True,
+        "is_featured": True,
+        "requires_subscription": True,
+    },
 ]
 
 
