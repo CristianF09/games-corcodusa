@@ -197,4 +197,19 @@ async def main():
         existing = await Game.find_one(Game.title == game["title"])
         if existing:
             # Update placeholder image URLs to real assets
-        
+            if existing.image_url and "placehold.co" in existing.image_url:
+                existing.image_url = game["image_url"]
+                await existing.save()
+                updated += 1
+            else:
+                skipped += 1
+            continue
+        await Game.create_new(**game)
+        created += 1
+
+    print(f"Seed complete: {created} created, {updated} updated, {skipped} already up-to-date.")
+    await close_db()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

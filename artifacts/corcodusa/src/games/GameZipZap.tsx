@@ -487,4 +487,64 @@ export default function GameZipZap() {
       <div className="w-full max-w-xs">
         <div className="flex justify-between text-xs text-gray-500 mb-1">
           <span>{drawnPath.length}/{level.rows * level.cols} celule</span>
-          <span>Punct {Math.min(nextWpIdx, level.
+          <span>Punct {Math.min(nextWpIdx, level.waypoints.length)}/{level.waypoints.length}</span>
+        </div>
+        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+          <div
+            className="h-full rounded-full transition-all"
+            style={{ width: `${(drawnPath.length / (level.rows * level.cols)) * 100}%`, background: level.color }}
+          />
+        </div>
+      </div>
+
+      {/* Buttons */}
+      {!won ? (
+        <div className="flex gap-3">
+          <button
+            onClick={undo}
+            disabled={drawnPath.length === 0}
+            className="flex items-center gap-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-40 text-gray-700 font-semibold rounded-xl transition text-sm"
+          >
+            <KidEmoji emoji="↩️" size={16} /> Înapoi
+          </button>
+          <button
+            onClick={resetLevel}
+            className="flex items-center gap-1 px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 font-semibold rounded-xl transition text-sm"
+          >
+            <KidEmoji emoji="🔄" size={16} /> Resetare
+          </button>
+          <button
+            onClick={requestHint}
+            disabled={hintCooldown}
+            className="flex items-center gap-1 px-4 py-2 bg-yellow-50 hover:bg-yellow-100 disabled:opacity-40 text-yellow-700 font-semibold rounded-xl transition text-sm"
+          >
+            <KidEmoji emoji="💡" size={16} /> Indiciu
+          </button>
+        </div>
+      ) : (
+        <div className="flex flex-col items-center gap-3">
+          <div className="text-2xl font-extrabold text-purple-600 flex items-center gap-2">
+            <KidEmoji emoji="🎉" size={32} /> Bravo! Nivel completat!
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={resetLevel}
+              className="px-5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition"
+            >
+              Joacă din nou
+            </button>
+            {levelIdx < 29 && (
+              <button
+                onClick={() => loadLevel(levelIdx + 1)}
+                className="px-5 py-2 text-white font-semibold rounded-xl transition"
+                style={{ background: LEVELS[levelIdx + 1].color }}
+              >
+                Nivel {levelIdx + 2} →
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
