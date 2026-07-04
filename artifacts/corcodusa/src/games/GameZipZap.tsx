@@ -1,6 +1,6 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { playClick, playCelebrate, playCorrect, playWrong } from "@/lib/sfx";
-import { KidEmoji } from "@/components/KidEmoji";
+import { KidEmoji } from "@/components/kid-emoji";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -141,8 +141,21 @@ export default function GameZipZap() {
   const level = LEVELS[levelIdx];
 
   // ─── Derived state ──────────────────────────────────────────────────────────
-  const drawnSet = new Set(drawnPath.map(cellKey));
-  const wpSet = new Map(level.waypoints.map((c, i) => [cellKey(c), i + 1]));
+  const drawnSet = useMemo(() => new Set(drawnPath.map(cellKey)), [drawnPath]);
+  const wpSet = useMemo(() => new Map(level.waypoints.map((c, i) => [cellKey(c), i + 1])), [level]);
+
+  // Dead-end: last drawn cell has no unvisited adjacent neighbours (and puzzle not done)
+  const isDeadEnd = useMemo(() => {
+    if (drawnPath.length === 0 || won) return false;
+    if (drawnPath.length === level.rows * level.cols) return false;
+    const [lr, lc] = drawnPath[drawnPath.length - 1];
+    return (
+      [[0,1],[1,0],[0,-1],[-1,0]] as [number,number][]
+    ).every(([dr, dc]) => {
+      const nr = lr + dr, nc = lc + dc;
+      return nr < 0 || nr >= level.rows || nc < 0 || nc >= level.cols || drawnSet.has(`${nr},${nc}`);
+    });
+  }, [drawnPath, drawnSet, level, won]);
 
   function resetLevel() {
     setDrawnPath([]);
@@ -201,9 +214,11 @@ export default function GameZipZap() {
         setTimeout(() => setWrongFlash(false), 600);
         return;
       }
+      // Correct waypoint hit!
+      playCorrect();
+    } else {
+      playClick();
     }
-
-    playClick();
     const newPath = [...drawnPath, [...cell] as Cell];
     const newNextWpIdx = wpNum !== undefined ? nextWpIdx + 1 : nextWpIdx;
     setDrawnPath(newPath);
@@ -237,11 +252,13 @@ export default function GameZipZap() {
     if (hintCooldown || won) return;
     setShowHint(true);
     setHintCooldown(true);
-    setTimeout(() => { setShowHint(false); setHintCooldown(false); }, 2000);
+    setTimeout(() => { setShowHint(false); setHintCooldown(false); }, 2500);
   }
 
-  const hintCell: Cell | null = (showHint && drawnPath.length < level.solution.length)
-    ? level.solution[drawnPath.length]
+  // When path is empty → hint points to start dot (waypoint 1)
+  // When in progress → hint points to next correct cell in solution
+  const hintCell: Cell | null = showHint
+    ? (drawnPath.length === 0 ? level.waypoints[0] : level.solution[drawnPath.length] ?? null)
     : null;
 
   // ─── SVG cell size ──────────────────────────────────────────────────────────
@@ -294,10 +311,18 @@ export default function GameZipZap() {
         </div>
       </div>
 
-      {/* Instructions */}
-      <p className="text-sm text-gray-500 text-center max-w-xs">
-        Conectează punctele în ordine și umple tot grila! <KidEmoji emoji="🎯" size={16} />
-      </p>
+      {/* Instructions / dead-end warning */}
+      {isDeadEnd ? (
+        <p className="text-sm font-semibold text-red-500 text-center max-w-xs animate-pulse">
+          Blocat! Apasă Înapoi sau Resetare. <KidEmoji emoji="🚧" size={16} />
+        </p>
+      ) : (
+        <p className="text-sm text-gray-500 text-center max-w-xs">
+          {drawnPath.length === 0
+            ? <>Atinge punctul <strong>1</strong> pentru a începe! <KidEmoji emoji="👆" size={16} /></>
+            : <>Conectează punctele în ordine și umple tot grila! <KidEmoji emoji="🎯" size={16} /></>}
+        </p>
+      )}
 
       {/* Level picker */}
       {showLevelPicker && (
@@ -394,15 +419,38 @@ export default function GameZipZap() {
             />
           )}
 
+          {/* Start pulse ring — shown on waypoint 1 before drawing begins */}
+          {drawnPath.length === 0 && (
+            <circle
+              cx={level.waypoints[0][1] * cellPx + CX}
+              cy={level.waypoints[0][0] * cellPx + CX}
+              r={cellPx * 0.44}
+              fill="none"
+              stroke={level.color}
+              strokeWidth={2}
+              opacity={0.5}
+            >
+              <animate attributeName="r" values={`${cellPx*0.38};${cellPx*0.52};${cellPx*0.38}`} dur="1.2s" repeatCount="indefinite" />
+              <animate attributeName="opacity" values="0.6;0.1;0.6" dur="1.2s" repeatCount="indefinite" />
+            </circle>
+          )}
+
           {/* Waypoint dots (always on top) */}
           {level.waypoints.map((wp, i) => {
             const key = cellKey(wp);
             const visited = drawnSet.has(key);
+            const isNext = i === nextWpIdx && !visited;
             const cx = wp[1] * cellPx + CX;
             const cy = wp[0] * cellPx + CX;
             const r = cellPx * 0.32;
             return (
               <g key={`wp-${i}`}>
+                {/* Glow ring on next waypoint */}
+                {isNext && drawnPath.length > 0 && (
+                  <circle cx={cx} cy={cy} r={r * 1.5} fill="none" stroke={level.color} strokeWidth={1.5} opacity={0.3}>
+                    <animate attributeName="r" values={`${r*1.3};${r*1.8};${r*1.3}`} dur="1s" repeatCount="indefinite" />
+                  </circle>
+                )}
                 <circle cx={cx} cy={cy} r={r} fill={visited ? level.color : "white"} stroke={level.color} strokeWidth={2.5} />
                 <text
                   x={cx}
@@ -439,64 +487,4 @@ export default function GameZipZap() {
       <div className="w-full max-w-xs">
         <div className="flex justify-between text-xs text-gray-500 mb-1">
           <span>{drawnPath.length}/{level.rows * level.cols} celule</span>
-          <span>Punct {Math.min(nextWpIdx, level.waypoints.length)}/{level.waypoints.length}</span>
-        </div>
-        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-          <div
-            className="h-full rounded-full transition-all"
-            style={{ width: `${(drawnPath.length / (level.rows * level.cols)) * 100}%`, background: level.color }}
-          />
-        </div>
-      </div>
-
-      {/* Buttons */}
-      {!won ? (
-        <div className="flex gap-3">
-          <button
-            onClick={undo}
-            disabled={drawnPath.length === 0}
-            className="flex items-center gap-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-40 text-gray-700 font-semibold rounded-xl transition text-sm"
-          >
-            <KidEmoji emoji="↩️" size={16} /> Înapoi
-          </button>
-          <button
-            onClick={resetLevel}
-            className="flex items-center gap-1 px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 font-semibold rounded-xl transition text-sm"
-          >
-            <KidEmoji emoji="🔄" size={16} /> Resetare
-          </button>
-          <button
-            onClick={requestHint}
-            disabled={hintCooldown || drawnPath.length === 0}
-            className="flex items-center gap-1 px-4 py-2 bg-yellow-50 hover:bg-yellow-100 disabled:opacity-40 text-yellow-700 font-semibold rounded-xl transition text-sm"
-          >
-            <KidEmoji emoji="💡" size={16} /> Indiciu
-          </button>
-        </div>
-      ) : (
-        <div className="flex flex-col items-center gap-3">
-          <div className="text-2xl font-extrabold text-purple-600 flex items-center gap-2">
-            <KidEmoji emoji="🎉" size={32} /> Bravo! Nivel completat!
-          </div>
-          <div className="flex gap-3">
-            <button
-              onClick={resetLevel}
-              className="px-5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition"
-            >
-              Joacă din nou
-            </button>
-            {levelIdx < 29 && (
-              <button
-                onClick={() => loadLevel(levelIdx + 1)}
-                className="px-5 py-2 text-white font-semibold rounded-xl transition"
-                style={{ background: LEVELS[levelIdx + 1].color }}
-              >
-                Nivel {levelIdx + 2} →
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+          <span>Punct {Math.min(nextWpIdx, level.
