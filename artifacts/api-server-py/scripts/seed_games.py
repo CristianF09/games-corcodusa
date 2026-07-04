@@ -171,6 +171,18 @@ GAMES = [
         "is_featured": True,
         "requires_subscription": True,
     },
+    {
+        # id 14 -> GameZipZap: fill-the-grid path puzzle, 30 levels, 3 difficulties.
+        "title": "Zip Zap",
+        "description": "Conectează punctele numerotate în ordine și umple toată grila! 30 de niveluri cu dificultate crescătoare.",
+        "category": "logica",
+        "age_min": 5,
+        "age_max": 10,
+        "image_url": "/api/assets/game-zipzap-1.png",
+        "is_new_game": True,
+        "is_featured": True,
+        "requires_subscription": True,
+    },
 ]
 
 
@@ -185,19 +197,4 @@ async def main():
         existing = await Game.find_one(Game.title == game["title"])
         if existing:
             # Update placeholder image URLs to real assets
-            if existing.image_url and "placehold.co" in existing.image_url:
-                existing.image_url = game["image_url"]
-                await existing.save()
-                updated += 1
-            else:
-                skipped += 1
-            continue
-        await Game.create_new(**game)
-        created += 1
-
-    print(f"Seed complete: {created} created, {updated} updated, {skipped} already up-to-date.")
-    await close_db()
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
+        
