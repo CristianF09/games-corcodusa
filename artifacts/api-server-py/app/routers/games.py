@@ -22,6 +22,8 @@ CATEGORY_LABELS = {
     "logica": {"label": "Logică & Puzzle", "emoji": "🧩"},
     "memorie": {"label": "Memorie & Concentrare", "emoji": "🧠"},
     "creativitate": {"label": "Creativitate", "emoji": "✏️"},
+    "labirint":     {"label": "Labirint",    "emoji": "🌀"},
+    "cuvinte":      {"label": "Caută Cuvinte", "emoji": "🔍"},
 }
 
 

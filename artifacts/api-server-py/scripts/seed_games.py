@@ -135,6 +135,30 @@ GAMES = [
         "age_max": 9,
         "image_url": "/api/assets/game-logica-1.png",
     },
+    {
+        # id 11 -> GameLabirint: maze navigation, 3 difficulty levels, 5 themes.
+        "title": "Labirint",
+        "description": "Navighează prin labirint cu 3 niveluri de dificultate și 5 teme: animale, fructe, legume, obiecte, spațiu.",
+        "category": "labirint",
+        "age_min": 4,
+        "age_max": 9,
+        "image_url": "/api/assets/game-labirint-1.png",
+        "is_new_game": True,
+        "is_featured": True,
+        "requires_subscription": True,
+    },
+    {
+        # id 12 -> GameCuvinte: word search, 5 categories, 3 difficulty levels.
+        "title": "Caută Cuvinte",
+        "description": "Găsește cuvinte ascunse în grilă! 5 categorii: animale, fructe, legume, obiecte, spațiu.",
+        "category": "cuvinte",
+        "age_min": 5,
+        "age_max": 9,
+        "image_url": "/api/assets/game-cuvinte-1.png",
+        "is_new_game": True,
+        "is_featured": True,
+        "requires_subscription": True,
+    },
 ]
 
 
