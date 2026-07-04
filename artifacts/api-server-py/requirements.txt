@@ -2,12 +2,12 @@
 # this repo's pnpm side enforces a 24h "minimum release age" supply-chain
 # policy (see pnpm-workspace.yaml); apply the same caution here: check a new
 # version has been out for at least a day before upgrading.
-fastapi==0.138.0
+fastapi==0.139.0  # published 2026-07-01, past the 24h window (checked 2026-07-03)
 uvicorn[standard]==0.49.0
 beanie==2.1.0
 motor==3.7.1  # 3.7.x does not wrap append_metadata; init_beanie must use connection_string= not database=
 pydantic==2.13.4
-stripe==15.2.1
+stripe==15.3.0  # published 2026-06-24, past the 24h window (checked 2026-07-03)
 clerk-backend-api==6.0.1
 httpx==0.28.1
 python-dotenv==1.2.2  # 1.0.1 had CVE-2026-28684 (symlink-following overwrite in set_key/unset_key, unused here); published 2026-03-01, well past the 24h caution window

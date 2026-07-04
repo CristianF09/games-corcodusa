@@ -139,6 +139,11 @@ async def create_checkout(body: dict = Body(...), clerk_id: str = Depends(requir
             "success_url": f"{base_url}/?checkout=success",
             "cancel_url": f"{base_url}/pricing",
             "metadata": {"clerkId": clerk_id, "interval": interval or ""},
+            # mode="payment" doesn't create an invoice on its own — this makes
+            # Stripe issue one (PDF + link, emailed to the customer if
+            # "Successful payments" emails are enabled in Dashboard →
+            # Settings → Emails). Not a Romanian fiscal invoice (e-Factura).
+            "invoice_creation": {"enabled": True},
         }
 
         session = await client.v1.checkout.sessions.create_async(params=session_params)

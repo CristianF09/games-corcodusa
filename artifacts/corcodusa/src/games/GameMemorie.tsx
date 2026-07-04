@@ -24,6 +24,14 @@ const THEMES: Record<string, { label: string; emoji: string; pairs: string[] }> 
     label: "Animale", emoji: "🐾",
     pairs: ["🐶","🐱","🐸","🦋","🦄","🐬","🦊","🐧","🐘","🦁","🦒","🐯"],
   },
+  pasari: {
+    label: "Păsări", emoji: "🐦",
+    pairs: ["🐔","🦆","🦉","🦜","🦅","🐧","🦩","🦚","🦢","🪿","🦃","🐣"],
+  },
+  obiecte: {
+    label: "Obiecte", emoji: "🧸",
+    pairs: ["🚗","⚽","🧸","🎈","🎁","🔑","☂️","👟","🎩","⏰","📚","🖍️"],
+  },
   fructe: {
     label: "Fructe & Mâncare", emoji: "🍎",
     pairs: ["🍎","🍋","🍓","🍇","🍉","🍒","🥝","🍑","🥭","🍍","🫐","🍊"],
@@ -210,7 +218,7 @@ export default function GameMemorie() {
                 fontSize: diffId === "hard" ? "24px" : "28px",
               }}>
               {card.flipped || card.matched
-                ? <KidEmoji emoji={card.emoji} size={diffId === "hard" ? 32 : 40} />
+                ? <KidEmoji emoji={card.emoji} size={diffId === "hard" ? 40 : 50} />
                 : "❓"}
             </button>
           ))}

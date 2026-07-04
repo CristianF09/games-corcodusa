@@ -57,6 +57,13 @@ const THEMES: Record<string, { label: string; emoji: string; pieces: string[] }>
       "🦃","🐝","🍎","🍓","🥔","🧑‍🌾","🐕","🛖","🌰",
     ],
   },
+  toys: {
+    label: "Jucării", emoji: "🧸",
+    pieces: [
+      "🧸","🚗","🚒","🚲","✈️","🚂","⚽","🏀","🎈","🎁","🪁","🎨","🖍️","📚","✏️","🎒",
+      "⏰","🔑","☂️","👟","🧢","🥁","🎸","🪀","🎲",
+    ],
+  },
 };
 
 function shuffle<T>(arr: T[]): T[] { return [...arr].sort(() => Math.random() - 0.5); }

@@ -45,6 +45,9 @@ const ANIMALS: Animal[] = [
   { name: "Cal",       emoji: "🐴", cat: "domestice", habitat: "ferma",  food: "iarbă, fân și ovăz",     sound: "Iîîî!" },
   { name: "Capră",     emoji: "🐐", cat: "domestice", habitat: "ferma",  food: "iarbă și frunze",        sound: "Mee!" },
   { name: "Iepure",    emoji: "🐰", cat: "domestice", habitat: "casa",   food: "morcovi și salată" },
+  { name: "Măgar",     emoji: "🫏", cat: "domestice", habitat: "ferma",  food: "iarbă, fân și morcovi",  sound: "I-ha! I-ha!" },
+  { name: "Bivol",     emoji: "🐃", cat: "domestice", habitat: "ferma",  food: "iarbă și fân" },
+  { name: "Hamster",   emoji: "🐹", cat: "domestice", habitat: "casa",   food: "semințe și morcovi" },
   // Sălbatice
   { name: "Lup",       emoji: "🐺", cat: "salbatice", habitat: "padure", food: "carne",                  sound: "Auuu!" },
   { name: "Urs",       emoji: "🐻", cat: "salbatice", habitat: "padure", food: "miere, fructe și pește", sound: "Morrr!" },
@@ -55,6 +58,19 @@ const ANIMALS: Animal[] = [
   { name: "Girafă",    emoji: "🦒", cat: "salbatice", habitat: "savana", food: "frunze de copac" },
   { name: "Delfin",    emoji: "🐬", cat: "salbatice", habitat: "ocean",  food: "pești",                  sound: "Clic-clic!" },
   { name: "Balenă",    emoji: "🐳", cat: "salbatice", habitat: "ocean",  food: "plancton și pești mici", sound: "Uuuum!" },
+  { name: "Tigru",     emoji: "🐯", cat: "salbatice", habitat: "padure", food: "carne",                  sound: "Hrrr!" },
+  { name: "Zebră",     emoji: "🦓", cat: "salbatice", habitat: "savana", food: "iarbă" },
+  { name: "Maimuță",   emoji: "🐵", cat: "salbatice", habitat: "padure", food: "banane și fructe",       sound: "U-u-a-a!" },
+  { name: "Hipopotam", emoji: "🦛", cat: "salbatice", habitat: "lac",    food: "iarbă și plante de apă" },
+  { name: "Rinocer",   emoji: "🦏", cat: "salbatice", habitat: "savana", food: "iarbă și frunze" },
+  { name: "Cangur",    emoji: "🦘", cat: "salbatice", habitat: "savana", food: "iarbă" },
+  { name: "Crocodil",  emoji: "🐊", cat: "salbatice", habitat: "lac",    food: "pești și carne" },
+  { name: "Arici",     emoji: "🦔", cat: "salbatice", habitat: "padure", food: "insecte și melci" },
+  { name: "Veveriță",  emoji: "🐿️", cat: "salbatice", habitat: "padure", food: "alune și ghinde" },
+  { name: "Mistreț",   emoji: "🐗", cat: "salbatice", habitat: "padure", food: "ghinde și rădăcini",     sound: "Groh-groh!" },
+  { name: "Șarpe",     emoji: "🐍", cat: "salbatice", habitat: "padure", food: "șoareci",                sound: "Sss!" },
+  { name: "Rechin",    emoji: "🦈", cat: "salbatice", habitat: "ocean",  food: "pești" },
+  { name: "Țestoasă",  emoji: "🐢", cat: "salbatice", habitat: "ocean",  food: "alge și meduze" },
   // Păsări
   { name: "Găină",     emoji: "🐔", cat: "pasari",    habitat: "ferma",  food: "semințe și grăunțe",     sound: "Cot-cot-cot!" },
   { name: "Rață",      emoji: "🦆", cat: "pasari",    habitat: "ferma",  food: "plante de apă",          sound: "Mac-mac!" },
@@ -64,6 +80,11 @@ const ANIMALS: Animal[] = [
   { name: "Porumbel",  emoji: "🕊️", cat: "pasari",    habitat: "aer",    food: "semințe și firimituri",  sound: "Gru-gru!" },
   { name: "Vultur",    emoji: "🦅", cat: "pasari",    habitat: "aer",    food: "carne" },
   { name: "Pinguin",   emoji: "🐧", cat: "pasari",    habitat: "ocean",  food: "pești" },
+  { name: "Gâscă",     emoji: "🪿", cat: "pasari",    habitat: "ferma",  food: "iarbă și grăunțe",       sound: "Ga-ga-ga!" },
+  { name: "Curcan",    emoji: "🦃", cat: "pasari",    habitat: "ferma",  food: "grăunțe și semințe",     sound: "Glu-glu-glu!" },
+  { name: "Lebădă",    emoji: "🦢", cat: "pasari",    habitat: "lac",    food: "plante de apă" },
+  { name: "Flamingo",  emoji: "🦩", cat: "pasari",    habitat: "lac",    food: "creveți și alge" },
+  { name: "Păun",      emoji: "🦚", cat: "pasari",    habitat: "ferma",  food: "semințe și insecte" },
   // Insecte și gâze
   { name: "Albină",    emoji: "🐝", cat: "insecte",   habitat: "aer",    food: "nectar din flori",       sound: "Bzzz!" },
   { name: "Fluture",   emoji: "🦋", cat: "insecte",   habitat: "aer",    food: "nectar" },
@@ -82,10 +103,11 @@ const MODE_TABS: [Mode, string][] = [
   ["sunete",     "🔊 Sunete"],
 ];
 
-const HABITATS = ["ferma", "casa", "padure", "ocean", "aer", "savana"];
+const HABITATS = ["ferma", "casa", "padure", "ocean", "aer", "savana", "lac"];
 const HABITAT_LABELS: Record<string, string> = {
   ferma: "🌾 La fermă", casa: "🏠 În casa omului", padure: "🌲 În pădure",
   ocean: "🌊 În ocean", aer: "☁️ În aer", savana: "🌍 În savană",
+  lac: "🏞️ La lac",
 };
 
 const DIFFICULTIES = [
@@ -232,7 +254,7 @@ export default function GameAnimale() {
                mode === "habitat" ? "Unde trăiește acest animal?" :
                "Ce mănâncă acest animal?"}
             </p>
-            <div className="flex justify-center"><KidEmoji emoji={round.target.emoji} size={90} /></div>
+            <div className="flex justify-center"><KidEmoji emoji={round.target.emoji} size={140} /></div>
             {mode !== "identifica" && (
               <div className="text-xl font-bold mt-2">{round.target.name}</div>
             )}

@@ -13,6 +13,10 @@ const ITEM_SETS = [
   { emoji: "🐸", label: "broscuțe"}, { emoji: "🌻", label: "flori"     },
   { emoji: "🍓", label: "căpșune" }, { emoji: "🚀", label: "rachete"   },
   { emoji: "🦊", label: "vulpițe" }, { emoji: "🐧", label: "pinguini"  },
+  { emoji: "🐄", label: "văcuțe"  }, { emoji: "🦁", label: "lei"       },
+  { emoji: "🦉", label: "bufnițe" }, { emoji: "🐤", label: "puișori"   },
+  { emoji: "🚗", label: "mașinuțe"}, { emoji: "🧸", label: "ursuleți"  },
+  { emoji: "⚽", label: "mingi"   }, { emoji: "🎁", label: "cadouri"   },
 ];
 const COUNT_LEVELS = [
   { id: 1, label: "1–5",   min: 1,  max: 5,  desc: "Numere mici"     },
