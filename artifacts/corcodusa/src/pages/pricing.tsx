@@ -72,7 +72,7 @@ export default function Pricing() {
   };
 
   const features = [
-    "Acces nelimitat la toate cele 10 jocuri",
+    "Acces nelimitat la toate cele 15 jocuri",
     "Fără reclame, niciodată",
     "Jocuri noi adăugate lunar",
     "Funcționează pe orice dispozitiv",
@@ -125,7 +125,7 @@ export default function Pricing() {
 
                 <ul className="space-y-3 flex-1 mb-8">
                   {[
-                    "Acces la toate cele 10 jocuri",
+                    "Acces la toate cele 15 jocuri",
                     "Fără reclame",
                     "Fără card bancar",
                     "Anulare automată după 7 zile",
@@ -244,4 +244,37 @@ export default function Pricing() {
                 <div className="mt-6">
                   <button
                     type="button"
-                    className="w-full h-12 rounded-xl bg-gradient-to-r from-[#0A4D68] to-[#2C5F7A] text-white font-
+                    className="w-full h-12 rounded-xl bg-gradient-to-r from-[#0A4D68] to-[#2C5F7A] text-white font-black text-sm shadow-[0px_6px_20px_rgba(10,77,104,.35)] hover:shadow-[0px_10px_28px_rgba(10,77,104,.50)] hover:from-[#083D52] hover:to-[#255570] transition-all duration-300 disabled:opacity-60"
+                    onClick={() => handleSubscribe(monthlyProduct?.priceId, monthlyProduct?.interval ?? "month")}
+                    disabled={createCheckout.isPending || checkoutWaking || (!isLoading && !monthlyProduct)}
+                  >
+                    {checkoutWaking ? "⏳ Serverul pornește..." : createCheckout.isPending ? "Se procesează..." : "Abonează-te lunar →"}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          {/* ── Reassurance strip ── */}
+          <div className="mt-14 flex justify-center">
+            <div className="inline-flex flex-wrap justify-center gap-6 bg-white rounded-2xl border border-[#E5E7EB] px-8 py-5 shadow-[0px_4px_15px_rgba(0,0,0,.06)]">
+              {[
+                { icon: "🛡️", text: "Fără reclame" },
+                { icon: "👶", text: "100% sigur pentru copii" },
+                { icon: "🔒", text: "Plată securizată prin Stripe" },
+              ].map((item) => (
+                <div key={item.text} className="flex items-center gap-2">
+                  <span className="text-xl">{item.icon}</span>
+                  <span className="text-sm font-semibold text-[#374151]">{item.text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <Footer />
+    </div>
+  );
+}

@@ -133,4 +133,34 @@ export function ContactDialog({ open, onOpenChange }: ContactDialogProps) {
                 <Textarea
                   id="contact-message"
                   value={message}
-          
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="Cu ce te putem ajuta?"
+                  required
+                  minLength={5}
+                  maxLength={5000}
+                  rows={4}
+                />
+              </div>
+
+              {status === "error" && (
+                <p className="text-sm font-semibold text-[#EF4444]">{errorMsg}</p>
+              )}
+
+              <button
+                type="submit"
+                disabled={status === "submitting" || status === "waking"}
+                className="w-full h-12 rounded-xl bg-gradient-to-r from-[#FF6B00] to-[#FF9A3C] text-white font-black text-base shadow-[0px_6px_20px_rgba(255,107,0,.35)] hover:shadow-[0px_10px_28px_rgba(255,107,0,.50)] hover:from-[#E55A00] hover:to-[#E58A2C] transition-all duration-300 disabled:opacity-60"
+              >
+                {status === "waking"
+                  ? "⏳ Serverul pornește, așteptați..."
+                  : status === "submitting"
+                  ? "Se trimite..."
+                  : "Trimite mesajul"}
+              </button>
+            </form>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}

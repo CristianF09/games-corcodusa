@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef } from "react";
 import { playClick, playCelebrate, playCorrect, playWrong } from "@/lib/sfx";
 import { KidEmoji } from "@/components/kid-emoji";
 
@@ -132,9 +132,12 @@ export default function GameCuvinte() {
   const [placements, setPlacements] = useState<Placement[]>([]);
   const [found, setFound] = useState<Set<string>>(new Set());
   const [foundCells, setFoundCells] = useState<Set<string>>(new Set());
-  const [selStart, setSelStart] = useState<[number,number] | null>(null);
+  const [selCells, setSelCells] = useState<[number,number][]>([]);
   const [flash, setFlash] = useState<"correct" | "wrong" | null>(null);
   const [cellSize, setCellSize] = useState(36);
+
+  const gridRef = useRef<HTMLDivElement>(null);
+  const dragAnchor = useRef<[number,number] | null>(null);
 
   const diff = DIFFS.find(d => d.id === diffId)!;
   const cat = CATEGORIES[catKey];
@@ -147,7 +150,8 @@ export default function GameCuvinte() {
     setPlacements(p);
     setFound(new Set());
     setFoundCells(new Set());
-    setSelStart(null);
+    setSelCells([]);
+    dragAnchor.current = null;
     setFlash(null);
     setPhase("playing");
     playClick();
@@ -155,27 +159,59 @@ export default function GameCuvinte() {
 
   function cellKey(r: number, c: number) { return `${r},${c}`; }
 
-  function checkSelection(start: [number,number], end: [number,number]) {
-    const [r1,c1] = start;
-    const [r2,c2] = end;
+  /* ── Drag selection (Wend-style): trage peste litere, linia se
+     evidențiază live, la ridicarea degetului se verifică cuvântul ── */
+  function cellAt(clientX: number, clientY: number): [number,number] | null {
+    const el = gridRef.current;
+    if (!el) return null;
+    const rect = el.getBoundingClientRect();
+    const c = Math.floor(((clientX - rect.left) / rect.width) * diff.size);
+    const r = Math.floor(((clientY - rect.top) / rect.height) * diff.size);
+    if (r < 0 || r >= diff.size || c < 0 || c >= diff.size) return null;
+    return [r, c];
+  }
+
+  // Straight line from anchor toward cur, snapped to the dominant axis
+  function lineCells(anchor: [number,number], cur: [number,number]): [number,number][] {
+    const [r1,c1] = anchor;
+    let [r2,c2] = cur;
     const dr = r2 - r1, dc = c2 - c1;
+    if (Math.abs(dr) >= Math.abs(dc)) c2 = c1; else r2 = r1;
+    const len = Math.max(Math.abs(r2 - r1), Math.abs(c2 - c1)) + 1;
+    const stepR = r2 === r1 ? 0 : r2 > r1 ? 1 : -1;
+    const stepC = c2 === c1 ? 0 : c2 > c1 ? 1 : -1;
+    return Array.from({ length: len }, (_, i) => [r1 + stepR * i, c1 + stepC * i] as [number,number]);
+  }
 
-    // Must be straight line: horizontal, vertical, or same cell
-    if (dr !== 0 && dc !== 0) { setSelStart(null); return; }
-    if (dr === 0 && dc === 0) { setSelStart(null); return; }
+  function onGridPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    if (phase !== "playing") return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    const cell = cellAt(e.clientX, e.clientY);
+    if (!cell) return;
+    dragAnchor.current = cell;
+    setSelCells([cell]);
+    playClick();
+  }
 
-    const len = Math.max(Math.abs(dr), Math.abs(dc)) + 1;
-    const stepR = dr === 0 ? 0 : dr > 0 ? 1 : -1;
-    const stepC = dc === 0 ? 0 : dc > 0 ? 1 : -1;
+  function onGridPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    if (phase !== "playing" || !dragAnchor.current) return;
+    const cell = cellAt(e.clientX, e.clientY);
+    if (!cell) return;
+    setSelCells(lineCells(dragAnchor.current, cell));
+  }
 
-    const cells: [number,number][] = [];
-    for (let i = 0; i < len; i++) {
-      cells.push([r1 + stepR * i, c1 + stepC * i]);
-    }
+  function onGridPointerUp() {
+    if (!dragAnchor.current) return;
+    const cells = selCells;
+    dragAnchor.current = null;
+    setSelCells([]);
+    if (cells.length < 2) return; // simple tap — nothing to check
+
     const word = cells.map(([r,c]) => grid[r]?.[c] ?? "").join("");
-
-    // Check against placements
-    const match = placements.find(p => p.word === word && !found.has(p.word));
+    const reversed = [...word].reverse().join("");
+    const match = placements.find(
+      p => (p.word === word || p.word === reversed) && !found.has(p.word)
+    );
     if (match) {
       const newFound = new Set(found);
       newFound.add(match.word);
@@ -193,17 +229,6 @@ export default function GameCuvinte() {
       playWrong();
       setFlash("wrong");
       setTimeout(() => setFlash(null), 400);
-    }
-    setSelStart(null);
-  }
-
-  function handleCellClick(r: number, c: number) {
-    if (phase !== "playing") return;
-    if (!selStart) {
-      setSelStart([r, c]);
-      playClick();
-    } else {
-      checkSelection(selStart, [r, c]);
     }
   }
 
@@ -305,8 +330,13 @@ export default function GameCuvinte() {
         </div>
       )}
 
-      {/* Grid */}
+      {/* Grid — drag across letters to select a word */}
       <div
+        ref={gridRef}
+        onPointerDown={onGridPointerDown}
+        onPointerMove={onGridPointerMove}
+        onPointerUp={onGridPointerUp}
+        onPointerCancel={onGridPointerUp}
         style={{
           display: "grid",
           gridTemplateColumns: `repeat(${diff.size}, ${cellSize}px)`,
@@ -314,17 +344,18 @@ export default function GameCuvinte() {
           borderRadius: 8,
           backgroundColor: cat.bg,
           overflow: "hidden",
+          touchAction: "none",
+          cursor: "pointer",
         }}
       >
         {grid.map((row, r) =>
           row.map((letter, c) => {
             const key = cellKey(r, c);
             const isFoundCell = foundCells.has(key);
-            const isSelStart = selStart?.[0] === r && selStart?.[1] === c;
+            const isSelected = selCells.some(([sr, sc]) => sr === r && sc === c);
             return (
               <div
                 key={key}
-                onClick={() => handleCellClick(r, c)}
                 style={{
                   width: cellSize,
                   height: cellSize,
@@ -334,16 +365,14 @@ export default function GameCuvinte() {
                   fontSize,
                   fontWeight: "bold",
                   fontFamily: "monospace",
-                  cursor: "pointer",
-                  backgroundColor: isFoundCell
+                  backgroundColor: isSelected
+                    ? "#fde047"
+                    : isFoundCell
                     ? cat.color + "33"
-                    : isSelStart
-                    ? "#fef08a"
                     : "transparent",
-                  color: isFoundCell ? cat.color : "#1F2937",
+                  color: isFoundCell && !isSelected ? cat.color : "#1F2937",
                   borderRight: c < diff.size - 1 ? "1px solid #e5e7eb" : "none",
                   borderBottom: r < diff.size - 1 ? "1px solid #e5e7eb" : "none",
-                  textDecoration: isFoundCell ? "line-through" : "none",
                   transition: "background-color 0.1s",
                   userSelect: "none",
                 }}
@@ -355,25 +384,30 @@ export default function GameCuvinte() {
         )}
       </div>
 
-      {/* Word list */}
+      {/* Word list — found words get a checkmark */}
       <div className="flex flex-wrap justify-center gap-2 max-w-sm px-2">
-        {placements.map(p => (
-          <span
-            key={p.word}
-            className="px-3 py-1 rounded-full text-sm font-bold transition-all"
-            style={{
-              background: found.has(p.word) ? cat.color : "#F3F4F6",
-              color: found.has(p.word) ? "white" : "#6B7280",
-              textDecoration: found.has(p.word) ? "line-through" : "none",
-            }}
-          >
-            {p.word}
-          </span>
-        ))}
+        {placements.map(p => {
+          const isFound = found.has(p.word);
+          return (
+            <span
+              key={p.word}
+              className="px-3 py-1 rounded-full text-sm font-bold transition-all inline-flex items-center gap-1"
+              style={{
+                background: isFound ? cat.color : "#F3F4F6",
+                color: isFound ? "white" : "#6B7280",
+              }}
+            >
+              {isFound && <span aria-hidden>✓</span>}
+              <span style={{ textDecoration: isFound ? "line-through" : "none" }}>{p.word}</span>
+            </span>
+          );
+        })}
       </div>
 
       <p className="text-[11px] text-gray-400">
-        {selStart ? "Acum click pe ultima literă a cuvântului" : "Click pe prima literă a unui cuvânt"}
+        {selCells.length > 1
+          ? selCells.map(([r,c]) => grid[r]?.[c] ?? "").join("")
+          : "Trage cu degetul peste litere ca să selectezi un cuvânt"}
       </p>
     </div>
   );

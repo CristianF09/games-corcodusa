@@ -51,6 +51,17 @@ function spiral(rows: number, cols: number): Cell[] {
   return path;
 }
 
+/** Reversed copy of a path — still a valid Hamiltonian path, but the level
+    plays completely differently (start/end and waypoints all move). */
+function rev(gen: (rows: number, cols: number) => Cell[]) {
+  return (rows: number, cols: number) => gen(rows, cols).reverse();
+}
+
+/** Spiral on the transposed grid → counter-clockwise spiral. */
+function spiralT(rows: number, cols: number): Cell[] {
+  return spiral(cols, rows).map(([r, c]) => [c, r] as Cell);
+}
+
 /** Pick evenly-spaced waypoints from path, always including first and last */
 function pickWaypoints(path: Cell[], count: number): Cell[] {
   if (count <= 2) return [path[0], path[path.length - 1]];
@@ -65,18 +76,45 @@ function pickWaypoints(path: Cell[], count: number): Cell[] {
 
 // ─── Level definitions ────────────────────────────────────────────────────────
 
-// [rows, cols, nWaypoints, pattern(0=snakeH,1=snakeV,2=spiral)]
+// [rows, cols, nWaypoints, pattern] — pattern indexes into GENERATORS:
+// 0=snakeH  1=snakeV  2=spiral  3=snakeH invers  4=snakeV invers
+// 5=spiral din centru  6=spirală anti-orar  7=spirală anti-orar din centru
 const CONFIGS: [number, number, number, number][] = [
-  // Easy 1-10
-  [4, 4, 4, 0], [4, 4, 4, 1], [4, 5, 4, 2], [4, 5, 5, 0], [5, 5, 5, 1],
-  [5, 5, 5, 2], [5, 5, 5, 0], [5, 6, 5, 1], [5, 6, 6, 2], [6, 5, 5, 0],
-  // Medium 11-20
-  [6, 6, 6, 1], [6, 6, 6, 2], [6, 6, 6, 0], [6, 6, 7, 1], [6, 6, 7, 2],
-  [6, 7, 7, 0], [6, 7, 7, 1], [7, 6, 7, 2], [7, 6, 7, 0], [7, 7, 8, 1],
-  // Hard 21-30
-  [7, 7, 8, 2], [7, 7, 9, 0], [7, 7, 9, 1], [7, 8, 9, 2], [8, 7, 9, 0],
-  [8, 7, 10, 1], [8, 8, 10, 2], [8, 8, 10, 0], [8, 8, 11, 1], [8, 8, 12, 2],
+  // Ușor 1-15
+  [4, 4, 4, 0], [4, 4, 4, 1], [4, 5, 4, 2], [4, 5, 5, 3], [5, 5, 5, 1],
+  [5, 5, 5, 6], [5, 5, 5, 4], [5, 6, 5, 5], [5, 6, 6, 2], [6, 5, 5, 0],
+  [5, 5, 5, 7], [6, 5, 6, 3], [5, 6, 5, 1], [6, 5, 6, 6], [5, 6, 6, 4],
+  // Mediu 16-35
+  [6, 6, 6, 1], [6, 6, 6, 2], [6, 6, 6, 0], [6, 6, 7, 5], [6, 6, 7, 6],
+  [6, 7, 7, 3], [6, 7, 7, 1], [7, 6, 7, 7], [7, 6, 7, 4], [7, 7, 8, 1],
+  [6, 6, 7, 3], [6, 7, 7, 2], [7, 6, 7, 0], [6, 7, 8, 6], [7, 6, 8, 5],
+  [7, 7, 8, 4], [7, 7, 8, 7], [6, 7, 7, 5], [7, 6, 7, 2], [7, 7, 8, 0],
+  // Greu 36-50
+  [7, 7, 8, 2], [7, 7, 9, 3], [7, 7, 9, 1], [7, 8, 9, 6], [8, 7, 9, 0],
+  [8, 7, 10, 5], [8, 8, 10, 2], [8, 8, 10, 4], [8, 8, 11, 7], [8, 8, 12, 6],
+  [7, 8, 9, 1], [8, 7, 10, 3], [8, 8, 10, 0], [8, 8, 11, 5], [8, 8, 12, 2],
+  // Expert 51-60
+  [9, 8, 11, 6], [8, 9, 11, 2], [9, 9, 12, 0], [9, 9, 12, 5], [9, 9, 13, 1],
+  [9, 10, 13, 7], [10, 9, 13, 3], [10, 10, 14, 2], [10, 10, 15, 6], [10, 10, 16, 5],
 ];
+
+const GENERATORS = [
+  snakeH, snakeV, spiral,
+  rev(snakeH), rev(snakeV), rev(spiral),
+  spiralT, rev(spiralT),
+];
+
+// Difficulty tier boundaries (level index is < boundary)
+const TIERS: { max: number; label: string }[] = [
+  { max: 15, label: "Ușor" },
+  { max: 35, label: "Mediu" },
+  { max: 50, label: "Greu" },
+  { max: Infinity, label: "Expert" },
+];
+
+function tierLabel(idx: number): string {
+  return TIERS.find(t => idx < t.max)!.label;
+}
 
 // Gradient color pairs [tubeColor, bgColor]
 const PALETTES: [string, string][] = [
@@ -86,19 +124,15 @@ const PALETTES: [string, string][] = [
   ["#f97316", "#ffedd5"],
 ];
 
-const DIFFICULTY_LABELS = ["Ușor", "Mediu", "Greu"];
-
 function buildLevel(idx: number): Level {
   const [rows, cols, nWP, pat] = CONFIGS[idx];
-  const gens = [snakeH, snakeV, spiral];
-  const solution = gens[pat](rows, cols);
+  const solution = GENERATORS[pat](rows, cols);
   const waypoints = pickWaypoints(solution, nWP);
-  const diff = idx < 10 ? 0 : idx < 20 ? 1 : 2;
   const [color, bgColor] = PALETTES[idx % PALETTES.length];
-  return { id: idx + 1, rows, cols, waypoints, solution, color, bgColor, label: DIFFICULTY_LABELS[diff] };
+  return { id: idx + 1, rows, cols, waypoints, solution, color, bgColor, label: tierLabel(idx) };
 }
 
-const LEVELS: Level[] = Array.from({ length: 30 }, (_, i) => buildLevel(i));
+const LEVELS: Level[] = Array.from({ length: CONFIGS.length }, (_, i) => buildLevel(i));
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -115,6 +149,7 @@ function DiffBadge({ label }: { label: string }) {
     "Ușor": "bg-green-100 text-green-700",
     "Mediu": "bg-yellow-100 text-yellow-700",
     "Greu": "bg-red-100 text-red-700",
+    "Expert": "bg-purple-100 text-purple-700",
   };
   return (
     <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${colors[label] ?? "bg-gray-100 text-gray-600"}`}>
@@ -306,7 +341,7 @@ export default function GameZipZap() {
             className="text-sm font-semibold text-purple-600 hover:text-purple-800 px-2 py-1 rounded-lg hover:bg-purple-50 transition"
             onClick={() => { playClick(); setShowLevelPicker(p => !p); }}
           >
-            Nivel {level.id}/30
+            Nivel {level.id}/{LEVELS.length}
           </button>
         </div>
       </div>
@@ -329,8 +364,8 @@ export default function GameZipZap() {
         <div className="w-full max-w-lg bg-white border border-purple-100 rounded-2xl p-3 shadow-lg">
           <div className="grid grid-cols-10 gap-1">
             {LEVELS.map((lv, i) => {
-              const diff = i < 10 ? "easy" : i < 20 ? "medium" : "hard";
-              const colors = { easy: "bg-green-100 hover:bg-green-200 text-green-800", medium: "bg-yellow-100 hover:bg-yellow-200 text-yellow-800", hard: "bg-red-100 hover:bg-red-200 text-red-800" };
+              const diff = i < 15 ? "easy" : i < 35 ? "medium" : i < 50 ? "hard" : "expert";
+              const colors = { easy: "bg-green-100 hover:bg-green-200 text-green-800", medium: "bg-yellow-100 hover:bg-yellow-200 text-yellow-800", hard: "bg-red-100 hover:bg-red-200 text-red-800", expert: "bg-purple-100 hover:bg-purple-200 text-purple-800" };
               const done = completedLevels.has(i);
               return (
                 <button
@@ -533,7 +568,7 @@ export default function GameZipZap() {
             >
               Joacă din nou
             </button>
-            {levelIdx < 29 && (
+            {levelIdx < LEVELS.length - 1 && (
               <button
                 onClick={() => loadLevel(levelIdx + 1)}
                 className="px-5 py-2 text-white font-semibold rounded-xl transition"

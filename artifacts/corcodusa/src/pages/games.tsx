@@ -18,6 +18,8 @@ const STATIC_CATEGORIES = [
   { name: "memorie", label: "Memorie" },
   { name: "creativitate", label: "Creativitate" },
   { name: "logica", label: "Logică" },
+  { name: "labirint", label: "Labirint" },
+  { name: "cuvinte", label: "Cuvinte" },
 ].map((c) => ({ ...c, emoji: CATEGORY_EMOJIS[c.name] }));
 
 export default function Games() {

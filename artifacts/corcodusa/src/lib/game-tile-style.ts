@@ -1,8 +1,8 @@
 // Per-game visual identity for the bold, flat-color "app tile" look —
-// each of the 10 games gets its own vivid solid color + visual content
+// each of the 15 games gets its own vivid solid color + visual content
 // (big example text like "2+3=5" or an emoji) + short tagline.
 //
-// Keyed by numeric game id (1-10), matching GAME_COMPONENTS in
+// Keyed by numeric game id (1-15), matching GAME_COMPONENTS in
 // src/games/index.ts and the seed order in scripts/seed_games.py.
 //
 // `isTextVisual = true` → render `visual` as large bold text (math
@@ -52,7 +52,7 @@ export const GAME_TILE_STYLES: Record<number, GameTileStyle> = {
     visual: "🦕",
     isTextVisual: false,
     tagline: "Lumea dinozaurilor",
-    imagePath: "/games/game-natura-1.png",
+    imagePath: "/games/game-litere-2.png",
   },
   // 5 → GameForme: shapes + color mixing
   5: {
@@ -107,6 +107,51 @@ export const GAME_TILE_STYLES: Record<number, GameTileStyle> = {
     isTextVisual: false,
     tagline: "Rezolvă & asociază",
     imagePath: "/games/game-logica-1.png",
+  },
+  // 11 → GameLabirint: maze navigation, 3 difficulties, 5 themes
+  11: {
+    gradient: "from-[#6A1B9A] to-[#8E24AA]",
+    label: "LABIRINT",
+    visual: "🌀",
+    isTextVisual: false,
+    tagline: "Găsește drumul",
+    imagePath: "",
+  },
+  // 12 → GameCuvinte: word search grid, 5 categories
+  12: {
+    gradient: "from-[#AD1457] to-[#D81B60]",
+    label: "CUVINTE",
+    visual: "🔍",
+    isTextVisual: false,
+    tagline: "Cuvinte ascunse",
+    imagePath: "",
+  },
+  // 13 → GameUnestePunctele: dot-to-dot numbers, letters, images
+  13: {
+    gradient: "from-[#EF6C00] to-[#FB8C00]",
+    label: "PUNCTE",
+    visual: "1•2•3",
+    isTextVisual: true,
+    tagline: "Unește punctele",
+    imagePath: "",
+  },
+  // 14 → GameZipZap: fill-the-grid path puzzle, 60 levels
+  14: {
+    gradient: "from-[#283593] to-[#3949AB]",
+    label: "ZIP ZAP",
+    visual: "⚡",
+    isTextVisual: false,
+    tagline: "Umple toată grila",
+    imagePath: "",
+  },
+  // 15 → GamePatches: cover the grid with rectangles matching size+shape clues
+  15: {
+    gradient: "from-[#00695C] to-[#00897B]",
+    label: "PETICE",
+    visual: "▦",
+    isTextVisual: true,
+    tagline: "Acoperă grila cu petice",
+    imagePath: "",
   },
 };
 

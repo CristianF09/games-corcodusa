@@ -72,7 +72,7 @@ export default function MetodeDePlata() {
                 <h2 className="text-lg font-black text-[#1F2937]">Ce primești după plată</h2>
               </div>
               <ul className="space-y-2.5 text-sm text-[#374151] pl-1">
-                <li>Accesul premium la toate cele 10 jocuri se activează automat, imediat după confirmarea plății.</li>
+                <li>Accesul premium la toate cele 15 jocuri se activează automat, imediat după confirmarea plății.</li>
                 <li>
                   Planul <strong className="text-[#1F2937]">lunar</strong> îți oferă 30 de zile de acces,
                   iar planul <strong className="text-[#1F2937]">anual</strong> îți oferă 365 de zile de acces

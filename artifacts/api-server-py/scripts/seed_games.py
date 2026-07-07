@@ -1,4 +1,4 @@
-"""One-off seed script — keeps the `games` collection in sync with the 10
+"""One-off seed script — keeps the `games` collection in sync with the 15
 playable games in artifacts/corcodusa/src/games/index.ts.
 
 IMPORTANT: `numeric_id` is assigned sequentially (1, 2, 3, ...) in insertion
@@ -6,9 +6,10 @@ order by Game.create_new() (see app/models/counter.py's next_sequence). The
 frontend's GAME_COMPONENTS map (src/games/index.ts) keys components by that
 same numeric id:
 
-    1: GameNumarare   2: GameAdunare   3: GameAlfabet   4: GameDinozauri
-    5: GameForme      6: GameAnimale   7: GameMuzica    8: GameMemorie
-    9: GameDesen     10: GamePuzzle
+    1: GameNumarare   2: GameAdunare   3: GameAlfabet    4: GameDinozauri
+    5: GameForme      6: GameAnimale   7: GameMuzica     8: GameMemorie
+    9: GameDesen     10: GamePuzzle   11: GameLabirint  12: GameCuvinte
+   13: GameUnestePunctele            14: GameZipZap    15: GamePatches
 
 So the order of GAMES below is load-bearing — it must match that map 1:1,
 or a DB game's id will point at the wrong (or no) component on the games
@@ -160,10 +161,10 @@ GAMES = [
         "requires_subscription": True,
     },
     {
-        # id 13 -> GameUnestePunctele: dot-to-dot for numbers 1-20, letters, images.
+        # id 13 -> GameUnestePunctele: dot-to-dot with 38 cute pictures (images only).
         "title": "Unește Punctele",
-        "description": "Conectează punctele în ordine și desenează cifre 1-20, litere și imagini amuzante!",
-        "category": "litere",
+        "description": "Conectează punctele în ordine și desenează imagini amuzante!",
+        "category": "creativitate",
         "age_min": 3,
         "age_max": 7,
         "image_url": "/api/assets/game-uneste-1.png",
@@ -172,13 +173,26 @@ GAMES = [
         "requires_subscription": True,
     },
     {
-        # id 14 -> GameZipZap: fill-the-grid path puzzle, 30 levels, 3 difficulties.
+        # id 14 -> GameZipZap: fill-the-grid path puzzle, 60 levels, 4 difficulties.
         "title": "Zip Zap",
-        "description": "Conectează punctele numerotate în ordine și umple toată grila! 30 de niveluri cu dificultate crescătoare.",
+        "description": "Conectează punctele numerotate în ordine și umple toată grila! 60 de niveluri cu dificultate crescătoare.",
         "category": "logica",
         "age_min": 5,
         "age_max": 10,
         "image_url": "/api/assets/game-zipzap-1.png",
+        "is_new_game": True,
+        "is_featured": True,
+        "requires_subscription": True,
+    },
+    {
+        # id 15 -> GamePatches: cover the grid with rectangles matching
+        # size+shape clues (LinkedIn Patches-style), 18 levels.
+        "title": "Petice",
+        "description": "Acoperă toată grila cu petice dreptunghiulare! Fiecare petic trebuie să respecte numărul și forma din indiciu.",
+        "category": "logica",
+        "age_min": 5,
+        "age_max": 10,
+        "image_url": "/api/assets/game-petice-1.png",
         "is_new_game": True,
         "is_featured": True,
         "requires_subscription": True,

@@ -47,7 +47,7 @@ function PricingSection() {
   };
 
   const features = [
-    "Acces la toate cele 10 jocuri",
+    "Acces la toate cele 15 jocuri",
     "Fără reclame niciodată",
     "Jocuri noi lunar",
     "Funcționează pe orice dispozitiv",
@@ -311,8 +311,8 @@ export default function Home() {
 
           {/* Subtitle */}
           <p className="text-white/75 text-lg md:text-xl max-w-md leading-relaxed">
-            10 jocuri educaționale sigure pentru copii între 3 și 8 ani.
-            Fără reclame, 100% distractiv.
+            15 jocuri educaționale sigure pentru copii între 3 și 10 ani,
+            cu peste 30 de niveluri de dificultate. Fără reclame, 100% distractiv.
           </p>
 
           {/* CTA */}

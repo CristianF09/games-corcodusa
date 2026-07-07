@@ -23,6 +23,11 @@ import Dashboard from "@/pages/dashboard";
 import Pricing from "@/pages/pricing";
 import MetodeDePlata from "@/pages/metode-de-plata";
 import PoliticaDeConfidentialitate from "@/pages/politica-de-confidentialitate";
+import TermeniSiConditii from "@/pages/termeni-si-conditii";
+import PoliticaCookie from "@/pages/politica-cookie";
+import PoliticaDeRetur from "@/pages/politica-de-retur";
+import Faq from "@/pages/faq";
+import DespreNoi from "@/pages/despre-noi";
 import NotFound from "@/pages/not-found";
 import { roLocalization } from "@/lib/clerk-ro";
 
@@ -247,6 +252,11 @@ function ClerkProviderWithRoutes() {
           <Route path="/pricing" component={Pricing} />
           <Route path="/metode-de-plata" component={MetodeDePlata} />
           <Route path="/politica-de-confidentialitate" component={PoliticaDeConfidentialitate} />
+          <Route path="/termeni-si-conditii" component={TermeniSiConditii} />
+          <Route path="/politica-cookie" component={PoliticaCookie} />
+          <Route path="/politica-de-retur" component={PoliticaDeRetur} />
+          <Route path="/faq" component={Faq} />
+          <Route path="/despre-noi" component={DespreNoi} />
 
           <Route path="/games">
             {() => <ProtectedRoute component={Games} />}

@@ -150,7 +150,10 @@ export default function GameDetail() {
                       </div>
                     }
                   >
-                    <div className="p-2 md:p-4 lg:p-5">
+                    {/* CSS zoom enlarges every game uniformly on larger screens;
+                        pointer math stays correct because games read positions
+                        relative to getBoundingClientRect(). */}
+                    <div className="p-2 md:p-4 lg:p-5 md:[zoom:1.2] xl:[zoom:1.35]">
                       <GameComponent />
                     </div>
                   </Suspense>

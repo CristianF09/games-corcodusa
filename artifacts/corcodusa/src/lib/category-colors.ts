@@ -11,6 +11,8 @@ export const CATEGORY_EMOJIS: Record<string, string> = {
   memorie: "🧠",
   creativitate: "✏️",
   logica: "🧩",
+  labirint: "🌀",
+  cuvinte: "🔍",
 };
 
 export const CATEGORY_GRADIENTS: Record<string, string> = {
@@ -22,6 +24,8 @@ export const CATEGORY_GRADIENTS: Record<string, string> = {
   memorie: "from-cyan-400 to-blue-500",
   creativitate: "from-yellow-400 to-orange-500",
   logica: "from-teal-400 to-cyan-500",
+  labirint: "from-purple-500 to-violet-500",
+  cuvinte: "from-rose-400 to-pink-500",
 };
 
 export const DEFAULT_GRADIENT = "from-primary to-secondary";
