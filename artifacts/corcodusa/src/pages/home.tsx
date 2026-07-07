@@ -311,8 +311,8 @@ export default function Home() {
 
           {/* Subtitle */}
           <p className="text-white/75 text-lg md:text-xl max-w-md leading-relaxed">
-            15 jocuri educaționale sigure pentru copii între 3 și 10 ani,
-            cu peste 30 de niveluri de dificultate. Fără reclame, 100% distractiv.
+            Jocuri educaționale sigure pentru copii între 3 și 10 ani,
+            cu zeci de niveluri de dificultate. Fără reclame, 100% distractiv.
           </p>
 
           {/* CTA */}

@@ -30,8 +30,8 @@ export function Footer() {
           {/* Brand */}
           <div className="flex flex-col gap-4 md:col-span-1">
             <div className="flex items-center gap-3">
-              <img src="/Corcodusa3D-Photoroom.png" alt="Corcodușa" className="h-16 w-auto object-contain" />
-              <img src="/logo-icon.png" alt="games.corcodusa.ro" className="h-12 w-12 object-contain" />
+              <img src="/logo-icon.png" alt="Corcodușa" className="h-16 w-16 object-contain" />
+              <img src="/icon.games.corcodusa.ro.png" alt="games.corcodusa.ro" className="h-14 w-auto object-contain" />
             </div>
             <p className="text-sm text-white/55 leading-relaxed max-w-xs">
               Jocuri educaționale sigure pentru copii 3–10 ani. Fără reclame, 100% românesc.
@@ -101,7 +101,7 @@ export function Footer() {
           <span>© {new Date().getFullYear()} games.corcodusa.ro · Toate drepturile rezervate.</span>
           <span className="flex items-center gap-2">
             Plată securizată prin
-            <img src="/stripe.png" alt="Stripe" className="h-6 w-auto object-contain" />
+            <img src="/stripe.png" alt="Stripe" className="h-9 w-auto object-contain" />
           </span>
         </div>
       </div>

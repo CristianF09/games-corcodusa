@@ -28,10 +28,8 @@ export function Navbar() {
       <div className="max-w-[1152px] mx-auto flex h-20 items-center justify-between px-10">
         {/* Logo + brand name */}
         <Link href="/" className="flex items-center gap-3">
-          <img src="/logo-icon.png" alt="Corcodusa Logo" className="h-11 w-11 object-contain" />
-          <span className="text-xl font-black text-[#1F2937] leading-none">
-            Corcodușa<span className="text-[#FF6B00]">.ro</span>
-          </span>
+          <img src="/Corcodusa3D-Photoroom.png" alt="Corcodușa" className="h-14 w-auto object-contain" />
+          <img src="/icon.games.corcodusa.ro.png" alt="games.corcodusa.ro" className="h-12 w-auto object-contain" />
         </Link>
 
         {/* Desktop nav */}
