@@ -43,11 +43,11 @@ STRIPE_PRICE_ID_ANNUAL = os.environ.get("STRIPE_PRICE_ID_ANNUAL", "price_1TorbBK
 # like Stripe/Clerk above: missing key means the route 500s with a clear
 # message instead of crashing the whole server at import time.
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
-# Must be a verified sender on the Resend account/domain (e.g.
-# "Corcodușa <no-reply@corcodusa.ro>"). Falls back to Resend's shared test
-# sender, which only delivers to the Resend account owner's own email — fine
-# for local testing, NOT for production use.
-CONTACT_EMAIL_FROM = os.environ.get("CONTACT_EMAIL_FROM", "Corcodușa <onboarding@resend.dev>")
+# Must be a verified sender on the Resend account/domain. corcodusa.ro is
+# verified in Resend, so the default sends from there; Resend's shared test
+# sender (onboarding@resend.dev) only delivers to the account owner's own
+# email, which made the contact form 502 for every visitor.
+CONTACT_EMAIL_FROM = os.environ.get("CONTACT_EMAIL_FROM", "Corcodusa <no-reply@corcodusa.ro>")
 CONTACT_EMAIL_TO = os.environ.get("CONTACT_EMAIL_TO", "contact@corcodusa.ro")
 
 
