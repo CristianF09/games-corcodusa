@@ -14,6 +14,7 @@ from clerk_backend_api.security.types import AuthenticateRequestOptions
 from fastapi import HTTPException, Request, status
 
 from app.config import CLERK_SECRET_KEY
+from app.logger import log_warn
 
 _sdk: Clerk | None = Clerk(bearer_auth=CLERK_SECRET_KEY) if CLERK_SECRET_KEY else None
 
@@ -44,10 +45,21 @@ async def require_auth(request: Request) -> str:
             _to_httpx_request(request),
             AuthenticateRequestOptions(),
         )
-    except Exception:
+    except Exception as err:  # noqa: BLE001
+        # Surfaced in Render logs — a signed-in frontend user getting 401 here
+        # usually means CLERK_SECRET_KEY belongs to a different Clerk instance
+        # than the publishable key baked into the frontend bundle.
+        log_warn("Clerk authenticate_request raised", err=str(err), path=request.url.path)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
 
     if not request_state.is_signed_in or not request_state.payload:
+        log_warn(
+            "Clerk rejected request",
+            reason=str(getattr(request_state, "reason", None)),
+            message=str(getattr(request_state, "message", None)),
+            has_auth_header="authorization" in request.headers,
+            path=request.url.path,
+        )
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
 
     clerk_id = request_state.payload.get("sub")
