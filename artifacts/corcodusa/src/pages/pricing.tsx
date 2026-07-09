@@ -15,6 +15,7 @@ export default function Pricing() {
   const { openSignIn } = useClerk();
   const [, setLocation] = useLocation();
   const [checkoutWaking, setCheckoutWaking] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const warmedRef = useRef(false);
 
   // Pre-warm the API server as soon as the pricing page loads so the
@@ -36,6 +37,14 @@ export default function Pricing() {
       return;
     }
     setCheckoutWaking(false);
+    setCheckoutError(null);
+    const showError = (err: unknown) => {
+      setCheckoutError(
+        err instanceof Error && err.message
+          ? err.message
+          : "Nu am putut deschide pagina de plată. Încearcă din nou.",
+      );
+    };
     createCheckout.mutate(
       { data: { priceId, interval } },
       {
@@ -55,8 +64,13 @@ export default function Pricing() {
             setCheckoutWaking(false);
             createCheckout.mutate(
               { data: { priceId, interval } },
-              { onSuccess: (data) => { window.location.href = data.url; } },
+              {
+                onSuccess: (data) => { window.location.href = data.url; },
+                onError: showError,
+              },
             );
+          } else {
+            showError(err);
           }
         },
       },
@@ -255,6 +269,12 @@ export default function Pricing() {
             </div>
 
           </div>
+
+          {checkoutError && (
+            <p className="mt-6 text-center text-sm font-semibold text-[#EF4444]">
+              {checkoutError}
+            </p>
+          )}
 
           {/* ── Reassurance strip ── */}
           <div className="mt-14 flex justify-center">

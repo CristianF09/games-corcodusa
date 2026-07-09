@@ -1,12 +1,15 @@
 """Stripe webhook dispatch. Grants access on checkout.session.completed
-and sends a Romanian confirmation email via Resend (non-fatal)."""
+and sends a Romanian confirmation email via Resend (non-fatal), with the
+code-generated invoice PDF attached (app/invoice.py — NOT Stripe's)."""
 
+import base64
 from datetime import datetime, timedelta, timezone
 
 import httpx
 import stripe
 
 from app.config import CONTACT_EMAIL_FROM, RESEND_API_KEY
+from app.invoice import create_invoice
 from app.logger import log_error, log_info, log_warn
 from app.models.user import User
 from app.stripe_client import get_stripe_webhook_secret
@@ -41,7 +44,7 @@ _EMAIL_TEMPLATE = """\
       &#9989; Abonamentul este activ pana pe <strong>{expiry_str}</strong></p>
   </td></tr></table>
   <p style="margin:20px 0 24px;font-size:14px;color:#6b7280;text-align:center;line-height:1.6;">
-    Bucurati-va de acces nelimitat la toate jocurile educationale Corcodusa!</p>
+    Bucurati-va de acces nelimitat la toate jocurile educationale Corcodusa!{invoice_note}</p>
   <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
     <a href="https://games.corcodusa.ro/games"
        style="display:inline-block;background:linear-gradient(135deg,#7c3aed,#a855f7);
@@ -61,15 +64,41 @@ _EMAIL_TEMPLATE = """\
 </body></html>"""
 
 
-async def _send_purchase_email(to_email: str, interval: str | None, expires_at: datetime) -> None:
-    """Send Romanian purchase confirmation email via Resend. Non-fatal."""
+async def _send_purchase_email(
+    to_email: str,
+    interval: str | None,
+    expires_at: datetime,
+    invoice: tuple[str, bytes] | None = None,
+) -> None:
+    """Send Romanian purchase confirmation email via Resend. Non-fatal.
+    `invoice` is (număr, PDF bytes) — attached when present."""
     if not RESEND_API_KEY:
         log_warn("RESEND_API_KEY not set - purchase confirmation email skipped", to=to_email)
         return
 
     plan_label = "pe un an" if interval == "year" else "pe o luna"
     expiry_str = expires_at.strftime("%d.%m.%Y")
-    html = _EMAIL_TEMPLATE.format(plan_label=plan_label, expiry_str=expiry_str)
+    invoice_note = (
+        f"<br>Factura {invoice[0]} este atasata acestui email." if invoice else ""
+    )
+    html = _EMAIL_TEMPLATE.format(
+        plan_label=plan_label, expiry_str=expiry_str, invoice_note=invoice_note
+    )
+
+    body = {
+        "from": CONTACT_EMAIL_FROM,
+        "to": [to_email],
+        "subject": "Felicitari! Abonamentul tau Games Corcodusa este activ",
+        "html": html,
+    }
+    if invoice:
+        invoice_no, pdf_bytes = invoice
+        body["attachments"] = [
+            {
+                "filename": f"Factura-{invoice_no}.pdf",
+                "content": base64.b64encode(pdf_bytes).decode("ascii"),
+            }
+        ]
 
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
@@ -79,12 +108,7 @@ async def _send_purchase_email(to_email: str, interval: str | None, expires_at: 
                     "Authorization": f"Bearer {RESEND_API_KEY}",
                     "Content-Type": "application/json",
                 },
-                json={
-                    "from": CONTACT_EMAIL_FROM,
-                    "to": [to_email],
-                    "subject": "Felicitari! Abonamentul tau Games Corcodusa este activ",
-                    "html": html,
-                },
+                json=body,
             )
         if resp.status_code >= 400:
             log_error(
@@ -99,7 +123,12 @@ async def _send_purchase_email(to_email: str, interval: str | None, expires_at: 
         log_error("Failed to send purchase confirmation email", err=str(err), to=to_email)
 
 
-async def _grant_access(clerk_id: str | None, customer_id: str | None, interval: str | None) -> None:
+async def _grant_access(
+    clerk_id: str | None,
+    customer_id: str | None,
+    interval: str | None,
+    session: dict | None = None,
+) -> None:
     user = None
     if clerk_id:
         user = await User.find_one(User.clerk_id == clerk_id)
@@ -134,9 +163,34 @@ async def _grant_access(clerk_id: str | None, customer_id: str | None, interval:
         expires_at=new_expiry.isoformat(),
     )
 
-    # Send confirmation email - failure must NOT block the access grant
+    # Invoice + confirmation email - failure must NOT block the access grant.
+    # The invoice is our own PDF (app/invoice.py), not Stripe's — if its
+    # generation fails, the email still goes out, just without attachment.
+    invoice = None
     try:
-        await _send_purchase_email(user.email, interval, new_expiry)
+        session = session or {}
+        customer_details = session.get("customer_details") or {}
+        buyer_name = (
+            customer_details.get("name")
+            or " ".join(filter(None, [user.first_name, user.last_name]))
+            or user.email
+        )
+        invoice = await create_invoice(
+            clerk_id=user.clerk_id,
+            buyer_name=buyer_name,
+            buyer_email=user.email,
+            interval=interval,
+            amount_minor=session.get("amount_total") or 0,
+            currency=session.get("currency") or "ron",
+            expires_at=new_expiry,
+            stripe_session_id=session.get("id"),
+        )
+        log_info("Invoice generated", number=invoice[0], clerk_id=user.clerk_id)
+    except Exception as err:  # noqa: BLE001
+        log_error("Invoice generation failed", err=str(err), clerk_id=user.clerk_id)
+
+    try:
+        await _send_purchase_email(user.email, interval, new_expiry, invoice=invoice)
     except Exception as err:  # noqa: BLE001
         log_error("Purchase confirmation email raised unexpectedly", err=str(err))
 
@@ -164,6 +218,7 @@ async def process_webhook(payload: bytes, signature: str) -> None:
                 clerk_id=metadata.get("clerkId"),
                 customer_id=session.get("customer"),
                 interval=metadata.get("interval"),
+                session=session,
             )
         except Exception as err:  # noqa: BLE001
             log_error("Failed to grant access after checkout.session.completed", err=str(err))

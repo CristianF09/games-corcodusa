@@ -11,3 +11,4 @@ stripe==15.3.0  # published 2026-06-24, past the 24h window (checked 2026-07-03)
 clerk-backend-api==6.0.1
 httpx==0.28.1
 python-dotenv==1.2.2  # 1.0.1 had CVE-2026-28684 (symlink-following overwrite in set_key/unset_key, unused here); published 2026-03-01, well past the 24h caution window
+fpdf2==2.8.3  # PDF invoice generation (app/invoice.py); published 2025-09-25, stable release
