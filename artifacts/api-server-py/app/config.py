@@ -52,14 +52,16 @@ CONTACT_EMAIL_TO = os.environ.get("CONTACT_EMAIL_TO", "contact@corcodusa.ro")
 
 # Facturare — datele vânzătorului tipărite pe factura PDF generată în cod
 # (app/invoice.py, atașată emailului de confirmare de după plată).
-# Placeholder-ele oglindesc artifacts/corcodusa/src/lib/company-info.ts —
-# completați valorile reale ale firmei pe Render, altfel factura iese cu
-# "[DENUMIRE FIRMA] S.R.L.".
+# Valorile implicite oglindesc artifacts/corcodusa/src/lib/company-info.ts
+# (sursa: corcodusa.ro, verificat 2026-10-09). Pot fi suprascrise din env.
 INVOICE_SERIES = os.environ.get("INVOICE_SERIES", "CG")
-COMPANY_LEGAL_NAME = os.environ.get("COMPANY_LEGAL_NAME", "[DENUMIRE FIRMA] S.R.L.")
-COMPANY_CUI = os.environ.get("COMPANY_CUI", "[CUI]")
-COMPANY_REG_COM = os.environ.get("COMPANY_REG_COM", "[J__/____/____]")
-COMPANY_ADDRESS = os.environ.get("COMPANY_ADDRESS", "[Adresa sediului social]")
+COMPANY_LEGAL_NAME = os.environ.get("COMPANY_LEGAL_NAME", "Corcodusa")
+COMPANY_CUI = os.environ.get("COMPANY_CUI", "55147026")
+COMPANY_REG_COM = os.environ.get("COMPANY_REG_COM", "F2026034422005")
+COMPANY_ADDRESS = os.environ.get(
+    "COMPANY_ADDRESS",
+    "Bulevardul Bucureștii Noi, Nr. 136, Et. P, Ap. 5, Sectorul 1, București",
+)
 COMPANY_EMAIL = os.environ.get("COMPANY_EMAIL", "contact@corcodusa.ro")
 
 

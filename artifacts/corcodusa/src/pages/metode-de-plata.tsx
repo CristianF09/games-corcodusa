@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { ShieldCheck, CreditCard, Lock, FileText } from "lucide-react";
+import { COMPANY } from "@/lib/company-info";
 
 export default function MetodeDePlata() {
   return (
@@ -43,6 +44,10 @@ export default function MetodeDePlata() {
                   Electron) sau <strong>MASTERCARD</strong> (inclusiv Maestro).
                 </li>
                 <li>Nu percepem niciun comision suplimentar pentru tranzacție.</li>
+                <li>
+                  Prețurile afișate sunt finale: {COMPANY.legalName} este <strong>neplătitoare de TVA</strong>{" "}
+                  (art. 310 din Codul Fiscal), deci nu se adaugă TVA suplimentar.
+                </li>
                 <li>
                   Procesarea plăților este realizată integral de platforma securizată{" "}
                   <strong className="text-[#1F2937]">Stripe.com</strong>.

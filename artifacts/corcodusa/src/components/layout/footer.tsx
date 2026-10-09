@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { ContactDialog } from "@/components/contact-dialog";
+import { COMPANY } from "@/lib/company-info";
 
 // TODO: înlocuiește cu URL-urile reale ale profilurilor de social media
 const SOCIAL_LINKS = [
@@ -98,7 +99,9 @@ export function Footer() {
         </div>
 
         <div className="mt-10 border-t border-white/10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-white/40">
-          <span>© {new Date().getFullYear()} games.corcodusa.ro · Toate drepturile rezervate.</span>
+          <span>
+            © {new Date().getFullYear()} {COMPANY.site} · Operat de {COMPANY.legalName} · CUI {COMPANY.cui} · {COMPANY.regCom} · Toate drepturile rezervate.
+          </span>
           <span className="flex items-center gap-2">
             Plată securizată prin
             <img src="/stripe.png" alt="Stripe" className="h-9 w-auto object-contain" />

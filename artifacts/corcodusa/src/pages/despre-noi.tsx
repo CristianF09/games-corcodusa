@@ -35,8 +35,7 @@ export default function DespreNoi() {
           Email:{" "}
           <a href={`mailto:${COMPANY.email}`} className="text-[#FF6B00] font-semibold hover:underline">
             {COMPANY.email}
-          </a>{" "}
-          · Telefon: {COMPANY.phone}
+          </a>
         </p>
       </LegalSection>
 

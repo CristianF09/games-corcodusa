@@ -15,10 +15,10 @@ export default function TermeniSiConditii() {
         </p>
         <ul className="list-disc pl-5 space-y-1">
           <li>CUI: <strong>{COMPANY.cui}</strong></li>
-          <li>Nr. Registrul Comerțului: <strong>{COMPANY.regCom}</strong></li>
+          <li>Nr. de înregistrare: <strong>{COMPANY.regCom}</strong></li>
           <li>Sediul social: {COMPANY.address}</li>
+          <li>Regim TVA: {COMPANY.vatStatus}</li>
           <li>Email: <a href={`mailto:${COMPANY.email}`} className="text-[#FF6B00] font-semibold hover:underline">{COMPANY.email}</a></li>
-          <li>Telefon: {COMPANY.phone}</li>
         </ul>
         <p>
           Utilizarea platformei implică acceptarea integrală a acestor Termeni și Condiții.
