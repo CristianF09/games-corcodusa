@@ -12,10 +12,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.config import CLERK_SECRET_KEY, STRIPE_SECRET_KEY
+from app.config import STRIPE_SECRET_KEY
 from app.db import close_db, connect_db
 from app.logger import log_info
-from app.routers import contact, games, health, maze, payments, users
+from app.routers import auth, contact, games, health, maze, payments, users
 
 
 @asynccontextmanager
@@ -26,8 +26,6 @@ async def lifespan(_app: FastAPI):
         log_info("Stripe configured (STRIPE_SECRET_KEY present)")
     else:
         log_info("Stripe init skipped (STRIPE_SECRET_KEY not set)")
-    if not CLERK_SECRET_KEY:
-        log_info("Clerk init skipped (CLERK_SECRET_KEY not set) — auth routes will 500")
     yield
     await close_db()
 
@@ -47,6 +45,7 @@ app.add_middleware(
 
 app.include_router(health.router, prefix="/api")
 app.include_router(games.router, prefix="/api")
+app.include_router(auth.router, prefix="/api")
 app.include_router(users.router, prefix="/api")
 app.include_router(payments.router, prefix="/api")
 app.include_router(contact.router, prefix="/api")

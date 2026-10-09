@@ -3,7 +3,7 @@ import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CheckCircle2 } from "lucide-react";
-import { useAuth, useClerk } from "@clerk/react";
+import { useCurrentUser, loginPath } from "@/lib/auth";
 import { useLocation } from "wouter";
 import { useEffect, useRef, useState } from "react";
 import { API_BASE_URL } from "@/lib/api-base";
@@ -11,8 +11,7 @@ import { API_BASE_URL } from "@/lib/api-base";
 export default function Pricing() {
   const { data: products, isLoading } = useListProducts();
   const createCheckout = useCreateCheckoutSession();
-  const { isSignedIn } = useAuth();
-  const { openSignIn } = useClerk();
+  const { isSignedIn } = useCurrentUser();
   const [, setLocation] = useLocation();
   const [checkoutWaking, setCheckoutWaking] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
@@ -33,7 +32,7 @@ export default function Pricing() {
   const handleSubscribe = (priceId: string | undefined, interval: string | undefined) => {
     if (!priceId) return;
     if (!isSignedIn) {
-      openSignIn({ forceRedirectUrl: "/pricing", signUpForceRedirectUrl: "/pricing" });
+      setLocation(loginPath("/pricing"));
       return;
     }
     setCheckoutWaking(false);
@@ -79,7 +78,7 @@ export default function Pricing() {
 
   const handleFreeStart = () => {
     if (!isSignedIn) {
-      openSignIn({ forceRedirectUrl: "/games", signUpForceRedirectUrl: "/games" });
+      setLocation(loginPath("/games"));
       return;
     }
     setLocation("/games");

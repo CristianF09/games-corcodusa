@@ -27,8 +27,7 @@ DB_NAME = os.environ.get("DB_NAME", "corcodusa")
 
 # Optional at import time — routes that need these fail with a clear 5xx
 # instead of crashing the whole server, matching the Node backend's
-# "Stripe init skipped" / "Clerk not configured" soft-degradation behavior.
-CLERK_SECRET_KEY = os.environ.get("CLERK_SECRET_KEY")
+# "Stripe init skipped" soft-degradation behavior.
 STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY")
 STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET")
 APP_BASE_URL = os.environ.get("APP_BASE_URL", "http://localhost:5173")
@@ -40,7 +39,7 @@ STRIPE_PRICE_ID_MONTHLY = os.environ.get("STRIPE_PRICE_ID_MONTHLY", "price_1TopG
 STRIPE_PRICE_ID_ANNUAL = os.environ.get("STRIPE_PRICE_ID_ANNUAL", "price_1TorbBK6Qc2WK3kdMIBQmGQ8")
 
 # Contact form (POST /api/contact) — sent via Resend's HTTP API. Soft-degrades
-# like Stripe/Clerk above: missing key means the route 500s with a clear
+# like Stripe/Resend above: missing key means the route 500s with a clear
 # message instead of crashing the whole server at import time.
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
 # Must be a verified sender on the Resend account/domain. corcodusa.ro is
@@ -50,19 +49,19 @@ RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
 CONTACT_EMAIL_FROM = os.environ.get("CONTACT_EMAIL_FROM", "Corcodusa <no-reply@corcodusa.ro>")
 CONTACT_EMAIL_TO = os.environ.get("CONTACT_EMAIL_TO", "contact@corcodusa.ro")
 
-# Facturare — datele vânzătorului tipărite pe factura PDF generată în cod
-# (app/invoice.py, atașată emailului de confirmare de după plată).
-# Valorile implicite oglindesc artifacts/corcodusa/src/lib/company-info.ts
-# (sursa: corcodusa.ro, verificat 2026-10-09). Pot fi suprascrise din env.
+# Datele vânzătorului — aceleași ca în artifacts/corcodusa/src/lib/company-info.ts
+# (sursa: corcodusa.ro, verificat 2026-10-09). Apar pe factura PDF (app/invoice.py).
+# Sunt constante în cod, nu variabile de mediu: modifici aici și în company-info.ts.
 INVOICE_SERIES = os.environ.get("INVOICE_SERIES", "CG")
-COMPANY_LEGAL_NAME = os.environ.get("COMPANY_LEGAL_NAME", "Corcodusa")
-COMPANY_CUI = os.environ.get("COMPANY_CUI", "55147026")
-COMPANY_REG_COM = os.environ.get("COMPANY_REG_COM", "F2026034422005")
-COMPANY_ADDRESS = os.environ.get(
-    "COMPANY_ADDRESS",
-    "Bulevardul Bucureștii Noi, Nr. 136, Et. P, Ap. 5, Sectorul 1, București",
-)
-COMPANY_EMAIL = os.environ.get("COMPANY_EMAIL", "contact@corcodusa.ro")
+COMPANY_LEGAL_NAME = "Corcodusa"
+COMPANY_CUI = "55147026"
+COMPANY_REG_COM = "F2026034422005"
+COMPANY_ADDRESS = "Bulevardul Bucureștii Noi, Nr. 136, Et. P, Ap. 5, Sectorul 1, București"
+COMPANY_EMAIL = "contact@corcodusa.ro"
+
+# Autentificare proprie (email + parolă), vezi app/auth.py.
+SESSION_DAYS = 30
+RESET_TOKEN_MINUTES = 60
 
 
 def require_port() -> int:

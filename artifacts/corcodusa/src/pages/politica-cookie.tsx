@@ -24,7 +24,7 @@ export default function PoliticaCookie() {
         <ul className="list-disc pl-5 space-y-1">
           <li>
             <strong>Cookie-uri de autentificare</strong> — setate de furnizorul nostru de
-            autentificare (Clerk) pentru a menține sesiunea contului tău activă și securizată.
+            autentificare pentru a menține sesiunea contului tău activă și securizată.
           </li>
           <li>
             <strong>Cookie-uri de sesiune</strong> — rețin starea navigării pe durata vizitei.

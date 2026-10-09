@@ -150,23 +150,6 @@ paths:
                 $ref: "#/components/schemas/User"
         "401":
           description: Unauthorized
-    post:
-      operationId: upsertUser
-      tags: [users]
-      summary: Create or update user profile (called after login)
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UserInput"
-      responses:
-        "200":
-          description: Updated user profile
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/User"
 
   /users/me/subscription:
     get:
@@ -301,12 +284,10 @@ components:
 
     User:
       type: object
-      required: [id, clerkId, email, subscriptionTier, trialDaysLeft]
+      required: [id, email, subscriptionTier, trialDaysLeft]
       properties:
         id:
           type: integer
-        clerkId:
-          type: string
         email:
           type: string
         firstName:
@@ -323,21 +304,6 @@ components:
           type: ["string", "null"]
         createdAt:
           type: string
-
-    UserInput:
-      type: object
-      required: [clerkId, email]
-      properties:
-        clerkId:
-          type: string
-        email:
-          type: string
-        firstName:
-          type: ["string", "null"]
-        lastName:
-          type: ["string", "null"]
-        avatarUrl:
-          type: ["string", "null"]
 
     SubscriptionStatus:
       type: object

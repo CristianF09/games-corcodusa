@@ -1,10 +1,18 @@
 import { Link, useLocation } from "wouter";
-import { Show, useClerk, UserButton } from "@clerk/react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { useCurrentUser, logout } from "@/lib/auth";
 
 export function Navbar() {
-  const { signOut } = useClerk();
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
+  const queryClient = useQueryClient();
+  const { isSignedIn, user } = useCurrentUser();
+
+  async function handleLogout() {
+    await logout();
+    queryClient.clear();
+    setLocation("/");
+  }
 
   const navLink = (href: string, label: string) => {
     const isActive = location === href;
@@ -41,20 +49,23 @@ export function Navbar() {
 
         {/* Auth actions */}
         <div className="flex items-center gap-3">
-          <Show when="signed-out">
-            <Link href="/sign-in">
-              <Button variant="ghost" size="default">Autentificare</Button>
-            </Link>
-            <Link href="/sign-up">
-              <Button size="default">Încearcă gratuit</Button>
-            </Link>
-          </Show>
-          <Show when="signed-in">
-            <Link href="/dashboard" className="text-sm font-medium text-foreground hover:text-primary transition-colors hidden sm:block">
-              Contul meu
-            </Link>
-            <UserButton appearance={{ elements: { avatarBox: "h-9 w-9" } }} />
-          </Show>
+          {isSignedIn ? (
+            <>
+              <Link href="/dashboard" className="text-sm font-medium text-foreground hover:text-primary transition-colors hidden sm:block">
+                {user?.firstName ? `Salut, ${user.firstName}` : "Contul meu"}
+              </Link>
+              <Button variant="ghost" size="default" onClick={handleLogout}>Ieșire</Button>
+            </>
+          ) : (
+            <>
+              <Link href="/autentificare">
+                <Button variant="ghost" size="default">Autentificare</Button>
+              </Link>
+              <Link href="/cont-nou">
+                <Button size="default">Încearcă gratuit</Button>
+              </Link>
+            </>
+          )}
           {/* Mobile fallback — games shortcut */}
           <Link href="/games" className="md:hidden text-sm font-semibold px-4 py-2 rounded-lg bg-primary/10 text-primary">
             🎮 Jocuri

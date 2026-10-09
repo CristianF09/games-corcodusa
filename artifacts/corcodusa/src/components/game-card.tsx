@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { useAuth, useClerk } from "@clerk/react";
+import { useCurrentUser, loginPath } from "@/lib/auth";
 import { Game } from "@workspace/api-client-react";
 import { gameTileStyle } from "@/lib/game-tile-style";
 
@@ -10,18 +10,14 @@ interface GameCardProps {
 
 export function GameCard({ game }: GameCardProps) {
   const [, setLocation] = useLocation();
-  const { isSignedIn } = useAuth();
-  const { openSignIn } = useClerk();
+  const { isSignedIn } = useCurrentUser();
   const style = gameTileStyle(game.id);
   const [imgFailed, setImgFailed] = useState(false);
 
   function handlePlay(e: React.MouseEvent) {
     e.stopPropagation();
     if (!isSignedIn) {
-      openSignIn({
-        forceRedirectUrl: `/games/${game.id}`,
-        signUpForceRedirectUrl: "/pricing",
-      });
+      setLocation(loginPath(`/games/${game.id}`));
       return;
     }
     setLocation(`/games/${game.id}`);

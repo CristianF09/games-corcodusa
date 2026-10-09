@@ -1,4 +1,4 @@
-import { useAuth, useClerk } from "@clerk/react";
+import { useCurrentUser, loginPath } from "@/lib/auth";
 import { useLocation } from "wouter";
 import {
   useListGames,
@@ -19,8 +19,7 @@ import {
 function PricingSection() {
   const { data: products, isLoading } = useListProducts();
   const createCheckout = useCreateCheckoutSession();
-  const { isSignedIn } = useAuth();
-  const { openSignIn } = useClerk();
+  const { isSignedIn } = useCurrentUser();
   const [, setLocation] = useLocation();
 
   const monthly = products?.find((p) => p.interval === "month");
@@ -28,7 +27,7 @@ function PricingSection() {
 
   const handleFree = () => {
     if (!isSignedIn) {
-      openSignIn({ forceRedirectUrl: "/#games", signUpForceRedirectUrl: "/#games" });
+      setLocation(loginPath("/"));
       return;
     }
     setLocation("/games/1");
@@ -37,7 +36,7 @@ function PricingSection() {
   const handleSubscribe = (priceId: string | undefined, interval: string | undefined) => {
     if (!priceId) return;
     if (!isSignedIn) {
-      openSignIn({ forceRedirectUrl: "/pricing", signUpForceRedirectUrl: "/pricing" });
+      setLocation(loginPath("/pricing"));
       return;
     }
     createCheckout.mutate(
@@ -244,12 +243,12 @@ export default function Home() {
   // Fall back to static games when API is unreachable or returns empty (unseeded DB).
   // `?? STATIC_GAMES` won't work — [] is not null/undefined.
   const allGames = (apiGames && apiGames.length > 0) ? apiGames : STATIC_GAMES;
-  const { isSignedIn } = useAuth();
-  const { openSignIn } = useClerk();
+  const { isSignedIn } = useCurrentUser();
+  const [, setLocation] = useLocation();
 
   function handleCTA() {
     if (!isSignedIn) {
-      openSignIn({ signUpForceRedirectUrl: "/#games", forceRedirectUrl: "/#games" });
+      setLocation(loginPath("/"));
       return;
     }
     document.getElementById("games")?.scrollIntoView({ behavior: "smooth" });

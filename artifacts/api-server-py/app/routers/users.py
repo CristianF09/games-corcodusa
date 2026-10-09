@@ -2,9 +2,9 @@
 
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Body, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
-from app.auth import require_auth
+from app.auth import require_user
 from app.logger import log_error
 from app.models.user import User
 
@@ -26,7 +26,6 @@ def compute_trial_days_left(user: User) -> int:
 def serialize_user(user: User) -> dict:
     return {
         "id": user.numeric_id,
-        "clerkId": user.clerk_id,
         "email": user.email,
         "firstName": user.first_name,
         "lastName": user.last_name,
@@ -39,58 +38,13 @@ def serialize_user(user: User) -> dict:
 
 
 @router.get("/users/me")
-async def get_me(clerk_id: str = Depends(require_auth)):
-    try:
-        user = await User.find_one(User.clerk_id == clerk_id)
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        return serialize_user(user)
-    except HTTPException:
-        raise
-    except Exception as err:  # noqa: BLE001
-        log_error("Failed to get user", err=str(err))
-        raise HTTPException(status_code=500, detail="Failed to get user")
-
-
-@router.post("/users/me")
-async def upsert_me(body: dict = Body(...), clerk_id: str = Depends(require_auth)):
-    try:
-        email = body.get("email")
-        first_name = body.get("firstName")
-        last_name = body.get("lastName")
-        avatar_url = body.get("avatarUrl")
-
-        user = await User.find_one(User.clerk_id == clerk_id)
-        if user:
-            await user.touch_and_save(
-                email=email,
-                first_name=first_name,
-                last_name=last_name,
-                avatar_url=avatar_url,
-            )
-        else:
-            user = await User.create_new(
-                clerk_id=clerk_id,
-                email=email,
-                first_name=first_name,
-                last_name=last_name,
-                avatar_url=avatar_url,
-                subscription_tier="free",
-                trial_started_at=datetime.now(timezone.utc),
-            )
-        return serialize_user(user)
-    except Exception as err:  # noqa: BLE001
-        log_error("Failed to upsert user", err=str(err))
-        raise HTTPException(status_code=500, detail="Failed to upsert user")
+async def get_me(user: User = Depends(require_user)):
+    return serialize_user(user)
 
 
 @router.get("/users/me/subscription")
-async def get_subscription(clerk_id: str = Depends(require_auth)):
+async def get_subscription(user: User = Depends(require_user)):
     try:
-        user = await User.find_one(User.clerk_id == clerk_id)
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-
         trial_days_left = compute_trial_days_left(user)
 
         # Paid access is a one-time purchase (see app/webhooks.py), not a

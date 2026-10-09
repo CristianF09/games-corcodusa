@@ -21,8 +21,15 @@ class User(Document):
     model_config = ConfigDict(populate_by_name=True)
 
     numeric_id: Optional[int] = Field(default=None, alias="id")
-    clerk_id: str = Field(alias="clerkId")
+    # Conturile create înainte de autentificarea proprie (Clerk) au `clerkId`;
+    # conturile noi nu-l au. Păstrat ca să nu pierdem abonamentele existente.
+    clerk_id: Optional[str] = Field(default=None, alias="clerkId")
     email: str
+    # Hash scrypt al parolei (app/auth.py). None pentru conturile vechi Clerk
+    # până își setează parola prin „Ai uitat parola?".
+    password_hash: Optional[str] = Field(default=None, alias="passwordHash")
+    reset_token_hash: Optional[str] = Field(default=None, alias="resetTokenHash")
+    reset_expires_at: Optional[datetime] = Field(default=None, alias="resetExpiresAt")
     first_name: Optional[str] = Field(default=None, alias="firstName")
     last_name: Optional[str] = Field(default=None, alias="lastName")
     avatar_url: Optional[str] = Field(default=None, alias="avatarUrl")
@@ -41,8 +48,9 @@ class User(Document):
 
     class Settings:
         name = "users"
+        # Indexul unic pe email nu e aici: se creează separat în app/db.py,
+        # ca un email duplicat din date vechi să nu oprească pornirea aplicației.
         indexes = [
-            IndexModel("clerkId", unique=True),
             IndexModel("id", unique=True),
         ]
 

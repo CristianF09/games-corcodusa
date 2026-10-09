@@ -8,6 +8,8 @@ from datetime import datetime, timedelta, timezone
 import httpx
 import stripe
 
+from beanie import PydanticObjectId
+
 from app.config import CONTACT_EMAIL_FROM, RESEND_API_KEY
 from app.invoice import create_invoice
 from app.logger import log_error, log_info, log_warn
@@ -124,20 +126,28 @@ async def _send_purchase_email(
 
 
 async def _grant_access(
-    clerk_id: str | None,
+    user_id: str | None,
+    legacy_clerk_id: str | None,
     customer_id: str | None,
     interval: str | None,
     session: dict | None = None,
 ) -> None:
     user = None
-    if clerk_id:
-        user = await User.find_one(User.clerk_id == clerk_id)
+    if user_id:
+        try:
+            user = await User.get(PydanticObjectId(user_id))
+        except Exception:  # noqa: BLE001 — id invalid
+            user = None
+    # Sesiunile de checkout create înainte de autentificarea proprie au
+    # metadata `clerkId` în loc de `userId`.
+    if not user and legacy_clerk_id:
+        user = await User.find_one(User.clerk_id == legacy_clerk_id)
     if not user and customer_id:
         user = await User.find_one(User.stripe_customer_id == customer_id)
     if not user:
         log_warn(
             "Stripe checkout completed but no matching user found",
-            clerk_id=clerk_id,
+            user_id=user_id,
             customer_id=customer_id,
         )
         return
@@ -158,7 +168,7 @@ async def _grant_access(
     )
     log_info(
         "Granted premium access from Stripe checkout",
-        clerk_id=user.clerk_id,
+        user_id=str(user.id),
         interval=interval,
         expires_at=new_expiry.isoformat(),
     )
@@ -176,7 +186,7 @@ async def _grant_access(
             or user.email
         )
         invoice = await create_invoice(
-            clerk_id=user.clerk_id,
+            user_id=str(user.id),
             buyer_name=buyer_name,
             buyer_email=user.email,
             interval=interval,
@@ -185,9 +195,9 @@ async def _grant_access(
             expires_at=new_expiry,
             stripe_session_id=session.get("id"),
         )
-        log_info("Invoice generated", number=invoice[0], clerk_id=user.clerk_id)
+        log_info("Invoice generated", number=invoice[0], user_id=str(user.id))
     except Exception as err:  # noqa: BLE001
-        log_error("Invoice generation failed", err=str(err), clerk_id=user.clerk_id)
+        log_error("Invoice generation failed", err=str(err), user_id=str(user.id))
 
     try:
         await _send_purchase_email(user.email, interval, new_expiry, invoice=invoice)
@@ -215,7 +225,8 @@ async def process_webhook(payload: bytes, signature: str) -> None:
         metadata = session.get("metadata") or {}
         try:
             await _grant_access(
-                clerk_id=metadata.get("clerkId"),
+                user_id=metadata.get("userId"),
+                legacy_clerk_id=metadata.get("clerkId"),
                 customer_id=session.get("customer"),
                 interval=metadata.get("interval"),
                 session=session,

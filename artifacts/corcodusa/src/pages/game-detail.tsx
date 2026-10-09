@@ -1,6 +1,6 @@
 import { Suspense, useEffect } from "react";
-import { useParams, Link } from "wouter";
-import { useAuth, useClerk } from "@clerk/react";
+import { useParams, Link, useLocation } from "wouter";
+import { useCurrentUser, loginPath } from "@/lib/auth";
 import { useGetGame, useGetUserSubscription, getGetUserSubscriptionQueryKey } from "@workspace/api-client-react";
 import { STATIC_GAMES } from "@/lib/static-games";
 import { Navbar } from "@/components/layout/navbar";
@@ -15,8 +15,9 @@ export default function GameDetail() {
   const { id } = useParams();
   const gameId = id ? parseInt(id, 10) : 0;
 
-  const { isLoaded: isAuthLoaded, isSignedIn } = useAuth();
-  const { openSignIn } = useClerk();
+  const { isLoading: authLoading, isSignedIn } = useCurrentUser();
+  const isAuthLoaded = !authLoading;
+  const [, setLocation] = useLocation();
 
   const { data: apiGame, isLoading } = useGetGame(gameId, {
     query: {
@@ -41,12 +42,9 @@ export default function GameDetail() {
 
   useEffect(() => {
     if (isAuthLoaded && !isSignedIn) {
-      openSignIn({
-        forceRedirectUrl: `/games/${gameId}`,
-        signUpForceRedirectUrl: `/games/${gameId}`,
-      });
+      setLocation(loginPath(`/games/${gameId}`));
     }
-  }, [isAuthLoaded, isSignedIn, gameId, openSignIn]);
+  }, [isAuthLoaded, isSignedIn, gameId, setLocation]);
 
   return (
     <div className="flex min-h-screen flex-col bg-[#F0F4F8]">
@@ -99,7 +97,7 @@ export default function GameDetail() {
             <div className="p-16 bg-white rounded-2xl border-2 border-dashed border-[#E5E7EB] text-center">
               <div className="text-5xl mb-4">🔒</div>
               <h3 className="text-xl font-black text-[#1F2937] mb-2">Conectează-te pentru a juca</h3>
-              <p className="text-base text-muted-foreground">Finalizează autentificarea în fereastra apărută.</p>
+              <p className="text-base text-muted-foreground">Intră în cont ca să joci.</p>
             </div>
           ) : isLoading && !game ? (
             /* Only show skeleton when we have no static fallback either */

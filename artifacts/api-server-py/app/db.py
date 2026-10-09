@@ -33,6 +33,7 @@ async def connect_db() -> AsyncIOMotorDatabase:
     from beanie import init_beanie
 
     from app.models.game import Game
+    from app.models.session import Session
     from app.models.user import User
 
     # motor 3.7.x doesn't expose PyMongo's append_metadata on AsyncIOMotorClient.
@@ -53,7 +54,7 @@ async def connect_db() -> AsyncIOMotorDatabase:
         _db = _client[DB_NAME]
 
     try:
-        await init_beanie(database=_db, document_models=[Game, User])
+        await init_beanie(database=_db, document_models=[Game, User, Session])
     except OperationFailure as exc:
         # Atlas M0 / restricted users deny createIndex (code 8000).
         # Indexes already exist from first deploy — safe to skip re-creation.
@@ -76,12 +77,35 @@ async def connect_db() -> AsyncIOMotorDatabase:
             old_init_indexes = Initializer.init_indexes
             Initializer.init_indexes = _noop_init_indexes  # type: ignore[method-assign]
             try:
-                await init_beanie(database=_db, document_models=[Game, User])
+                await init_beanie(database=_db, document_models=[Game, User, Session])
             finally:
                 Initializer.init_indexes = old_init_indexes  # type: ignore[method-assign]
         else:
             raise
+    await _ensure_user_indexes(_db)
     return _db
+
+
+async def _ensure_user_indexes(db: AsyncIOMotorDatabase) -> None:
+    """Indexuri care nu pot sta în Beanie fără riscuri la pornire.
+
+    - Indexul vechi unic `clerkId` e șters: conturile noi nu au acest câmp,
+      iar un index unic ar respinge al doilea cont fără el.
+    - Email-ul devine unic. Dacă datele vechi au duplicate, aplicația pornește
+      oricum și doar avertizează.
+    """
+    from app.logger import log_warn
+
+    users = db["users"]
+    try:
+        await users.drop_index("clerkId_1")
+    except OperationFailure:
+        pass  # indexul nu există (cazul normal după prima pornire)
+
+    try:
+        await users.create_index("email", unique=True, name="email_unique")
+    except Exception as exc:  # noqa: BLE001
+        log_warn("Could not create unique index on users.email", err=str(exc))
 
 
 async def close_db() -> None:

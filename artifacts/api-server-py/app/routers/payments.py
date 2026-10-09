@@ -10,7 +10,7 @@ side, but the comment is kept for parity/context).
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Request
 
-from app.auth import require_auth
+from app.auth import require_user
 from app.config import APP_BASE_URL, STRIPE_PRICE_ID_ANNUAL, STRIPE_PRICE_ID_MONTHLY
 from app.logger import log_error, log_info, log_warn
 from app.models.user import User
@@ -24,7 +24,7 @@ router = APIRouter()
 # `interval` metadata being set in the Dashboard. Stripe Payment Links exist
 # for these plans too (buy.stripe.com/28E6oI7MWeav8h5h0EeZ20d lunar,
 # buy.stripe.com/eVq28s0kuc2neFt9yceZ20e anual) but are NOT used in-app:
-# access is granted by the webhook from Checkout Session metadata (clerkId),
+# access is granted by the webhook from Checkout Session metadata (userId),
 # which Payment Links don't carry.
 KNOWN_PLANS = (
     {"price_id": STRIPE_PRICE_ID_MONTHLY, "interval": "month", "is_popular": False},
@@ -102,7 +102,7 @@ async def list_products():
 
 
 @router.post("/payments/checkout")
-async def create_checkout(body: dict = Body(...), clerk_id: str = Depends(require_auth)):
+async def create_checkout(body: dict = Body(...), user: User = Depends(require_user)):
     try:
         price_id = body.get("priceId")
         # "month" or "year" — which plan was bought, so the webhook knows how
@@ -110,10 +110,6 @@ async def create_checkout(body: dict = Body(...), clerk_id: str = Depends(requir
         # app/webhooks.py). Sent by the frontend from the product it fetched
         # via /payments/products.
         interval = body.get("interval")
-
-        user = await User.find_one(User.clerk_id == clerk_id)
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
 
         client = get_stripe_client()
         base_url = get_base_url()
@@ -138,7 +134,7 @@ async def create_checkout(body: dict = Body(...), clerk_id: str = Depends(requir
             "mode": "payment",
             "success_url": f"{base_url}/?checkout=success",
             "cancel_url": f"{base_url}/pricing",
-            "metadata": {"clerkId": clerk_id, "interval": interval or ""},
+            "metadata": {"userId": str(user.id), "interval": interval or ""},
             # mode="payment" doesn't create an invoice on its own — this makes
             # Stripe issue one (PDF + link, emailed to the customer if
             # "Successful payments" emails are enabled in Dashboard →
@@ -156,10 +152,9 @@ async def create_checkout(body: dict = Body(...), clerk_id: str = Depends(requir
 
 
 @router.post("/payments/portal")
-async def create_portal(clerk_id: str = Depends(require_auth)):
+async def create_portal(user: User = Depends(require_user)):
     try:
-        user = await User.find_one(User.clerk_id == clerk_id)
-        if not user or not user.stripe_customer_id:
+        if not user.stripe_customer_id:
             raise HTTPException(status_code=400, detail="No Stripe customer found")
 
         client = get_stripe_client()

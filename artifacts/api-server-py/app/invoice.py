@@ -117,7 +117,7 @@ def _build_pdf(
 
 async def create_invoice(
     *,
-    clerk_id: str,
+    user_id: str,
     buyer_name: str,
     buyer_email: str,
     interval: str | None,
@@ -149,7 +149,7 @@ async def create_invoice(
             "series": INVOICE_SERIES,
             "number": invoice_no,
             "issuedAt": issued_at,
-            "clerkId": clerk_id,
+            "userId": user_id,
             "buyerName": buyer_name,
             "buyerEmail": buyer_email,
             "planInterval": interval,

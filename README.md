@@ -1,6 +1,6 @@
 # Corcodusa — Jocuri Educaționale
 
-Platformă de jocuri educaționale pentru copii români cu vârste între 3 și 8 ani, cu autentificare Clerk, abonamente Stripe și o bibliotecă de jocuri protejate.
+Platformă de jocuri educaționale pentru copii români cu vârste între 3 și 8 ani, cu autentificare email + parolă, abonamente Stripe și o bibliotecă de jocuri protejate.
 
 ## Run & Operate
 
@@ -14,7 +14,6 @@ Platformă de jocuri educaționale pentru copii români cu vârste între 3 și 
 ### Required environment variables
 
 - `MONGODB_URI` — MongoDB connection string
-- `CLERK_SECRET_KEY` / Clerk publishable key — authentication (see [Clerk Dashboard](https://dashboard.clerk.com))
 - `STRIPE_SECRET_KEY` — enables payments (optional; API falls back to mock product data when unset)
 - `STRIPE_WEBHOOK_SECRET` — enables Stripe webhook signature verification (optional)
 - `APP_BASE_URL` — base URL of the **frontend** (not the API), used to build Stripe checkout/portal redirect URLs (defaults to `http://localhost:5173`)
@@ -22,12 +21,12 @@ Platformă de jocuri educaționale pentru copii români cu vârste între 3 și 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
-- Frontend: React 19 + Vite 7, wouter (routing), Clerk React — deployed to Firebase Hosting (`games.corcodusa.ro`)
+- Frontend: React 19 + Vite 7, wouter (routing) — deployed to Firebase Hosting (`games.corcodusa.ro`)
 - **Domains**: `games.corcodusa.ro` (this frontend) and `games-api.corcodusa.ro` (this backend, once deployed) are distinct from `corcodusa.ro` / `www.corcodusa.ro` and `api.corcodusa.ro`, which belong to a separate, unrelated business (PDF-delivery site, repo `CristianF09/forkids`) — same Stripe account, different everything else.
 - API: `artifacts/api-server-py` — FastAPI + Beanie/Motor, deployed to Render
 - DB: MongoDB + Beanie/Motor (Mongoose for `lib/db` seed scripts)
 - Validation: Zod (`zod/v4`)
-- Auth: Clerk (whitelabel proxy at `/clerk`) — `ProtectedRoute` re-enabled; routes require sign-in
+- Auth: email + parolă, sesiune în cookie httpOnly (`/api/auth/*`) — `ProtectedRoute` cere login pentru jocuri și cont
 - Payments: Stripe (graceful fallback when not configured; webhook signature verification works, but event handling — e.g. `checkout.session.completed` — is still a TODO)
 - API codegen: Orval (from OpenAPI spec at `lib/api-spec/openapi.yaml`)
 - Build: Vite (frontend); see `artifacts/api-server-py/README.md` for the Python API
@@ -46,15 +45,13 @@ Platformă de jocuri educaționale pentru copii români cu vârste între 3 și 
 ## Architecture decisions
 
 - **Contract-first API**: OpenAPI spec → Orval codegen → type-safe hooks. Always edit the spec first, then run codegen.
-- **Clerk whitelabel proxy**: All Clerk requests go through `/clerk` on the same domain to avoid third-party cookie issues.
 - **Stripe graceful fallback**: Stripe integration is optional; API returns mock product data when not connected.
 - **Static game assets**: Game cover images live in `attached_assets/` and are served by the API at `/api/assets/` (FastAPI `StaticFiles` mount).
-- **Protected routes**: Designed for Clerk authentication to gate the game library and dashboard (frontend guards + API dependency) — currently disabled for testing, see Gotchas.
+- **Protected routes**: frontend guard (`ProtectedRoute`) + API dependency `require_user` (`app/auth.py`).
 
 ## Product
 
 - Landing page with hero, live statistics, game categories, featured games, features overview, and FAQ
-- Google (and other) login via Clerk
 - 7-day free trial + paid subscription (Full Access) via Stripe
 - Browsable game library with category filtering and search
 - User dashboard showing subscription status and account management
@@ -63,6 +60,4 @@ Platformă de jocuri educaționale pentru copii români cu vârste între 3 și 
 
 - **Stripe not configured**: set `STRIPE_SECRET_KEY` (and optionally `STRIPE_WEBHOOK_SECRET`) before checkout works in production.
 - **Game images**: stored in `attached_assets/*.png`, served via `/api/assets/`. Add new images there and seed the DB with `/api/assets/<filename>` URLs.
-- **Clerk dev keys warning**: expected in development — not an error.
 - **GAME_COMPONENTS vs seed data**: `artifacts/corcodusa/src/games/index.ts` maps numeric game ids to playable components; ids 4–11 from the seed data don't all line up thematically with their component, and id 11 has no component at all (falls back to a "in development" placeholder). Check this mapping before adding/reordering seed games.
-- **Auth is currently disabled for testing**: `ProtectedRoute` in the frontend doesn't enforce Clerk login — re-enable before shipping if subscription gating matters.

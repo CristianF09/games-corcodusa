@@ -1,16 +1,15 @@
-import { useUser } from "@clerk/react";
+import { useCurrentUser } from "@/lib/auth";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useGetUserSubscription, useGetCurrentUser } from "@workspace/api-client-react";
+import { useGetUserSubscription } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
 import { ro } from "date-fns/locale";
 import { CheckCircle2, XCircle } from "lucide-react";
 
 export default function Dashboard() {
-  const { user: clerkUser } = useUser();
-  const { data: dbUser, isLoading: isLoadingDbUser } = useGetCurrentUser();
+  const { user: dbUser, isLoading: isLoadingDbUser } = useCurrentUser();
   const { data: subscription, isLoading: isLoadingSub } = useGetUserSubscription();
 
   const isLoading = isLoadingSub || isLoadingDbUser;
@@ -38,21 +37,17 @@ export default function Dashboard() {
                 {/* Avatar with orange ring */}
                 <div className="relative">
                   <div className="h-24 w-24 rounded-full overflow-hidden ring-4 ring-[#FF6B00]/20 ring-offset-2">
-                    {clerkUser?.imageUrl ? (
-                      <img src={clerkUser.imageUrl} alt="Avatar" className="h-full w-full object-cover" />
-                    ) : (
-                      <div className="h-full w-full bg-gradient-to-br from-[#FF6B00] to-[#FF9A3C] flex items-center justify-center text-white font-black text-2xl">
-                        {clerkUser?.firstName?.[0] || clerkUser?.emailAddresses[0]?.emailAddress?.[0]?.toUpperCase() || "U"}
-                      </div>
-                    )}
+                    <div className="h-full w-full bg-gradient-to-br from-[#FF6B00] to-[#FF9A3C] flex items-center justify-center text-white font-black text-2xl">
+                      {dbUser?.firstName?.[0] || dbUser?.email?.[0]?.toUpperCase() || "U"}
+                    </div>
                   </div>
                 </div>
 
                 <div>
                   <h2 className="text-xl font-black text-[#1F2937]">
-                    {clerkUser?.firstName} {clerkUser?.lastName}
+                    {dbUser?.firstName} {dbUser?.lastName}
                   </h2>
-                  <p className="text-sm text-muted-foreground mt-0.5">{clerkUser?.primaryEmailAddress?.emailAddress}</p>
+                  <p className="text-sm text-muted-foreground mt-0.5">{dbUser?.email}</p>
                 </div>
 
                 {isLoadingSub ? (
