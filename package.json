@@ -11,10 +11,10 @@
   },
   "private": true,
   "devDependencies": {
-    "prettier": "^3.9.4",
+    "prettier": "^3.9.9",
     "typescript": "~5.9.3"
   },
   "dependencies": {
-    "stripe": "^22.3.0"
+    "stripe": "^22.6.2"
   }
 }
