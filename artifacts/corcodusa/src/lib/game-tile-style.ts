@@ -153,6 +153,15 @@ export const GAME_TILE_STYLES: Record<number, GameTileStyle> = {
     tagline: "Acoperă grila cu petice",
     imagePath: "",
   },
+  // 16 → GamePreK: compare, next/before, ordinals, patterns (pre-K)
+  16: {
+    gradient: "from-[#F9A825] to-[#FBC02D]",
+    label: "PRE-K",
+    visual: "🔴🔵",
+    isTextVisual: false,
+    tagline: "Compară, ordonează, modele",
+    imagePath: "",
+  },
 };
 
 export const DEFAULT_TILE_STYLE: GameTileStyle = {

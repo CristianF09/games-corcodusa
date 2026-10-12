@@ -197,6 +197,18 @@ GAMES = [
         "is_featured": True,
         "requires_subscription": True,
     },
+    {
+        # id 16 -> GamePreK: compare numbers, next/before, ordinals, patterns.
+        "title": "Pregătire Preșcolari",
+        "description": "Compară numere, spune ce vine după sau înainte, află al câtelea e un animal și completează modele colorate.",
+        "category": "matematica",
+        "age_min": 3,
+        "age_max": 6,
+        "image_url": "",
+        "is_new_game": True,
+        "is_featured": True,
+        "requires_subscription": True,
+    },
 ]
 
 

@@ -18,4 +18,5 @@ export const GAME_COMPONENTS: Record<number, ReturnType<typeof lazy>> = {
   13: lazy(() => import("./GameUnestePunctele")),
   14: lazy(() => import("./GameZipZap")),
   15: lazy(() => import("./GamePatches")),
+  16: lazy(() => import("./GamePreK")),
 };

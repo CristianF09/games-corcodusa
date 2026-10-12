@@ -138,4 +138,13 @@ export const STATIC_GAMES: Game[] = [
     imageUrl: "",
     isNew: true, isFeatured: true, requiresSubscription: true,
   },
+  {
+    id: 16,
+    title: "Pregătire Preșcolari",
+    description: "Compară numere, spune ce vine după sau înainte, află al câtelea e un animal și completează modele colorate.",
+    category: "matematica",
+    ageMin: 3, ageMax: 6,
+    imageUrl: "",
+    isNew: true, isFeatured: true, requiresSubscription: true,
+  },
 ];
