@@ -46,7 +46,7 @@ function PricingSection() {
   };
 
   const features = [
-    "Acces la toate cele 15 jocuri",
+    "Acces la toate jocurile",
     "Fără reclame niciodată",
     "Jocuri noi lunar",
     "Funcționează pe orice dispozitiv",

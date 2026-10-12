@@ -85,7 +85,7 @@ export default function Pricing() {
   };
 
   const features = [
-    "Acces nelimitat la toate cele 15 jocuri",
+    "Acces nelimitat la toate jocurile",
     "Fără reclame, niciodată",
     "Jocuri noi adăugate lunar",
     "Funcționează pe orice dispozitiv",
@@ -138,7 +138,7 @@ export default function Pricing() {
 
                 <ul className="space-y-3 flex-1 mb-8">
                   {[
-                    "Acces la toate cele 15 jocuri",
+                    "Acces la toate jocurile",
                     "Fără reclame",
                     "Fără card bancar",
                     "Anulare automată după 7 zile",

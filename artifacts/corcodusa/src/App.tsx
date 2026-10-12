@@ -21,6 +21,8 @@ import PoliticaDeRetur from "@/pages/politica-de-retur";
 import Faq from "@/pages/faq";
 import DespreNoi from "@/pages/despre-noi";
 import NotFound from "@/pages/not-found";
+import { SeoHead } from "@/lib/seo";
+import { CookieConsent } from "@/components/cookie-consent";
 
 const queryClient = new QueryClient();
 
@@ -82,7 +84,9 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <WouterRouter base={basePath}>
+          <SeoHead />
           <AppRoutes />
+          <CookieConsent />
         </WouterRouter>
         <Toaster />
       </TooltipProvider>

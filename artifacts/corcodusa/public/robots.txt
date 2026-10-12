@@ -1,0 +1,13 @@
+# Corcodușa — jocuri educaționale pentru copii
+# Paginile publice sunt indexabile. Zonele protejate de autentificare nu au conținut public.
+
+User-agent: *
+Allow: /
+Disallow: /games
+Disallow: /dashboard
+Disallow: /autentificare
+Disallow: /cont-nou
+Disallow: /resetare-parola
+Disallow: /resetare-parola-noua
+
+Sitemap: https://games.corcodusa.ro/sitemap.xml

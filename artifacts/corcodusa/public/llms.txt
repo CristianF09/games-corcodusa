@@ -1,0 +1,22 @@
+# Corcodușa
+
+> Corcodușa (games.corcodusa.ro) este o platformă de jocuri educaționale în limba română pentru copii cu vârste între 3 și 8 ani. Jocurile acoperă numărare, adunare și scădere, litere și alfabet, forme, modele, logică, labirinte, puzzle-uri și creativitate. Platforma nu afișează reclame. Accesul este pe bază de abonament lunar sau anual, cu 7 zile de probă gratuite, fără card bancar.
+
+## Pagini principale
+
+- [Acasă](https://games.corcodusa.ro/): prezentarea platformei și lista jocurilor
+- [Abonamente](https://games.corcodusa.ro/pricing): prețurile pentru accesul lunar și anual
+- [Întrebări frecvente](https://games.corcodusa.ro/faq): perioada gratuită, conturi, plăți și reînnoire
+- [Despre noi](https://games.corcodusa.ro/despre-noi): cine suntem și misiunea platformei
+- [Metode de plată](https://games.corcodusa.ro/metode-de-plata): cum se face plata și cum se activează accesul
+
+## Informații legale
+
+- [Termeni și condiții](https://games.corcodusa.ro/termeni-si-conditii)
+- [Politica de confidențialitate](https://games.corcodusa.ro/politica-de-confidentialitate)
+- [Politica cookie](https://games.corcodusa.ro/politica-cookie)
+- [Politica de retur](https://games.corcodusa.ro/politica-de-retur)
+
+## Contact
+
+- Email: contact@corcodusa.ro

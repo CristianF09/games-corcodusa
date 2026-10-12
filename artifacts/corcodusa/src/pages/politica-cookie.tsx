@@ -38,20 +38,27 @@ export default function PoliticaCookie() {
 
       <LegalSection title="Cookie-uri funcționale">
         <p>
-          Rețin preferințele tale (de exemplu, setări de sunet în jocuri) pentru o experiență mai
-          bună. Acestea nu colectează date în scopuri publicitare.
+          În prezent, platforma <strong>nu setează cookie-uri funcționale</strong>. Acestea ar
+          păstra preferințe care îmbunătățesc experiența și nu colectează date în scopuri
+          publicitare. Vor fi activate doar cu acordul tău.
         </p>
       </LegalSection>
-
       <LegalSection title="Cookie-uri de analiză (analytics)">
         <p>
           În prezent, platforma <strong>nu folosește cookie-uri de analiză sau publicitate</strong>.
-          Dacă vom introduce instrumente de analiză în viitor, această pagină va fi actualizată,
-          iar consimțământul tău va fi solicitat printr-un banner de cookie-uri înainte de
+          Dacă vom introduce instrumente de analiză, consimțământul tău va fi solicitat înainte de
           activarea lor.
         </p>
       </LegalSection>
-
+      <LegalSection title="Alegerea ta (banner de cookie-uri)">
+        <p>
+          La prima vizită îți afișăm un banner în care poți alege <strong>„Doar esențiale"</strong>{" "}
+          sau <strong>„Acceptă toate"</strong>. Alegerea este salvată în browserul tău, în
+          localStorage, sub cheia <code>corcodusa-cookie-consent</code>, și nu este trimisă către
+          serverele noastre. Poți șterge oricând această intrare din setările browserului, iar
+          bannerul va reapărea.
+        </p>
+      </LegalSection>
       <LegalSection title="Cum poți controla cookie-urile">
         <p>
           Poți șterge sau bloca cookie-urile din setările browserului tău. Reține însă că blocarea
