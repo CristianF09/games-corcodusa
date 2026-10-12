@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { useCurrentUser, loginPath } from "@/lib/auth";
 import { Game } from "@workspace/api-client-react";
 import { gameTileStyle } from "@/lib/game-tile-style";
+import { DEV_OPEN_GAMES } from "@/lib/dev-access";
 
 interface GameCardProps {
   game: Game;
@@ -16,7 +17,7 @@ export function GameCard({ game }: GameCardProps) {
 
   function handlePlay(e: React.MouseEvent) {
     e.stopPropagation();
-    if (!isSignedIn) {
+    if (!DEV_OPEN_GAMES && !isSignedIn) {
       setLocation(loginPath(`/games/${game.id}`));
       return;
     }

@@ -4,20 +4,10 @@ import StepTraceCanvas from "@/components/step-trace-canvas";
 import { numberStrokes } from "@/lib/stroke-data";
 import { KidEmoji } from "@/components/kid-emoji";
 import { DeckMap } from "@/lib/exercise-deck";
+import { NOUNS, countPhrase, howMany, pickNoun } from "@/lib/ro-nouns";
 
 /* ─── Counting game data ──────────────────────────────────── */
-const ITEM_SETS = [
-  { emoji: "🍎", label: "mere"      }, { emoji: "⭐", label: "stele"     },
-  { emoji: "🐶", label: "cățeluși" }, { emoji: "🦋", label: "fluturi"   },
-  { emoji: "🍭", label: "acadele"  }, { emoji: "🎈", label: "baloane"   },
-  { emoji: "🐸", label: "broscuțe"}, { emoji: "🌻", label: "flori"     },
-  { emoji: "🍓", label: "căpșune" }, { emoji: "🚀", label: "rachete"   },
-  { emoji: "🦊", label: "vulpițe" }, { emoji: "🐧", label: "pinguini"  },
-  { emoji: "🐄", label: "văcuțe"  }, { emoji: "🦁", label: "lei"       },
-  { emoji: "🦉", label: "bufnițe" }, { emoji: "🐤", label: "puișori"   },
-  { emoji: "🚗", label: "mașinuțe"}, { emoji: "🧸", label: "ursuleți"  },
-  { emoji: "⚽", label: "mingi"   }, { emoji: "🎁", label: "cadouri"   },
-];
+
 export const COUNT_LEVELS = [
   { id: 1, label: "1–5",   min: 1,  max: 5,  desc: "Numere mici"     },
   { id: 2, label: "1–10",  min: 1,  max: 10, desc: "Până la 10"      },
@@ -37,13 +27,13 @@ const COUNT_DECKS = new DeckMap<number>((levelKey) => {
 
 export function generateRound(lv: number) {
   const count = COUNT_DECKS.next(String(lv));
-  const set = ITEM_SETS[Math.floor(Math.random() * ITEM_SETS.length)];
+  const noun = pickNoun();
   const wrong = new Set<number>([count]);
   while (wrong.size < 4) {
     const w = Math.max(1, count + Math.floor(Math.random() * 7) - 3);
     if (w !== count && w > 0) wrong.add(w);
   }
-  return { count, ...set, options: shuffle([...wrong]) };
+  return { count, noun, options: shuffle([...wrong]) };
 }
 
 /* ─── Tracing colors ─────────────────────────────────────── */
@@ -180,7 +170,7 @@ export default function GameNumarare() {
           </div>
 
           <p className="text-base font-bold text-foreground text-center">
-            {lvl.parity ? `${round.count} este par sau impar?` : `Câte ${round.label} vezi? Numără-le!`}
+            {lvl.parity ? `Numărul ${round.count} este par sau impar?` : `${howMany(round.noun)} ${NOUNS[round.noun].pl} vezi? Numără-le!`}
           </p>
 
           <div className="flex flex-wrap justify-center gap-2 max-w-md bg-card rounded-3xl p-5 border-2 border-border shadow-inner min-h-20">
@@ -188,7 +178,7 @@ export default function GameNumarare() {
               <button key={i}
                 onClick={() => { if (answered) return; playClick(); setClicked(p => { const n = new Set(p); n.has(i) ? n.delete(i) : n.add(i); return n; }); }}
                 className={`transition-all duration-200 active:scale-75 ${clicked.has(i) ? "opacity-30 scale-90" : "hover:scale-110"}`}>
-                <KidEmoji emoji={round.emoji} size={34} />
+                <KidEmoji emoji={NOUNS[round.noun].emoji} size={34} />
               </button>
             ))}
           </div>
@@ -236,7 +226,7 @@ export default function GameNumarare() {
                 ? (streak >= 3 ? "🔥 Fantastic!" : "🎉 Corect! Bravo!")
                 : lvl.parity
                   ? `❌ ${round.count} este ${round.count % 2 === 0 ? "par" : "impar"}`
-                  : `❌ Erau ${round.count} ${round.label}`}
+                  : `❌ ${round.count === 1 ? "Era" : "Erau"} ${countPhrase(round.count, round.noun)}`}
             </div>
           )}
 
@@ -247,7 +237,7 @@ export default function GameNumarare() {
           )}
           {showHint && !answered && (
             <div className="text-sm bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-2 text-yellow-800">
-              Apasă pe fiecare {round.emoji} ca să numeri mai ușor!
+              Apasă pe fiecare {NOUNS[round.noun].emoji} ca să numeri mai ușor!
             </div>
           )}
         </>

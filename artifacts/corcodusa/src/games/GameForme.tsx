@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, type ReactElement } from "react";
+import { KidEmoji } from "@/components/kid-emoji";
 import { playCorrect, playWrong, playCelebrate } from "@/lib/sfx";
 import StepTraceCanvas from "@/components/step-trace-canvas";
 import { shapeStrokes } from "@/lib/stroke-data";
@@ -33,7 +34,7 @@ const COLORS: ColorName[] = ["roșu","albastru","galben","verde","portocaliu","v
  *  abstract shapes. */
 const REAL_OBJECTS: { name: string; emoji: string; color: ColorName; q: string }[] = [
   { name: "stea",      emoji: "⭐", color: "galben",     q: "Ce culoare are o stea?" },
-  { name: "nor",       emoji: "☁️", color: "albastru",   q: "Ce culoare are cerul cu un nor?" },
+  { name: "cerul",     emoji: "🌤️", color: "albastru",   q: "Ce culoare are cerul pe timp senin?" },
   { name: "copac",     emoji: "🌳", color: "verde",      q: "Ce culoare are un copac?" },
   { name: "măr",       emoji: "🍎", color: "roșu",       q: "Ce culoare are un măr?" },
   { name: "portocală", emoji: "🍊", color: "portocaliu", q: "Ce culoare are o portocală?" },
@@ -181,7 +182,7 @@ export default function GameForme() {
             {colorR.kind === "object" ? colorR.obj.q : "Ce culoare are această formă?"}
           </p>
           <div className="bg-card rounded-3xl border-2 border-border p-8 shadow-inner flex items-center justify-center">
-            {colorR.kind === "object" ? <span className="text-6xl">{colorR.obj.emoji}</span> : SHAPE_SVG[colorR.shape](COLOR_HEX[colorR.color])}
+            {colorR.kind === "object" ? <KidEmoji emoji={colorR.obj.emoji} size={96} /> : SHAPE_SVG[colorR.shape](COLOR_HEX[colorR.color])}
           </div>
           <div className="grid grid-cols-2 gap-3 w-full max-w-xs">
             {colorR.options.map(c => (

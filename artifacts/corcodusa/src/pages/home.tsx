@@ -303,7 +303,7 @@ export default function Home() {
 
           {/* Hero image — directly under the title */}
           <img
-            src="/corcodusagames.png"
+            src="/corcodusagames.webp"
             alt="Corcodușa"
             className="h-56 w-56 md:h-72 md:w-72 object-contain drop-shadow-[0_12px_40px_rgba(0,0,0,.40)]"
           />

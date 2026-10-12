@@ -5,7 +5,6 @@ import { CATEGORY_EMOJIS } from "@/lib/category-colors";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { GameCard } from "@/components/game-card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Search } from "lucide-react";
 
 // Rendered immediately so category buttons never wait on the API.
@@ -29,7 +28,8 @@ export default function Games() {
   const { data: apiCategories } = useListGameCategories();
   // Fetch the full list once; category filtering happens client-side so
   // switching categories is instant instead of a network round-trip per click.
-  const { data: apiGames, isLoading: isLoadingGames } = useListGames({});
+  // Lista statică e afișată imediat; datele din API o înlocuiesc când sosesc.
+  const { data: apiGames } = useListGames({});
   const categories = (apiCategories && apiCategories.length > 0) ? apiCategories : STATIC_CATEGORIES;
   // Fall back to static games when API is unreachable or returns empty (unseeded DB)
   const baseGames = (apiGames && apiGames.length > 0) ? apiGames : STATIC_GAMES;
@@ -109,11 +109,7 @@ export default function Games() {
 
           {/* Game grid */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5 md:gap-6">
-            {isLoadingGames ? (
-              Array.from({ length: 8 }).map((_, i) => (
-                <Skeleton key={i} className="h-[240px] rounded-3xl" />
-              ))
-            ) : filteredGames && filteredGames.length > 0 ? (
+            {filteredGames.length > 0 ? (
               filteredGames.map((game) => <GameCard key={game.id} game={game} />)
             ) : (
               <div className="col-span-full py-20 text-center">

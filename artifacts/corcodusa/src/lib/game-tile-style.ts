@@ -25,7 +25,7 @@ export const GAME_TILE_STYLES: Record<number, GameTileStyle> = {
     visual: "1 2 3",
     isTextVisual: true,
     tagline: "Numără până la 20",
-    imagePath: "/games/game-matematica-1.png",
+    imagePath: "/games/game-matematica-1.webp",
   },
   // 2 → GameAdunare: addition, subtraction, multiplication
   2: {
@@ -34,7 +34,7 @@ export const GAME_TILE_STYLES: Record<number, GameTileStyle> = {
     visual: "2+3=5",
     isTextVisual: true,
     tagline: "Adunări și scăderi",
-    imagePath: "/games/game-matematica-2.png",
+    imagePath: "/games/game-matematica-2.webp",
   },
   // 3 → GameAlfabet: letters & sounds
   3: {
@@ -43,7 +43,7 @@ export const GAME_TILE_STYLES: Record<number, GameTileStyle> = {
     visual: "A B C",
     isTextVisual: true,
     tagline: "Literele alfabetului",
-    imagePath: "/games/game-litere-1.png",
+    imagePath: "/games/game-litere-1.webp",
   },
   // 4 → GameDinozauri: dinosaur exploration
   4: {
@@ -52,7 +52,7 @@ export const GAME_TILE_STYLES: Record<number, GameTileStyle> = {
     visual: "🦕",
     isTextVisual: false,
     tagline: "Lumea dinozaurilor",
-    imagePath: "/games/game-litere-2.png",
+    imagePath: "/games/game-litere-2.webp",
   },
   // 5 → GameForme: shapes + color mixing
   5: {
@@ -61,7 +61,7 @@ export const GAME_TILE_STYLES: Record<number, GameTileStyle> = {
     visual: "◯ □ △",
     isTextVisual: true,
     tagline: "Forme și culori",
-    imagePath: "/games/game-culori-1.png",
+    imagePath: "/games/game-culori-1.webp",
   },
   // 6 → GameAnimale: animal sounds & habitats
   6: {
@@ -70,7 +70,7 @@ export const GAME_TILE_STYLES: Record<number, GameTileStyle> = {
     visual: "🐾",
     isTextVisual: false,
     tagline: "Sunete și habitate",
-    imagePath: "/games/game-natura-1.png",
+    imagePath: "/games/game-natura-1.webp",
   },
   // 7 → GameMuzica: rhythm & instrument sequences
   7: {
@@ -79,7 +79,7 @@ export const GAME_TILE_STYLES: Record<number, GameTileStyle> = {
     visual: "🎵",
     isTextVisual: false,
     tagline: "Ritmuri muzicale",
-    imagePath: "/games/game-muzica-1.png",
+    imagePath: "/games/game-muzica-1.webp",
   },
   // 8 → GameMemorie: classic matching pairs
   8: {
@@ -88,7 +88,7 @@ export const GAME_TILE_STYLES: Record<number, GameTileStyle> = {
     visual: "🧠",
     isTextVisual: false,
     tagline: "Găsește perechile",
-    imagePath: "/games/game-memorie-1.png",
+    imagePath: "/games/game-memorie-1.webp",
   },
   // 9 → GameDesen: free drawing & coloring canvas
   9: {
@@ -97,7 +97,7 @@ export const GAME_TILE_STYLES: Record<number, GameTileStyle> = {
     visual: "🎨",
     isTextVisual: false,
     tagline: "Desenează liber",
-    imagePath: "/games/game-creativitate-1.png",
+    imagePath: "/games/game-creativitate-1.webp",
   },
   // 10 → GamePuzzle: logic & matching puzzles
   10: {
@@ -106,7 +106,7 @@ export const GAME_TILE_STYLES: Record<number, GameTileStyle> = {
     visual: "🧩",
     isTextVisual: false,
     tagline: "Rezolvă & asociază",
-    imagePath: "/games/game-logica-1.png",
+    imagePath: "/games/game-logica-1.webp",
   },
   // 11 → GameLabirint: maze navigation, 3 difficulties, 5 themes
   11: {

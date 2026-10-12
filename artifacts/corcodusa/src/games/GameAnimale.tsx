@@ -38,11 +38,11 @@ type Animal = {
 export const ANIMALS: Animal[] = [
   // Domestice
   { name: "Vacă",      emoji: "🐄", cat: "domestice", habitat: "ferma",  food: "iarbă și fân",           sound: "Muu!" },
-  { name: "Porc",      emoji: "🐷", cat: "domestice", habitat: "ferma",  food: "orice — e omnivor",      sound: "Groh!" },
+  { name: "Porc",      emoji: "🐷", cat: "domestice", habitat: "ferma",  food: "cereale, legume și resturi", sound: "Groh!" },
   { name: "Câine",     emoji: "🐶", cat: "domestice", habitat: "casa",   food: "carne și oase",          sound: "Ham-ham!" },
   { name: "Pisică",    emoji: "🐱", cat: "domestice", habitat: "casa",   food: "carne și pește",         sound: "Miau!" },
   { name: "Oaie",      emoji: "🐑", cat: "domestice", habitat: "ferma",  food: "iarbă",                  sound: "Bee!" },
-  { name: "Cal",       emoji: "🐴", cat: "domestice", habitat: "ferma",  food: "iarbă, fân și ovăz",     sound: "Iîîî!" },
+  { name: "Cal",       emoji: "🐴", cat: "domestice", habitat: "ferma",  food: "iarbă, fân și ovăz",     sound: "Hî-hî!" },
   { name: "Capră",     emoji: "🐐", cat: "domestice", habitat: "ferma",  food: "iarbă și frunze",        sound: "Mee!" },
   { name: "Iepure",    emoji: "🐰", cat: "domestice", habitat: "casa",   food: "morcovi și salată" },
   { name: "Măgar",     emoji: "🫏", cat: "domestice", habitat: "ferma",  food: "iarbă, fân și morcovi",  sound: "I-ha! I-ha!" },
@@ -76,7 +76,7 @@ export const ANIMALS: Animal[] = [
   { name: "Rață",      emoji: "🦆", cat: "pasari",    habitat: "ferma",  food: "plante de apă",          sound: "Mac-mac!" },
   { name: "Cocoș",     emoji: "🐓", cat: "pasari",    habitat: "ferma",  food: "semințe",                sound: "Cucuriguu!" },
   { name: "Bufniță",   emoji: "🦉", cat: "pasari",    habitat: "padure", food: "șoareci",                sound: "U-hu! U-hu!" },
-  { name: "Papagal",   emoji: "🦜", cat: "pasari",    habitat: "casa",   food: "semințe și fructe",      sound: "Vorbește ca omul!" },
+  { name: "Papagal",   emoji: "🦜", cat: "pasari",    habitat: "casa",   food: "semințe și fructe",      sound: "Salut! Salut!" },
   { name: "Porumbel",  emoji: "🕊️", cat: "pasari",    habitat: "aer",    food: "semințe și firimituri",  sound: "Gru-gru!" },
   { name: "Vultur",    emoji: "🦅", cat: "pasari",    habitat: "aer",    food: "carne" },
   { name: "Pinguin",   emoji: "🐧", cat: "pasari",    habitat: "ocean",  food: "pești" },
@@ -116,6 +116,12 @@ const DIFFICULTIES = [
   { id: "mediu", label: "🌿 Mediu", options: 4 },
   { id: "greu",  label: "🌳 Greu",  options: 6 },
 ];
+
+/** Locul în propoziții („trăiește la fermă"). Eticheta cu emoji e doar pentru butoane. */
+const HABITAT_PHRASE: Record<string, string> = {
+  ferma: "la fermă", casa: "în casa omului", padure: "în pădure", ocean: "în ocean",
+  aer: "în aer", savana: "în savană", lac: "lângă lac",
+};
 
 /** Animals are dealt from a per-category+mode deck: every animal in the
  *  category appears once before any repeats. */
@@ -297,7 +303,7 @@ export default function GameAnimale() {
       {chosen && (
         <div className={`text-xl font-bold animate-in zoom-in duration-300 ${correct ? "text-green-600" : "text-red-500"}`}>
           {correct ? "🎉 Corect! Bravo!" : (
-            mode === "habitat" ? `❌ Trăiește ${HABITAT_LABELS[round.target.habitat].toLowerCase()}` :
+            mode === "habitat" ? `❌ Trăiește ${HABITAT_PHRASE[round.target.habitat]}` :
             mode === "hrana" ? `❌ Mănâncă ${round.target.food}` :
             `❌ Era ${round.target.name}`
           )}
@@ -307,7 +313,7 @@ export default function GameAnimale() {
       {/* Fun fact after a correct answer */}
       {chosen && correct && (
         <div className="text-sm bg-blue-50 border border-blue-200 rounded-xl px-4 py-2 text-blue-800 text-center max-w-sm">
-          🌟 {round.target.name} trăiește {HABITAT_LABELS[round.target.habitat].toLowerCase()} și mănâncă {round.target.food}.
+          🌟 {round.target.name} trăiește {HABITAT_PHRASE[round.target.habitat]} și mănâncă {round.target.food}.
         </div>
       )}
     </div>

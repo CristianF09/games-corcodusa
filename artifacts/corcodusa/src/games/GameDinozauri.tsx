@@ -61,7 +61,7 @@ export const CATEGORIES: Record<string, { label: string; emoji: string; words: {
       { word: "INIMĂ", emoji: "❤️", hint: "Pompează sânge în corp" },
       { word: "GURĂ", emoji: "👄", hint: "Cu ea vorbim și mâncăm" },
       { word: "DINTE", emoji: "🦷", hint: "Alb și tare, în gură" },
-      { word: "DEGET", emoji: "☝️", hint: "Avem zece la mâini" },
+      { word: "DEGET", emoji: "☝️", hint: "Avem zece în total, pe mâini" },
       { word: "LIMBĂ", emoji: "👅", hint: "Cu ea gustăm" },
     ],
   },

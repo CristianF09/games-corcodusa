@@ -10,8 +10,8 @@ export const LETTERS_DATA: Record<string, { word: string; emoji: string; desc: s
   // Ă and Â never start Romanian words — show a word that CONTAINS them,
   // which is how school primers teach these letters.
   Ă: { word: "Măr",      emoji: "🍎", desc: "Fruct dulce — «ă» e în mijloc: m-ă-r", type: "vocala" },
-  Â: { word: "Pâine",    emoji: "🍞", desc: "«â» stă mereu în mijloc: p-â-ine",  type: "vocala"   },
-  B: { word: "Broscuță", emoji: "🐸", desc: "Sare și croncăne la baltă",        type: "consoana" },
+  Â: { word: "Pâine",    emoji: "🍞", desc: "Litera «â» stă în mijloc: p-â-i-ne",  type: "vocala"   },
+  B: { word: "Broscuță", emoji: "🐸", desc: "Sare și orăcăie lângă baltă",        type: "consoana" },
   C: { word: "Cal",      emoji: "🐴", desc: "Animal care nechează",             type: "consoana" },
   D: { word: "Delfin",   emoji: "🐬", desc: "Înoată în ocean",                  type: "consoana" },
   E: { word: "Elefant",  emoji: "🐘", desc: "Cel mai mare animal de uscat",     type: "vocala"   },
@@ -37,7 +37,7 @@ export const LETTERS_DATA: Record<string, { word: string; emoji: string; desc: s
   V: { word: "Vulpe",    emoji: "🦊", desc: "Animal viclean din povești",        type: "consoana" },
   X: { word: "Xilofon",  emoji: "🎶", desc: "Instrument muzical colorat",        type: "consoana" },
   Y: { word: "Yo-yo",    emoji: "🪀", desc: "Jucărie care urcă și coboară",     type: "consoana" },
-  Z: { word: "Zebră",    emoji: "🦓", desc: "Cal cu dungi albe și negre",       type: "consoana" },
+  Z: { word: "Zebră",    emoji: "🦓", desc: "Animal cu dungi albe și negre",       type: "consoana" },
 };
 const ALL_LETTERS = Object.keys(LETTERS_DATA);
 export const TRACE_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVXYZ".split("");
@@ -285,7 +285,7 @@ export default function GameAlfabet() {
           <div className="flex gap-2 justify-center flex-wrap">
             {(TRACE_WORDS[curLetter] ?? []).map((w, i) => (
               <div key={i} className="flex flex-col items-center gap-0.5 bg-muted/50 rounded-xl px-3 py-2">
-                <span className="text-2xl">{w.emoji}</span>
+                <KidEmoji emoji={w.emoji} size={32} />
                 <span className="text-xs font-bold text-muted-foreground">{w.word}</span>
               </div>
             ))}
@@ -351,7 +351,7 @@ export default function GameAlfabet() {
           <p className="font-bold text-lg text-center">Ce literă completează cuvântul?</p>
 
           <div className="bg-gradient-to-br from-primary/5 to-secondary/5 rounded-3xl border-2 border-border p-8 text-center shadow-inner w-full max-w-sm">
-            <div className="text-7xl mb-3 drop-shadow">{wbRound.item.emoji}</div>
+            <div className="mb-3 flex justify-center drop-shadow"><KidEmoji emoji={wbRound.item.emoji} size={112} /></div>
             <div className={`text-4xl font-display font-black tracking-wide ${wbChosen === wbRound.item.letter ? "text-green-600" : "text-foreground"}`}>
               {wbChosen === wbRound.item.letter ? wbRound.item.word.toUpperCase() : wbRound.item.blanked}
             </div>

@@ -155,6 +155,7 @@ export default function GamePreK() {
           const isThisCorrect = opt === round.answer;
           const isThisChosen  = chosen === opt;
           const tone = OPTION_TONES[idx % OPTION_TONES.length];
+          const isNumeric = /^\d+$/.test(opt);
           let state = `bg-gradient-to-b ${tone} hover:-translate-y-1 hover:shadow-xl active:scale-95`;
           if (answered && isThisCorrect) state = "bg-green-100 border-green-500 text-green-700 scale-105 shadow-xl";
           else if (answered && isThisChosen) state = "bg-red-100 border-red-400 text-red-700 opacity-90";
@@ -162,7 +163,7 @@ export default function GamePreK() {
           return (
             <button key={opt} onClick={() => handleAnswer(opt)} disabled={answered}
               className={`min-h-20 sm:min-h-24 rounded-3xl border-2 shadow-md font-display font-black text-4xl sm:text-5xl transition-all duration-300 flex items-center justify-center ${state}`}>
-              {opt}
+              {isNumeric ? opt : <KidEmoji emoji={opt} size={56} />}
             </button>
           );
         })}

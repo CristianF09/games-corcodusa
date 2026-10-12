@@ -183,7 +183,7 @@ export default function GameLabirint() {
                   : "border-transparent bg-gray-100 hover:bg-gray-200"
               }`}
             >
-              <span className="text-2xl">{t.emoji}</span>
+              <KidEmoji emoji={t.emoji} size={28} />
               <span className="text-[10px] font-semibold text-[#374151] leading-tight text-center">{t.label}</span>
             </button>
           ))}

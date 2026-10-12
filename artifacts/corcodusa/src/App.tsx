@@ -22,9 +22,22 @@ import Faq from "@/pages/faq";
 import DespreNoi from "@/pages/despre-noi";
 import NotFound from "@/pages/not-found";
 import { SeoHead } from "@/lib/seo";
+import { DEV_OPEN_GAMES } from "@/lib/dev-access";
 import { CookieConsent } from "@/components/cookie-consent";
 
-const queryClient = new QueryClient();
+// Lista de jocuri și abonamentul nu se schimbă la fiecare navigare: cache de 5 minute,
+// o singură reîncercare (nu 3 cu backoff, care făcea lista să pară blocată când API-ul e lent),
+// și fără reîncărcare la revenirea în fereastră.
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60_000,
+      gcTime: 10 * 60_000,
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -36,6 +49,7 @@ function HomeRedirect() {
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
   const { isSignedIn, isLoading } = useCurrentUser();
+  if (DEV_OPEN_GAMES) return <Component />;
   const [location] = useLocation();
 
   if (isLoading) {

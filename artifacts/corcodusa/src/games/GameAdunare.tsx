@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect } from "react";
+import { KidEmoji } from "@/components/kid-emoji";
 import { playCorrect, playWrong, playCelebrate } from "@/lib/sfx";
 import {
   DeckMap, shuffle, orient, additionSpace, subtractionSpace,
   multiplicationSpace, divisionSpace, type MathEx,
 } from "@/lib/exercise-deck";
-
-const EMOJI_SETS = ["🍎","🍋","🍓","🍇","🌟","🎈","🐥","🦋","🍩","🪄"];
+import { NOUNS, NounKey, countPhrase, numWord, isAre, pickNoun } from "@/lib/ro-nouns";
 
 /* ─── Confetti ────────────────────────────────────────────── */
 function Confetti() {
@@ -47,21 +47,32 @@ const EXERCISE_DECKS = new DeckMap<MathEx>((levelKey) => {
 
 export function generateRound(levelId: number) {
   const { a, b, op, answer } = orient(EXERCISE_DECKS.next(String(levelId)));
-  const emoji = EMOJI_SETS[Math.floor(Math.random() * EMOJI_SETS.length)];
+  const noun = pickNoun();
 
   const wrong = new Set([answer]);
   while (wrong.size < 4) {
     const w = Math.max(0, answer + Math.floor(Math.random() * 7) - 3);
     if (w !== answer) wrong.add(w);
   }
-  return { a, b, op, answer, emoji, options: shuffle([...wrong]) };
+  return { a, b, op, answer, noun, options: shuffle([...wrong]) };
 }
 
-const WORD_PROBLEMS: Record<string, (a: number, b: number, emoji: string) => string> = {
-  "+": (a, b, e) => `Maria are ${a} ${e}. Primește încă ${b}. Câte are acum?`,
-  "−": (a, b, e) => `Sunt ${a} ${e} pe masă. Se mănâncă ${b}. Câte rămân?`,
-  "×": (a, b, e) => `Sunt ${a} coșuri cu câte ${b} ${e}. Câte sunt în total?`,
-  "÷": (a, b, e) => `Sunt ${a} ${e} împărțite egal la ${b} copii. Câte primește fiecare?`,
+/** Enunțurile sunt scrise pentru orice substantiv din NOUNS: numeralele și
+ *  verbele se acordă după număr și gen (un măr / două mere, este / sunt). */
+export const WORD_PROBLEMS: Record<string, (a: number, b: number, k: NounKey) => string> = {
+  "+": (a, b, k) =>
+    `Maria are ${countPhrase(a, k)}. Primește încă ${countPhrase(b, k)}. Câte are acum?`,
+  "−": (a, b, k) => {
+    // „Unul/una" pentru 1, altfel numeralul la genul plural al substantivului.
+    const gone = b === 1
+      ? (NOUNS[k].gender === "f" ? "Una" : "Unul")
+      : numWord(b, NOUNS[k].plGender).replace(/^./, c => c.toUpperCase());
+    return `Pe masă sunt ${countPhrase(a, k)}. ${gone} dintre ele ${b === 1 ? "dispare" : "dispar"}. Câte rămân pe masă?`;
+  },
+  "×": (a, b, k) =>
+    `Sunt ${numWord(a, "m")} coșuri. În fiecare coș ${isAre(b)} ${countPhrase(b, k)}. Câte sunt în total?`,
+  "÷": (a, b, k) =>
+    `${countPhrase(a, k).replace(/^./, c => c.toUpperCase())} ${isAre(a)} împărțite egal între ${numWord(b, "m")} copii. Câte primește fiecare copil?`,
 };
 
 export default function GameAdunare() {
@@ -119,6 +130,7 @@ export default function GameAdunare() {
   }
 
   const correct = chosen === round.answer;
+  const emoji = NOUNS[round.noun].emoji;
   const maxVisual = 10;
   const showVisual = round.op !== "×" && round.op !== "÷" && round.a <= maxVisual && round.b <= maxVisual;
 
@@ -155,7 +167,7 @@ export default function GameAdunare() {
       {mode === "word" ? (
         <div className="bg-card rounded-3xl border-2 border-border p-6 w-full max-w-md text-center shadow-inner">
           <p className="text-lg font-bold text-foreground leading-relaxed">
-            {WORD_PROBLEMS[round.op]?.(round.a, round.b, round.emoji) ?? `${round.a} ${round.op} ${round.b} = ?`}
+            {WORD_PROBLEMS[round.op]?.(round.a, round.b, round.noun) ?? `${round.a} ${round.op} ${round.b} = ?`}
           </p>
         </div>
       ) : (
@@ -165,7 +177,7 @@ export default function GameAdunare() {
               {Array.from({ length: round.a }).map((_, row) => (
                 <div key={row} className="flex gap-1">
                   {Array.from({ length: round.b }).map((_, col) => (
-                    <span key={col} className="text-2xl">{round.emoji}</span>
+                    <KidEmoji key={col} emoji={emoji} size={28} />
                   ))}
                 </div>
               ))}
@@ -175,7 +187,7 @@ export default function GameAdunare() {
             <>
               <div className="flex flex-col items-center gap-1">
                 <div className="flex flex-wrap gap-1 max-w-[150px] justify-center">
-                  {Array.from({ length: round.a }).map((_, i) => <span key={i} className="text-2xl">{round.emoji}</span>)}
+                  {Array.from({ length: round.a }).map((_, i) => <KidEmoji key={i} emoji={emoji} size={28} />)}
                 </div>
                 <span className="text-2xl font-bold">{round.a}</span>
               </div>
@@ -183,7 +195,7 @@ export default function GameAdunare() {
               <div className="flex flex-col items-center gap-1">
                 <div className="flex flex-wrap gap-1 max-w-[150px] justify-center">
                   {Array.from({ length: round.b }).map((_, i) => (
-                    <span key={i} className={`text-2xl ${round.op === "−" ? "opacity-30 line-through" : ""}`}>{round.emoji}</span>
+                    <span key={i} className={`${round.op === "−" ? "opacity-30 line-through" : ""}`}><KidEmoji emoji={emoji} size={28} /></span>
                   ))}
                 </div>
                 <span className="text-2xl font-bold">{round.b}</span>

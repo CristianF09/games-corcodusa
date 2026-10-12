@@ -261,7 +261,7 @@ export default function GameCuvinte() {
                 catKey === key ? "border-[#FF6B00] bg-orange-50 scale-105" : "border-transparent bg-gray-100 hover:bg-gray-200"
               }`}
             >
-              <span className="text-2xl">{c.emoji}</span>
+              <KidEmoji emoji={c.emoji} size={28} />
               <span className="text-[10px] font-semibold text-[#374151] text-center leading-tight">{c.label}</span>
             </button>
           ))}

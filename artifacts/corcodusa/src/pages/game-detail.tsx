@@ -10,6 +10,7 @@ import { ArrowLeft, Lock } from "lucide-react";
 import { getGetGameQueryKey } from "@workspace/api-client-react";
 import { GAME_COMPONENTS } from "@/games";
 import { categoryEmoji, categoryGradient } from "@/lib/category-colors";
+import { DEV_OPEN_GAMES } from "@/lib/dev-access";
 
 export default function GameDetail() {
   const { id } = useParams();
@@ -34,6 +35,7 @@ export default function GameDetail() {
     query: { enabled: !!isSignedIn && !bypassSubscription, queryKey: getGetUserSubscriptionQueryKey() },
   });
   const hasAccess =
+    DEV_OPEN_GAMES ||
     bypassSubscription ||
     !!subscription?.isActive ||
     (subscription?.trialDaysLeft ?? 0) > 0;
@@ -41,7 +43,7 @@ export default function GameDetail() {
   const GameComponent = gameId ? GAME_COMPONENTS[gameId] : null;
 
   useEffect(() => {
-    if (isAuthLoaded && !isSignedIn) {
+    if (!DEV_OPEN_GAMES && isAuthLoaded && !isSignedIn) {
       setLocation(loginPath(`/games/${gameId}`));
     }
   }, [isAuthLoaded, isSignedIn, gameId, setLocation]);
@@ -93,7 +95,7 @@ export default function GameDetail() {
 
         {/* ── Game content ─────────────────────────────────────── */}
         <div className="max-w-[1400px] mx-auto px-2 md:px-4 py-3 md:py-5">
-          {!isAuthLoaded || !isSignedIn ? (
+          {!DEV_OPEN_GAMES && (!isAuthLoaded || !isSignedIn) ? (
             <div className="p-16 bg-white rounded-2xl border-2 border-dashed border-[#E5E7EB] text-center">
               <div className="text-5xl mb-4">🔒</div>
               <h3 className="text-xl font-black text-[#1F2937] mb-2">Conectează-te pentru a juca</h3>

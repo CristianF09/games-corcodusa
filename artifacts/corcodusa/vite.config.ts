@@ -2,7 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import basicSsl from "@vitejs/plugin-basic-ssl";
-import path from "path";
+import path from "path";  
 
 // PORT is only needed to run the dev/preview server; `vite build` (used for
 // production deploys, e.g. Firebase Hosting) doesn't bind a port at all.
