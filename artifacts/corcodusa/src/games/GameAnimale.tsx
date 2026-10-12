@@ -35,7 +35,7 @@ type Animal = {
   habitat: string; food: string; sound?: string;
 };
 
-const ANIMALS: Animal[] = [
+export const ANIMALS: Animal[] = [
   // Domestice
   { name: "Vacă",      emoji: "🐄", cat: "domestice", habitat: "ferma",  food: "iarbă și fân",           sound: "Muu!" },
   { name: "Porc",      emoji: "🐷", cat: "domestice", habitat: "ferma",  food: "orice — e omnivor",      sound: "Groh!" },
@@ -91,6 +91,7 @@ const ANIMALS: Animal[] = [
   { name: "Buburuză",  emoji: "🐞", cat: "insecte",   habitat: "padure", food: "insecte foarte mici" },
   { name: "Furnică",   emoji: "🐜", cat: "insecte",   habitat: "padure", food: "semințe și firimituri" },
   { name: "Greier",    emoji: "🦗", cat: "insecte",   habitat: "padure", food: "iarbă și frunze",        sound: "Cri-cri!" },
+  { name: "Lăcustă",   emoji: "🦗", cat: "insecte",   habitat: "savana", food: "frunze și plante",       sound: "Țrr-ț!" },
   { name: "Păianjen",  emoji: "🕷️", cat: "insecte",   habitat: "casa",   food: "insecte prinse în pânză" },
 ];
 
@@ -124,7 +125,18 @@ const ANIMAL_DECKS = new DeckMap<Animal>((key) => {
   return mode === "sunete" ? pool.filter(a => a.sound) : pool;
 });
 
-function generateRound(mode: Mode, cat: Category, diffId: string) {
+/** Wrong foods for "Ce mănâncă?" — drawn from all animals, but never one that
+ *  shares a word with the right answer: "iarbă" for a zebra must not be offered
+ *  next to "iarbă și frunze", which is also true for a zebra. */
+export function foodDistractors(food: string, count: number): string[] {
+  const words = (s: string) => s.toLowerCase().split(/[\s,]+/).filter(w => w.length > 3);
+  const targetWords = new Set(words(food));
+  const candidates = [...new Set(ANIMALS.map(a => a.food))]
+    .filter(f => f !== food && !words(f).some(w => targetWords.has(w)));
+  return shuffle(candidates).slice(0, count);
+}
+
+export function generateRound(mode: Mode, cat: Category, diffId: string) {
   const wrongCount = DIFFICULTIES.find(d => d.id === diffId)!.options - 1;
   const target = ANIMAL_DECKS.next(`${cat}:${mode}`);
   const pool = ANIMALS.filter(a => a.cat === cat);
@@ -134,9 +146,7 @@ function generateRound(mode: Mode, cat: Category, diffId: string) {
     return { target, options: shuffle([target.habitat, ...wrong]) };
   }
   if (mode === "hrana") {
-    // Wrong choices come from ALL animals' foods so there's always variety.
-    const foods = [...new Set(ANIMALS.map(a => a.food).filter(f => f !== target.food))];
-    return { target, options: shuffle([target.food, ...shuffle(foods).slice(0, wrongCount)]) };
+    return { target, options: shuffle([target.food, ...foodDistractors(target.food, wrongCount)]) };
   }
   // "identifica" and "sunete" — the answer is the animal's name.
   const wrong = shuffle(pool.filter(a => a.name !== target.name)).slice(0, wrongCount);

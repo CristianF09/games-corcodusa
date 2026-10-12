@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { playCorrect, playWrong, playCelebrate } from "@/lib/sfx";
 import {
   DeckMap, shuffle, orient, additionSpace, subtractionSpace,
@@ -24,7 +24,7 @@ function Confetti() {
   );
 }
 
-const LEVELS = [
+export const LEVELS = [
   { id: 1, label: "Adunare 1–5",    desc: "Adunare simplă", op: "add",  max: 5  },
   { id: 2, label: "Adunare 1–10",   desc: "Adunare până la 10", op: "add",  max: 10 },
   { id: 3, label: "Scădere 1–10",   desc: "Scădere simplă", op: "sub",  max: 10 },
@@ -45,7 +45,7 @@ const EXERCISE_DECKS = new DeckMap<MathEx>((levelKey) => {
   return additionSpace(lvl.max);
 });
 
-function generateRound(levelId: number) {
+export function generateRound(levelId: number) {
   const { a, b, op, answer } = orient(EXERCISE_DECKS.next(String(levelId)));
   const emoji = EMOJI_SETS[Math.floor(Math.random() * EMOJI_SETS.length)];
 
@@ -74,6 +74,10 @@ export default function GameAdunare() {
   const [showExplain, setShowExplain] = useState(false);
   const [streak, setStreak] = useState(0);
   const [celebrate, setCelebrate] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cancel the pending "next round" when the child leaves the game.
+  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
 
   function nextRound(lvl = levelId) {
     setRound(generateRound(lvl));
@@ -86,26 +90,27 @@ export default function GameAdunare() {
     setChosen(n);
     setTotal(t => t + 1);
     if (n === round.answer) {
+      const next = streak + 1;
       setScore(s => s + 1);
-      setStreak(s => {
-        const next = s + 1;
-        if (next >= 3) {
-          playCelebrate();
-          setCelebrate(true);
-          setTimeout(() => setCelebrate(false), 1400);
-        } else {
-          playCorrect();
-        }
-        return next;
-      });
+      setStreak(next);
+      // Sounds are played outside the state updater so StrictMode can't double them.
+      if (next >= 3) {
+        playCelebrate();
+        setCelebrate(true);
+        setTimeout(() => setCelebrate(false), 1400);
+      } else {
+        playCorrect();
+      }
     } else {
       setStreak(0);
       playWrong();
     }
-    setTimeout(() => nextRound(), 2200);
+    timerRef.current = setTimeout(() => nextRound(), 2200);
   }
 
   function changeLevel(l: number) {
+    // Drop the pending round from the old level, otherwise it overwrites the new one.
+    if (timerRef.current) clearTimeout(timerRef.current);
     setLevelId(l);
     setScore(0);
     setTotal(0);

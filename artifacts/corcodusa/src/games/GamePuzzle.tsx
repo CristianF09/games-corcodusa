@@ -19,7 +19,7 @@ function Confetti() {
   );
 }
 
-const GRIDS = [
+export const GRIDS = [
   { id: "2x2", label: "2×2", cols: 2, rows: 2 },
   { id: "3x3", label: "3×3", cols: 3, rows: 3 },
   { id: "4x4", label: "4×4", cols: 4, rows: 4 },
@@ -28,7 +28,7 @@ const GRIDS = [
 
 /** 25 unique pieces per theme — a 2×2 puzzle uses the first 4, 5×5 all 25,
  *  so every grid size gets a genuinely different picture to rebuild. */
-const THEMES: Record<string, { label: string; emoji: string; pieces: string[] }> = {
+export const THEMES: Record<string, { label: string; emoji: string; pieces: string[] }> = {
   jungle: {
     label: "Junglă", emoji: "🌴",
     pieces: [
@@ -70,13 +70,18 @@ function shuffle<T>(arr: T[]): T[] { return [...arr].sort(() => Math.random() - 
 
 interface PieceState { id: number; emoji: string; correctPos: number; currentPos: number }
 
-function createPuzzle(themeKey: string, cols: number, rows: number): PieceState[] {
+export function createPuzzle(themeKey: string, cols: number, rows: number): PieceState[] {
   const pieces = THEMES[themeKey].pieces.slice(0, cols * rows);
-  const shuffled = shuffle(pieces.map((emoji, id) => ({ id, emoji, correctPos: id, currentPos: id })));
-  return shuffled.map((p, i) => ({ ...p, currentPos: i }));
+  // Never start already solved (a 2×2 board is solved by chance 1 time in 24).
+  let placed: PieceState[];
+  do {
+    const shuffled = shuffle(pieces.map((emoji, id) => ({ id, emoji, correctPos: id, currentPos: id })));
+    placed = shuffled.map((p, i) => ({ ...p, currentPos: i }));
+  } while (isSolved(placed));
+  return placed;
 }
 
-function isSolved(pieces: PieceState[]) {
+export function isSolved(pieces: PieceState[]) {
   return pieces.every(p => p.correctPos === p.currentPos);
 }
 
@@ -93,6 +98,8 @@ export default function GamePuzzle() {
   const [hints, setHints] = useState(3);
   const [highlighted, setHighlighted] = useState<number | null>(null);
   const [celebrate, setCelebrate] = useState(false);
+  // True when the last win beat (or tied into) the stored best for this board.
+  const [newRecord, setNewRecord] = useState(false);
 
   function restart(t = themeKey, g = gridId) {
     const gr = GRIDS.find(x => x.id === g)!;
@@ -123,7 +130,10 @@ export default function GamePuzzle() {
       setCelebrate(true);
       setWon(true);
       const key = `${themeKey}-${gridId}`;
-      setBestMoves(prev => ({ ...prev, [key]: Math.min(moves + 1, prev[key] ?? Infinity) }));
+      const prevBest = bestMoves[key];
+      const finalMoves = moves + 1;
+      setNewRecord(prevBest === undefined || finalMoves < prevBest);
+      setBestMoves(prev => ({ ...prev, [key]: Math.min(finalMoves, prev[key] ?? Infinity) }));
     }
   }
 
@@ -198,7 +208,7 @@ export default function GamePuzzle() {
         <div className="flex flex-col items-center gap-3 animate-in zoom-in duration-500 py-4">
           <div className="text-7xl animate-bounce">🏆</div>
           <div className="text-2xl font-display font-bold text-green-600">Puzzle rezolvat!</div>
-          <p className="text-muted-foreground">{moves} mutări{bestMoves[bestKey] === moves ? " 🎉 Record nou!" : ""}</p>
+          <p className="text-muted-foreground">{moves} mutări{newRecord ? " 🎉 Record nou!" : ""}</p>
           <button onClick={() => restart()} className="px-8 py-3 bg-primary text-white font-bold rounded-full shadow-lg hover:-translate-y-1 transition-all">
             Joacă din nou
           </button>

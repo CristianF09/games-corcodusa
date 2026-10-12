@@ -1,10 +1,10 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { playWrong, playCelebrate, playClick } from "@/lib/sfx";
 import { KidEmoji } from "@/components/kid-emoji";
 
 /** Words are DEX dictionary base forms (no articled forms like "ursul" or
  *  "mărul") and every emoji matches its word. */
-const CATEGORIES: Record<string, { label: string; emoji: string; words: { word: string; emoji: string; hint: string }[] }> = {
+export const CATEGORIES: Record<string, { label: string; emoji: string; words: { word: string; emoji: string; hint: string }[] }> = {
   animale: {
     label: "Animale", emoji: "🐾",
     words: [
@@ -94,7 +94,7 @@ const DIFFICULTIES = [
   { id: "greu",  label: "🌳 Greu",  keys: 17, lives: 2 },
 ];
 
-function buildKeyboard(word: string, totalKeys: number) {
+export function buildKeyboard(word: string, totalKeys: number) {
   const needed = [...new Set(word.split(""))];
   const extras = shuffle("AEIOUÎĂÂBCDFGHJKLMNPRSȘTVZ".split("").filter(c => !needed.includes(c)))
     .slice(0, Math.max(0, totalKeys - needed.length));
@@ -128,6 +128,17 @@ export default function GameDinozauri() {
     [current.word, diff.keys],
   );
 
+  // Physical keyboard too: a typed letter that is on the on-screen keyboard counts.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey || e.key.length !== 1) return;
+      const letter = e.key.toLocaleUpperCase("ro-RO");
+      if (keyboard.includes(letter)) { e.preventDefault(); handleLetter(letter); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+
   function handleLetter(l: string) {
     if (celebrate || lives === 0) return;
     const needed = letters[typed.length];
@@ -156,15 +167,14 @@ export default function GameDinozauri() {
       playWrong();
       setWrong(prev => new Set([...prev, l]));
       setTimeout(() => setWrong(prev => { const n = new Set(prev); n.delete(l); return n; }), 700);
-      setLives(lv => {
-        const next = lv - 1;
-        if (next === 0) setTimeout(() => {
-          setLives(diff.lives); setTyped([]); setWrong(new Set()); setCelebrate(false);
-          setShowHint(false); setHintUsed(false);
-          setWordIndex(wi => wi + 1);
-        }, 1500);
-        return next;
-      });
+      // Computed outside the updater: a timer scheduled inside setState runs twice under StrictMode.
+      const next = lives - 1;
+      setLives(next);
+      if (next === 0) setTimeout(() => {
+        setLives(diff.lives); setTyped([]); setWrong(new Set()); setCelebrate(false);
+        setShowHint(false); setHintUsed(false);
+        setWordIndex(wi => wi + 1);
+      }, 1500);
     }
   }
 

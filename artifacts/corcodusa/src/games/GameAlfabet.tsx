@@ -5,7 +5,7 @@ import { LETTER_STROKES } from "@/lib/stroke-data";
 import { KidEmoji } from "@/components/kid-emoji";
 
 /* ─── Data ───────────────────────────────────────────────── */
-const LETTERS_DATA: Record<string, { word: string; emoji: string; desc: string; type: "vocala" | "consoana" }> = {
+export const LETTERS_DATA: Record<string, { word: string; emoji: string; desc: string; type: "vocala" | "consoana" }> = {
   A: { word: "Arici",    emoji: "🦔", desc: "Animal mic cu țepi",               type: "vocala"   },
   // Ă and Â never start Romanian words — show a word that CONTAINS them,
   // which is how school primers teach these letters.
@@ -40,11 +40,11 @@ const LETTERS_DATA: Record<string, { word: string; emoji: string; desc: string; 
   Z: { word: "Zebră",    emoji: "🦓", desc: "Cal cu dungi albe și negre",       type: "consoana" },
 };
 const ALL_LETTERS = Object.keys(LETTERS_DATA);
-const TRACE_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVXYZ".split("");
+export const TRACE_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVXYZ".split("");
 
 /** 3 example words per traceable letter, shown next to the canvas so the
  *  child connects the letter shape to real words — capital letter on top. */
-const TRACE_WORDS: Record<string, { word: string; emoji: string }[]> = {
+export const TRACE_WORDS: Record<string, { word: string; emoji: string }[]> = {
   A: [{ word: "Avion", emoji: "✈️" }, { word: "Ananas", emoji: "🍍" }, { word: "Arici", emoji: "🦔" }],
   B: [{ word: "Banană", emoji: "🍌" }, { word: "Broască", emoji: "🐸" }, { word: "Bicicletă", emoji: "🚲" }],
   C: [{ word: "Casă", emoji: "🏠" }, { word: "Cal", emoji: "🐴" }, { word: "Cireșe", emoji: "🍒" }],
@@ -73,7 +73,7 @@ const TRACE_WORDS: Record<string, { word: string; emoji: string }[]> = {
 };
 
 /** Word bank for the "complete the word" picture game — first letter blanked. */
-const WORD_BLANKS = [
+export const WORD_BLANKS = [
   { word: "Casă",    emoji: "🏠" }, { word: "Avion",   emoji: "✈️" },
   { word: "Balon",   emoji: "🎈" }, { word: "Delfin",  emoji: "🐬" },
   { word: "Elefant", emoji: "🐘" }, { word: "Fluture", emoji: "🦋" },

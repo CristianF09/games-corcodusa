@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { playCorrect, playWrong, playCelebrate, playClick } from "@/lib/sfx";
 import StepTraceCanvas from "@/components/step-trace-canvas";
 import { numberStrokes } from "@/lib/stroke-data";
@@ -18,7 +18,7 @@ const ITEM_SETS = [
   { emoji: "🚗", label: "mașinuțe"}, { emoji: "🧸", label: "ursuleți"  },
   { emoji: "⚽", label: "mingi"   }, { emoji: "🎁", label: "cadouri"   },
 ];
-const COUNT_LEVELS = [
+export const COUNT_LEVELS = [
   { id: 1, label: "1–5",   min: 1,  max: 5,  desc: "Numere mici"     },
   { id: 2, label: "1–10",  min: 1,  max: 10, desc: "Până la 10"      },
   { id: 3, label: "5–20",  min: 5,  max: 20, desc: "Până la 20"      },
@@ -35,7 +35,7 @@ const COUNT_DECKS = new DeckMap<number>((levelKey) => {
   return Array.from({ length: lvl.max - lvl.min + 1 }, (_, i) => lvl.min + i);
 });
 
-function generateRound(lv: number) {
+export function generateRound(lv: number) {
   const count = COUNT_DECKS.next(String(lv));
   const set = ITEM_SETS[Math.floor(Math.random() * ITEM_SETS.length)];
   const wrong = new Set<number>([count]);
@@ -94,6 +94,8 @@ export default function GameNumarare() {
   const [parityChosen, setParityChosen] = useState<boolean | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
+
   // Trace state
   const [traceNum, setTraceNum]           = useState(1);
   const [traceScore, setTraceScore]       = useState(0);
@@ -111,8 +113,10 @@ export default function GameNumarare() {
     setChosen(n); setTotal(t => t + 1);
     const ok = n === round.count;
     if (ok) {
+      const ns = streak + 1;
       setScore(s => s + 1);
-      setStreak(s => { const ns = s + 1; (ns >= 3 ? playCelebrate : playCorrect)(); return ns; });
+      setStreak(ns);
+      (ns >= 3 ? playCelebrate : playCorrect)();
       setCelebrate(true);
     } else { setStreak(0); playWrong(); }
     timerRef.current = setTimeout(() => nextRound(), 2000);
@@ -123,8 +127,10 @@ export default function GameNumarare() {
     setParityChosen(guessEven); setTotal(t => t + 1);
     const ok = (round.count % 2 === 0) === guessEven;
     if (ok) {
+      const ns = streak + 1;
       setScore(s => s + 1);
-      setStreak(s => { const ns = s + 1; (ns >= 3 ? playCelebrate : playCorrect)(); return ns; });
+      setStreak(ns);
+      (ns >= 3 ? playCelebrate : playCorrect)();
       setCelebrate(true);
     } else { setStreak(0); playWrong(); }
     timerRef.current = setTimeout(() => nextRound(), 2000);

@@ -44,12 +44,12 @@ const DIFFS = [
 type DiffId = "easy" | "medium" | "hard";
 
 /* ─── Maze generation (recursive backtracking) ─────────────── */
-const OPPOSITE: Record<Dir, Dir> = { N: "S", S: "N", E: "W", W: "E" };
+export const OPPOSITE: Record<Dir, Dir> = { N: "S", S: "N", E: "W", W: "E" };
 const DELTA: Record<Dir, [number, number]> = { N: [-1,0], S: [1,0], E: [0,1], W: [0,-1] };
 
 function shuffle<T>(arr: T[]): T[] { return [...arr].sort(() => Math.random() - 0.5); }
 
-function generateMaze(rows: number, cols: number): Cell[][] {
+export function generateMaze(rows: number, cols: number): Cell[][] {
   const grid: Cell[][] = Array.from({ length: rows }, () =>
     Array.from({ length: cols }, () => ({ N: true, S: true, E: true, W: true }))
   );
@@ -83,7 +83,7 @@ function fmtTime(s: number) {
 }
 
 /* ─── Stars by moves ────────────────────────────────────────── */
-function calcStars(moves: number, rows: number): number {
+export function calcStars(moves: number, rows: number): number {
   const par = rows * rows * 0.7;
   if (moves <= par * 1.0) return 3;
   if (moves <= par * 1.6) return 2;
@@ -137,17 +137,17 @@ export default function GameLabirint() {
   /* Movement */
   const move = useCallback((dir: Dir) => {
     if (phase !== "playing") return;
-    setPos(p => {
-      const cell = maze[p.r]?.[p.c];
-      if (!cell || cell[dir]) return p;
-      const [dr, dc] = DELTA[dir];
-      const nr = p.r + dr, nc = p.c + dc;
-      if (nr < 0 || nr >= diff.rows || nc < 0 || nc >= diff.cols) return p;
-      playSwap();
-      setMoves(m => m + 1);
-      return { r: nr, c: nc };
-    });
-  }, [phase, maze, diff]);
+    // Computed from the current position, not inside setPos: side effects
+    // (sound, move counter) in an updater run twice under StrictMode.
+    const cell = maze[pos.r]?.[pos.c];
+    if (!cell || cell[dir]) return;
+    const [dr, dc] = DELTA[dir];
+    const nr = pos.r + dr, nc = pos.c + dc;
+    if (nr < 0 || nr >= diff.rows || nc < 0 || nc >= diff.cols) return;
+    playSwap();
+    setMoves(m => m + 1);
+    setPos({ r: nr, c: nc });
+  }, [phase, maze, diff, pos]);
 
   /* Keyboard */
   useEffect(() => {
@@ -156,11 +156,12 @@ export default function GameLabirint() {
       w: "N", s: "S", a: "W", d: "E",
     };
     const handler = (e: KeyboardEvent) => {
-      if (MAP[e.key]) { e.preventDefault(); move(MAP[e.key]); }
+      // Only steal arrow keys while playing — the menu and result screens must still scroll.
+      if (phase === "playing" && MAP[e.key]) { e.preventDefault(); move(MAP[e.key]); }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [move]);
+  }, [move, phase]);
 
   /* ── Menu ── */
   if (phase === "menu") return (
@@ -227,7 +228,7 @@ export default function GameLabirint() {
           <div className="text-3xl mt-2">{Array.from({length:stars}).map((_,i)=>"⭐").join("")}</div>
           <p className="text-[#6B7280] mt-3">
             <strong className="text-[#1F2937]">{moves}</strong> mișcări ·{" "}
-            <strong className="text-[#1F2937]">{fmtTime(elapsed)}</strong> minute
+            <strong className="text-[#1F2937]">{fmtTime(elapsed)}</strong>
           </p>
         </div>
         <div className="flex gap-3">

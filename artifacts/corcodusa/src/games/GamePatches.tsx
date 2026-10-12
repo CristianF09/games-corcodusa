@@ -40,7 +40,7 @@ function shapeOf(w: number, h: number): Shape {
   return w === h ? "square" : w > h ? "wide" : "tall";
 }
 
-function generateLevel(idx: number, size: number, maxLeaf: number): Level {
+export function generateLevel(idx: number, size: number, maxLeaf: number): Level {
   const rnd = mulberry32(1000 + idx * 37);
   const leaves: Rect[] = [];
 
@@ -78,7 +78,7 @@ function generateLevel(idx: number, size: number, maxLeaf: number): Level {
 }
 
 // 18 deterministic levels: 6× 4×4, 6× 5×5, 6× 6×6
-const LEVELS: Level[] = Array.from({ length: 18 }, (_, i) =>
+export const LEVELS: Level[] = Array.from({ length: 18 }, (_, i) =>
   generateLevel(i, i < 6 ? 4 : i < 12 ? 5 : 6, i < 6 ? 4 : 6)
 );
 
@@ -106,6 +106,9 @@ export default function GamePatches() {
 
   const svgRef = useRef<SVGSVGElement>(null);
   const anchor = useRef<[number, number] | null>(null);
+  // Whether the pointer moved since it went down: a plain tap removes a patch,
+  // a drag that started on a patch must not.
+  const moved = useRef(false);
   const level = LEVELS[levelIdx];
 
   // covered["r,c"] = index of patch covering that cell
@@ -213,6 +216,7 @@ export default function GamePatches() {
     const cell = getCellAt(e.clientX, e.clientY);
     if (!cell) return;
     anchor.current = cell;
+    moved.current = false;
     if (!covered.has(`${cell[0]},${cell[1]}`)) {
       setPreview({ r: cell[0], c: cell[1], w: 1, h: 1 });
     }
@@ -222,6 +226,7 @@ export default function GamePatches() {
     if (won || !anchor.current) return;
     const cell = getCellAt(e.clientX, e.clientY);
     if (!cell) return;
+    if (cell[0] !== anchor.current[0] || cell[1] !== anchor.current[1]) moved.current = true;
     if (covered.has(`${anchor.current[0]},${anchor.current[1]}`)) return; // drag from a patch → ignore
     setPreview(rectFrom(anchor.current, cell));
   }
@@ -233,9 +238,9 @@ export default function GamePatches() {
     setPreview(null);
     if (won || !a) return;
 
-    // Tap on an existing patch removes it
+    // Tap on an existing patch removes it (a drag from a patch does nothing)
     if (covered.has(`${a[0]},${a[1]}`)) {
-      removePatchAt(a[0], a[1]);
+      if (!moved.current) removePatchAt(a[0], a[1]);
       return;
     }
     if (rect) tryPlace(rect);

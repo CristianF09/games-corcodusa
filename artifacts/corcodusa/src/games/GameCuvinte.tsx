@@ -21,7 +21,7 @@ function Confetti() {
 }
 
 /* ─── Word categories ──────────────────────────────────────── */
-const CATEGORIES = {
+export const CATEGORIES = {
   animale: {
     label: "Animale", emoji: "🐾", color: "#22c55e", bg: "#f0fdf4",
     easy:   ["URS", "LUP", "CAL", "RAȚĂ", "VACĂ"],
@@ -72,7 +72,7 @@ function shuffle<T>(a: T[]): T[] { return [...a].sort(() => Math.random() - 0.5)
 /* ─── Word placement ───────────────────────────────────────── */
 interface Placement { word: string; cells: [number,number][] }
 
-function buildGrid(words: readonly string[], size: number): { grid: string[][]; placements: Placement[] } {
+function attemptGrid(words: readonly string[], size: number): { grid: string[][]; placements: Placement[] } {
   const grid: string[][] = Array.from({ length: size }, () => new Array(size).fill(""));
   const placements: Placement[] = [];
   const DIRS: [number,number][] = [[0,1],[1,0],[0,-1],[-1,0]]; // H-fwd, V-fwd, H-bwd, V-bwd
@@ -115,6 +115,17 @@ function buildGrid(words: readonly string[], size: number): { grid: string[][]; 
       if (grid[r][c] === "") grid[r][c] = rndLetter();
 
   return { grid, placements };
+}
+
+/** Retries the whole layout until every word fits — a word that silently
+ *  failed to place used to be missing from the list, so the child could never
+ *  "finish" the grid. Falls back to the last attempt if none fits. */
+export function buildGrid(words: readonly string[], size: number) {
+  let result = attemptGrid(words, size);
+  for (let tries = 1; tries < 60 && result.placements.length < words.length; tries++) {
+    result = attemptGrid(words, size);
+  }
+  return result;
 }
 
 /* ─── Cell size ─────────────────────────────────────────────── */

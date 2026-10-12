@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { playWrong, playCelebrate } from "@/lib/sfx";
 
 /* ─── Confetti ────────────────────────────────────────────── */
@@ -70,6 +70,9 @@ export default function GameMuzica() {
   const [rhythmBeat, setRhythmBeat] = useState<boolean>(false);
   const ctxRef = useRef<AudioContext | null>(null);
   const rhythmRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Stop the drum loop when the child leaves the game (it kept playing before).
+  useEffect(() => () => { if (rhythmRef.current) clearInterval(rhythmRef.current); }, []);
 
   // Echo challenge ("Repetă melodia") — listen to a growing note sequence, then play it back.
   const [echoSeq, setEchoSeq] = useState<number[]>([]);
@@ -171,7 +174,10 @@ export default function GameMuzica() {
   }
 
   function handleEchoInput(i: number) {
-    if (echoPlaying || echoSeq.length === 0) return;
+    // Ignore taps while the sequence plays, during the celebration/fail pause,
+    // and after the last note (a stray tap there used to cost a life).
+    if (echoPlaying || echoCelebrate || echoFail || echoSeq.length === 0) return;
+    if (echoStep >= echoSeq.length) return;
     if (i === echoSeq[echoStep]) {
       const nextStep = echoStep + 1;
       setEchoStep(nextStep);
@@ -189,15 +195,13 @@ export default function GameMuzica() {
     } else {
       playWrong();
       setEchoFail(true);
-      setEchoLives(lv => {
-        const next = lv - 1;
-        setTimeout(() => {
-          setEchoFail(false);
-          if (next <= 0) resetEcho();
-          else { setEchoStep(0); playSequence(echoSeq); }
-        }, 900);
-        return next;
-      });
+      const next = echoLives - 1;
+      setEchoLives(next);
+      setTimeout(() => {
+        setEchoFail(false);
+        if (next <= 0) resetEcho();
+        else { setEchoStep(0); playSequence(echoSeq); }
+      }, 900);
     }
   }
 

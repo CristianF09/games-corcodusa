@@ -132,13 +132,13 @@ function buildLevel(idx: number): Level {
   return { id: idx + 1, rows, cols, waypoints, solution, color, bgColor, label: tierLabel(idx) };
 }
 
-const LEVELS: Level[] = Array.from({ length: CONFIGS.length }, (_, i) => buildLevel(i));
+export const LEVELS: Level[] = Array.from({ length: CONFIGS.length }, (_, i) => buildLevel(i));
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function cellKey(c: Cell) { return `${c[0]},${c[1]}`; }
 
-function isAdjacent(a: Cell, b: Cell) {
+export function isAdjacent(a: Cell, b: Cell) {
   return Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]) === 1;
 }
 
@@ -292,9 +292,20 @@ export default function GameZipZap() {
 
   // When path is empty → hint points to start dot (waypoint 1)
   // When in progress → hint points to next correct cell in solution
-  const hintCell: Cell | null = showHint
-    ? (drawnPath.length === 0 ? level.waypoints[0] : level.solution[drawnPath.length] ?? null)
-    : null;
+  // Hint = next cell of the reference solution when it is still reachable from
+  // the head; otherwise any free neighbour, since the child may be on another valid route.
+  function computeHint(): Cell | null {
+    if (drawnPath.length === 0) return level.waypoints[0];
+    const last = drawnPath[drawnPath.length - 1];
+    const sol = level.solution[drawnPath.length];
+    if (sol && isAdjacent(last, sol) && !drawnSet.has(cellKey(sol))) return sol;
+    for (const [dr, dc] of [[0, 1], [1, 0], [0, -1], [-1, 0]] as [number, number][]) {
+      const n: Cell = [last[0] + dr, last[1] + dc];
+      if (n[0] >= 0 && n[0] < level.rows && n[1] >= 0 && n[1] < level.cols && !drawnSet.has(cellKey(n))) return n;
+    }
+    return null;
+  }
+  const hintCell: Cell | null = showHint ? computeHint() : null;
 
   // ─── SVG cell size ──────────────────────────────────────────────────────────
   const maxW = Math.min(480, typeof window !== "undefined" ? window.innerWidth - 32 : 480);

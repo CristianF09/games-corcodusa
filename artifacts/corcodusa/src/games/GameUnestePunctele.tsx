@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { playCelebrate, playClick, playCorrect } from "@/lib/sfx";
+import { playCelebrate, playClick, playCorrect, playWrong } from "@/lib/sfx";
 import { KidEmoji } from "@/components/kid-emoji";
 
 /* ─── Confetti ──────────────────────────────────────────────── */
@@ -32,7 +32,7 @@ interface Puzzle {
 }
 
 /* ─── Image puzzles (dot-to-dot pictures, 0-100 coordinate space) ── */
-const IMAGE_PUZZLES: Omit<Puzzle, "key">[] = [
+export const IMAGE_PUZZLES: Omit<Puzzle, "key">[] = [
   {
     label: "Inimă", emoji: "❤️", color: "#ef4444",
     dots: [[50,88],[72,70],[85,52],[85,33],[74,18],[60,18],[50,32],[40,18],[26,18],[15,33],[15,52],[28,70],[50,88]],
@@ -245,11 +245,12 @@ const DOT_R = 3.5;     // dot radius in SVG units (0-100 space)
 const LINE_W = 2.2;    // line stroke width
 
 function PuzzleSVG({
-  puzzle, nextIdx, onDotClick,
+  puzzle, nextIdx, onDotClick, wrongIdx = null,
 }: {
   puzzle: Puzzle;
   nextIdx: number;
   onDotClick: (i: number) => void;
+  wrongIdx?: number | null;
 }) {
   const { dots, lifts, color } = puzzle;
   const done = nextIdx >= dots.length;
@@ -297,16 +298,14 @@ function PuzzleSVG({
           >
             {/* Pulse ring on next dot */}
             {isNext && (
-              <circle
-                cx={d[0]} cy={d[1]} r={DOT_R + 3}
-                fill="none" stroke={color} strokeWidth="1" opacity="0.4"
-                style={{ animation: "ping 1s infinite" }}
-              />
+              <circle cx={d[0]} cy={d[1]} r={DOT_R + 3} fill="none" stroke={color} strokeWidth="1" opacity="0.4">
+                <animate attributeName="r" values={`${DOT_R + 2};${DOT_R + 5};${DOT_R + 2}`} dur="1s" repeatCount="indefinite" />
+              </circle>
             )}
             <circle
               cx={d[0]} cy={d[1]} r={DOT_R}
-              fill={isPast ? color : isNext ? color : "#f8fafc"}
-              stroke={isPast ? color : isNext ? color : "#cbd5e1"}
+              fill={wrongIdx === i ? "#fecaca" : isPast ? color : isNext ? color : "#f8fafc"}
+              stroke={wrongIdx === i ? "#ef4444" : isPast ? color : isNext ? color : "#cbd5e1"}
               strokeWidth="0.8"
               opacity={isPast ? 1 : isNext ? 0.9 : 0.7}
             />
@@ -341,6 +340,7 @@ export default function GameUnestePunctele() {
   const [phase, setPhase] = useState<"menu" | "playing" | "won">("menu");
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
   const [nextIdx, setNextIdx] = useState(0);
+  const [wrongIdx, setWrongIdx] = useState<number | null>(null);
 
   function pickPuzzle(p: Puzzle) {
     setPuzzle(p);
@@ -359,6 +359,11 @@ export default function GameUnestePunctele() {
         setPhase("won");
         playCelebrate();
       }
+    } else {
+      // Wrong dot: say so, otherwise the child sees nothing happen.
+      playWrong();
+      setWrongIdx(i);
+      setTimeout(() => setWrongIdx(null), 500);
     }
   }
 
@@ -435,7 +440,7 @@ export default function GameUnestePunctele() {
       </div>
 
       {/* Puzzle SVG */}
-      <PuzzleSVG puzzle={puzzle} nextIdx={nextIdx} onDotClick={handleDotClick} />
+      <PuzzleSVG puzzle={puzzle} nextIdx={nextIdx} onDotClick={handleDotClick} wrongIdx={wrongIdx} />
 
       {/* Instruction */}
       <div className="text-center">

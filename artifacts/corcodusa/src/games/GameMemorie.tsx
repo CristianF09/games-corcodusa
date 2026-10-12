@@ -19,7 +19,7 @@ function Confetti() {
   );
 }
 
-const THEMES: Record<string, { label: string; emoji: string; pairs: string[] }> = {
+export const THEMES: Record<string, { label: string; emoji: string; pairs: string[] }> = {
   animale: {
     label: "Animale", emoji: "🐾",
     pairs: ["🐶","🐱","🐸","🦋","🦄","🐬","🦊","🐧","🐘","🦁","🦒","🐯"],
@@ -46,7 +46,7 @@ const THEMES: Record<string, { label: string; emoji: string; pairs: string[] }> 
   },
 };
 
-const DIFFICULTIES = [
+export const DIFFICULTIES = [
   { id: "easy",   label: "Ușor",  pairs: 6,  cols: 4 },
   { id: "medium", label: "Mediu", pairs: 8,  cols: 4 },
   { id: "hard",   label: "Greu",  pairs: 12, cols: 6 },
@@ -67,7 +67,7 @@ function drawPairs(themeKey: string, pool: string[], count: number): string[] {
   return deck.slice(0, count);
 }
 
-function createCards(themeKey: string, pairs: string[], count: number) {
+export function createCards(themeKey: string, pairs: string[], count: number) {
   const chosen = drawPairs(themeKey, pairs, count);
   return [...chosen, ...chosen]
     .map((emoji, id) => ({ id, emoji, flipped: false, matched: false }))
@@ -89,6 +89,7 @@ export default function GameMemorie() {
   const [won, setWon] = useState(false);
   const [bestMoves, setBestMoves] = useState<Record<string, number>>({});
   const [celebrate, setCelebrate] = useState(false);
+  const [newRecord, setNewRecord] = useState(false);
 
   useEffect(() => {
     if (won) return;
@@ -140,6 +141,8 @@ export default function GameMemorie() {
           setTimeout(() => setCelebrate(false), 1800);
           setWon(true);
           const key = `${themeKey}-${diffId}`;
+          const prevBest = bestMoves[key];
+          setNewRecord(prevBest === undefined || moves + 1 < prevBest);
           setBestMoves(prev => ({ ...prev, [key]: Math.min(moves + 1, prev[key] ?? Infinity) }));
         } else {
           playCorrect();
@@ -196,7 +199,7 @@ export default function GameMemorie() {
           <div className="text-2xl font-display font-bold text-green-600">Felicitări!</div>
           <div className="text-center text-muted-foreground">
             <p>{elapsed}s · {moves} mutări</p>
-            {best && moves <= best && <p className="text-primary font-bold">🎉 Nou record!</p>}
+            {newRecord && <p className="text-primary font-bold">🎉 Nou record!</p>}
           </div>
           <button onClick={() => restart()} className="px-8 py-3 bg-primary text-white font-bold rounded-full shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all">
             Joacă din nou

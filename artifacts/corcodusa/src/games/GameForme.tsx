@@ -1,4 +1,4 @@
-import { useState, type ReactElement } from "react";
+import { useState, useRef, useEffect, type ReactElement } from "react";
 import { playCorrect, playWrong, playCelebrate } from "@/lib/sfx";
 import StepTraceCanvas from "@/components/step-trace-canvas";
 import { shapeStrokes } from "@/lib/stroke-data";
@@ -124,6 +124,10 @@ export default function GameForme() {
   const [traceScore, setTraceScore] = useState(0);
   const [traceCelebrate, setTraceCelebrate] = useState(false);
 
+  // Pending "next round" timer — cancelled on mode change and when leaving the game.
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
+
   function nextRound() {
     setColorR(genColorRound()); setShapeR(genShapeRound()); setCountR(genCountRound());
     setMixR(genMixRound()); setRainbowR(genRainbowRound());
@@ -131,10 +135,11 @@ export default function GameForme() {
   }
   function handleAnswer(val: string, correct: string) {
     if (chosen) return; setChosen(val); setTotal(t => t + 1);
+    if (timerRef.current) clearTimeout(timerRef.current);
     if (val === correct) { setScore(s => s + 1); playCorrect(); } else { playWrong(); }
-    setTimeout(() => nextRound(), 1800);
+    timerRef.current = setTimeout(() => nextRound(), 1800);
   }
-  function changeMode(m: Mode) { setMode(m); setScore(0); setTotal(0); nextRound(); }
+  function changeMode(m: Mode) { if (timerRef.current) clearTimeout(timerRef.current); setMode(m); setScore(0); setTotal(0); nextRound(); }
 
   const curShape = TRACEABLE[traceIdx];
 

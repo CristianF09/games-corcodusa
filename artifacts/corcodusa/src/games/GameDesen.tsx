@@ -312,7 +312,7 @@ export default function GameDesen() {
         </div>
         {/* Actions */}
         <div className="flex gap-1">
-          <button onClick={() => { playClick(); undo(); }} title="Anul" className="px-2 py-1.5 rounded-xl text-xs font-bold bg-muted hover:bg-muted/70 transition-all">↩</button>
+          <button onClick={() => { playClick(); undo(); }} title="Anulează" className="px-2 py-1.5 rounded-xl text-xs font-bold bg-muted hover:bg-muted/70 transition-all">↩</button>
           <button onClick={clearCanvas} className="px-2 py-1.5 rounded-xl text-xs font-bold bg-red-100 text-red-700 hover:bg-red-200 transition-all">🗑</button>
           <button onClick={saveCanvas} className="px-2 py-1.5 rounded-xl text-xs font-bold bg-green-100 text-green-700 hover:bg-green-200 transition-all">💾</button>
         </div>
